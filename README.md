@@ -1,3 +1,3 @@
 # README
 
-A collection of examples using the `ibp-registry` database.
+Risk estimation done using the [ibp-registry database](https://github.com/BioPsyk/biopsyk-wiki/wiki/Software%3A-ibp-registry).
