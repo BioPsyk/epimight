@@ -409,36 +409,46 @@ Danish_Register_CumulativeIncidence_familial_betweenDisorder = function(data_pat
   
   if(letter == "e")
   {
-    survival_data = survival_data[survival_data[,4] == number, c(1:3,5)]
+    survival_data = survival_data[survival_data[,4] == number, c(1:3,5,4)]
   } else if(letter == "s"){
-    survival_data = survival_data[survival_data[,4] < number, c(1:3,5)]
+    survival_data = survival_data[survival_data[,4] <= number, c(1:3,5,4)]
   } else if(letter == "l"){
-    survival_data = survival_data[survival_data[,4] > number, c(1:3,5)]
+    survival_data = survival_data[survival_data[,4] >= number, c(1:3,5,4)]
   }
   
   anygroup = survival_data[survival_data$diagnosed_relatives > 0,]
   anygroup$diagnosed_relatives = "Any"
   cuminc_data = rbind(anygroup,survival_data)
   rm(anygroup)
-  
+
+ 	nonegroup = survival_data[survival_data$relatives == 0,]
+	nonegroup$diagnosed_relatives = "NoFamilyMembers"
+	cuminc_data = rbind(cuminc_data,nonegroup)
+	rm(nonegroup)
+   
   n_familymembers <- survival_data %>%
                                       summarise(max_diagnosed_relatives = max(diagnosed_relatives)) %>%
                                       pull(max_diagnosed_relatives)
 
 	x = NULL
 	# Loop though classes to check if consuring column is multiple options. If not delete group
-	for(i in c("Any", 0:n_familymembers))
+	for(i in c("Any", "NoFamilyMembers", 0:n_familymembers))
 	{
-		if(length(unique(cuminc_data[cuminc_data[,4] == i,3])) <= 1)
+	  if(length(unique(cuminc_data[cuminc_data[,4] == i,3])) <= 1)
 		{
-			#cuminc_data = cuminc_data[cuminc_data[,5] != i,]
+      #cuminc_data = cuminc_data[cuminc_data[,5] != i,]
 			cat("Group",i, "Affected Family Members: either did not excist or contained no censured individuals and was therefore removed", "\n")
 			next
 		}
 		# Calculate Cumulative Incidence using competing risk
 		# Some error occured when I tries it out using everybody in one go, but when running the data one by one it seems to work.
     # While the group statement is redundant I use it later on to keep the group names
-		cum1 = cuminc(ftime = cuminc_data[cuminc_data$diagnosed_relatives == i,]$failure_time, fstatus = cuminc_data[cuminc_data$diagnosed_relatives == i,]$failure_status, group=cuminc_data[cuminc_data$diagnosed_relatives == i,]$diagnosed_relatives, cencode = 0)
+		cum1 = cuminc(
+                    ftime = cuminc_data[cuminc_data$diagnosed_relatives == i,]$failure_time, 
+                    fstatus = cuminc_data[cuminc_data$diagnosed_relatives == i,]$failure_status, 
+                    group=cuminc_data[cuminc_data$diagnosed_relatives == i,]$diagnosed_relatives, 
+                    cencode = 0
+                  )
 
 		# Get Groupname name
 		out = strsplit(names(cum1), " ")[[1]][1]

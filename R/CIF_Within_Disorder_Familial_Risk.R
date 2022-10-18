@@ -347,15 +347,15 @@ Danish_Register_CumulativeIncidence_familial_withinDisorder = function(data_path
   letter = strsplit(nFamMember,"")[[1]][1]
   number = paste(strsplit(nFamMember,"")[[1]][2:length(strsplit(nFamMember,"")[[1]])], collapse="")
   
-  survival_data = survival_data[survival_data[,4] > 0,]
+  #survival_data = survival_data[survival_data[,4] > 0,]
    
   if(letter == "e")
   {
-    survival_data = survival_data[survival_data[,5] == number, c(1:3,5)]
+    survival_data = survival_data[survival_data$diagnosed_relatives == number, c(1:3,5,4)]
   } else if(letter == "s"){
-    survival_data = survival_data[survival_data[,5] < number, c(1:3,5)]
+    survival_data = survival_data[survival_data$diagnosed_relatives <= number, c(1:3,5,4)]
   } else if(letter == "l"){
-    survival_data = survival_data[survival_data[,5] > number, c(1:3,5)]
+    survival_data = survival_data[survival_data$diagnosed_relatives >= number, c(1:3,5,4)]
   }
 
   if(nrow(survival_data) == 0)
@@ -372,6 +372,11 @@ Danish_Register_CumulativeIncidence_familial_withinDisorder = function(data_path
   cuminc_data = rbind(anygroup,survival_data)
   rm(anygroup)
   
+ 	nonegroup = survival_data[survival_data$relatives == 0,]
+	nonegroup$diagnosed_relatives = "NoFamilyMembers"
+	cuminc_data = rbind(cuminc_data,nonegroup)
+	rm(nonegroup)
+ 
   n_familymembers <- survival_data %>%
                                       summarise(max_diagnosed_relatives = max(diagnosed_relatives)) %>%
                                       pull(max_diagnosed_relatives)
@@ -380,9 +385,9 @@ Danish_Register_CumulativeIncidence_familial_withinDisorder = function(data_path
 
 	x = NULL
 	# Loop though classes to check if consuring column is multiple options. If not delete group
-	for(i in c("Any", 0:n_familymembers))
+	for(i in c("Any", "NoFamilyMembers", 0:n_familymembers))
 	{
-	if(length(unique(cuminc_data[cuminc_data[,4] == i,3])) <= 1)
+	  if(length(unique(cuminc_data[cuminc_data[,4] == i,3])) <= 1)
 		{
 			#cuminc_data = cuminc_data[cuminc_data[,5] != i,]
 			cat("Group",i, "Affected Family Members: either did not excist or contained no censured individuals and was therefore removed", "\n")
