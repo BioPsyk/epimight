@@ -1,0 +1,775 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[swedish]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{background}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \usepackage[most]{tcolorbox}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \sectionfont{\color{light_grey}}
+#+LATEX_HEADER: \subsectionfont{\color{light_grey}}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \renewenvironment{quote}{%
+#+LATEX_HEADER:   \tcolorbox[
+#+LATEX_HEADER:     top=10pt,
+#+LATEX_HEADER:     bottom=10pt
+#+LATEX_HEADER:   ]
+#+LATEX_HEADER:   \parskip=0.5\baselineskip \advance\parskip by 0pt plus 2pt
+#+LATEX_HEADER:   \parindent=0pt
+#+LATEX_HEADER: }{%
+#+LATEX_HEADER:   \endtcolorbox
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \definecolor{light-gray}{gray}{0.95}
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{light-gray},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX: \color{light_grey}
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: Pipeline: estimate genetic correlation between two disorders stratified by year of birth
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+#+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
+
+#+BEGIN_SRC R :exports none :tangle no
+devtools::load_all(".")
+source("./quality-assurance/utils.R")
+#+END_SRC
+
+#+RESULTS:
+
+This is a guide for using the pre-assembled pipeline that estimates genetic
+correlation between two disorders stratified by birth year, using TTE (time-to-event) data.
+
+All code shown in this guide have been written to [[./estimate-genetic-correlation-between-two-disorders-by-yob.R][this R file]], so that you don't have
+to copy all code snippets manually.
+
+This pipeline is an extension of the [[./estimate-genetic-correlation-between-two-disorders.org]["estimate genetic correlation between two disorders"]].
+We will extend the research question from that pipeline to be:
+"What is the genetic correlation between schizophrenia and coronary artery disease
+in Danish millenials and their full siblings (people born from 1981 to 1996)
+stratified by birth year?"
+
+The same naming convention will be used as the previous pipeline:
+
+- Disorders:
+  - ~d1~ = Schizophrenia
+  - ~d2~ = Coronary Artery Disease
+- Cohorts:
+  - ~c1~ = Target cohort
+  - ~c2~ = Individuals with at least 1 diagnosed relative of disorder 1
+  - ~c3~ = Individuals with at least 1 diagnosed relative of disorder 2
+- Results:
+  - ~re_d1_c1~ = Risk estimates of disorder 1, cohort 1
+  - ~re_d1_c2~ = Risk estimates of disorder 1, cohort 2
+  - ~re_d1_c3~ = Risk estimates of disorder 1, cohort 3
+  - ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
+  - ~re_d2_c3~ = Risk estimates of disorder 2, cohort 3
+  - ~h2_d1~ = Heritability of disorder 1 (cohort 1 vs cohort 2)
+  - ~h2_d2~ = Heritability of disorder 2 (cohort 1 vs cohort 3)
+  - ~gc_d1_d2~ = Genetic correlation (disorder 1 vs disorder 2)
+
+The data derivation diagram is exactly the same as the previous pipeline:
+
+[[file:../diagrams/gc-dag.png]]
+
+The answer to the research question above will be in result ~gc_d1_d2~.
+
+We start by importing all the needed libraries:
+
+#+BEGIN_SRC R :exports code :eval no
+library(data.table)
+library(dplyr)
+library(dtplyr)
+library(readr)
+library(IbpRiskEstimations)
+#+END_SRC
+
+* Arguments
+
+We'll use all the same arguments as the heritability pipeline, and introduce 4 new variables
+for the two disorders:
+
+#+BEGIN_SRC R :exports code :results output
+study_period_start <- as.Date("1981-01-01")
+study_period_end   <- as.Date("2016-12-31")
+
+d1_earliest_onset_age <- 10
+d2_earliest_onset_age <- 1
+
+born_at_start <- as.Date("1981-01-01")
+born_at_end   <- as.Date("1996-01-01")
+
+relationship_kind <- "FS"
+#+END_SRC
+
+#+RESULTS:
+
+* Data processing
+
+Just like the previous pipeline, we will read our two separate TTE datasets:
+
+#+BEGIN_SRC R :eval no :exports code
+d1_tte <- read_csv("./tmp/data/tte_SCZ_FS.csv") |> as.data.table()
+d2_tte <- read_csv("./tmp/data/tte_CAD_FS.csv") |> as.data.table()
+#+END_SRC
+
+#+BEGIN_SRC R :exports results :results output :tangle no
+set.seed(6)
+n_count <- 100000
+
+d1_tte <- generate_random_tte(n_count)
+d1_tte <- generate_failure(d1_tte, 20, 10)
+d1_tte <- generate_diagnosed_relatives(d1_tte, "diagnosed_relatives") |>
+  relocate(relatives, .after = failure_time)
+d1_tte <- data.table(d1_tte)
+
+d2_tte <- d1_tte
+d2_tte <- generate_failure(d2_tte, 25, 10)
+d2_tte <- generate_diagnosed_relatives(d2_tte, "diagnosed_relatives") |>
+  relocate(relatives, .after = failure_time)
+d2_tte <- data.table(d2_tte)
+
+d1_tte <- d1_tte |> select(-born_at_year, -dead_at_year)
+d2_tte <- d2_tte |> select(-born_at_year, -dead_at_year)
+#+END_SRC
+
+#+RESULTS:
+
+After the data has been read, we need to apply our millenials filter to it:
+
+#+BEGIN_SRC R :exports both :results output
+d1_tte <- d1_tte |>
+  filter(
+    born_at >= born_at_start,
+    born_at <= born_at_end
+  )
+
+d2_tte <- d2_tte |>
+  filter(
+    born_at >= born_at_start,
+    born_at <= born_at_end
+  )
+#+END_SRC
+
+#+RESULTS:
+
+Since we are going to stratify the analysis on birth year, we also need to add a new
+column which we can use as the grouping column:
+
+#+BEGIN_SRC R :exports code :results output
+d1_tte <- d1_tte |>
+  mutate(
+    born_at_year = as.character(format(born_at, "%Y"))
+  )
+
+d2_tte <- d2_tte |>
+  mutate(
+    born_at_year = as.character(format(born_at, "%Y"))
+  )
+#+END_SRC
+
+#+RESULTS:
+
+The TTE data will look something like this after the new column was added:
+
+#+BEGIN_SRC R :exports both :results output
+print("Disorder 1 survival data:")
+print(d1_tte)
+print("Disorder 2 survival data:")
+print(d2_tte)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[1] "Disorder 1 survival data:"
+       person_id    born_at failure_status failure_time relatives diagnosed_relatives
+    1:        20 1987-07-21              0           36         2                   0
+    2:        26 1990-07-14              0           33         0                   0
+    3:        34 1990-11-28              0           33         1                   0
+    4:        61 1993-01-22              0           30         2                   0
+    5:        71 1986-09-01              0           37         1                   0
+   ---
+11333:     99962 1993-05-13              0           30         0                   0
+11334:     99968 1995-02-10              0           28         2                   0
+11335:     99970 1994-12-23              1           18         2                   2
+11336:     99977 1984-01-20              0           39         4                   0
+11337:     99993 1988-07-25              0           35         0                   0
+       born_at_year
+    1:         1987
+    2:         1990
+    3:         1990
+    4:         1993
+    5:         1986
+   ---
+11333:         1993
+11334:         1995
+11335:         1994
+11336:         1984
+11337:         1988
+[1] "Disorder 2 survival data:"
+       person_id    born_at failure_status failure_time relatives diagnosed_relatives
+    1:        20 1987-07-21              0           36         2                   2
+    2:        26 1990-07-14              0           33         0                   0
+    3:        34 1990-11-28              0           33         1                   0
+    4:        61 1993-01-22              0           30         2                   0
+    5:        71 1986-09-01              0           37         1                   0
+   ---
+11333:     99962 1993-05-13              1           26         0                   0
+11334:     99968 1995-02-10              0           28         2                   1
+11335:     99970 1994-12-23              0           29         2                   2
+11336:     99977 1984-01-20              0           39         4                   0
+11337:     99993 1988-07-25              0           35         0                   0
+       born_at_year
+    1:         1987
+    2:         1990
+    3:         1990
+    4:         1993
+    5:         1986
+   ---
+11333:         1993
+11334:         1995
+11335:         1994
+11336:         1984
+11337:         1988
+#+end_example
+
+We then need to create the 3 cohorts:
+
+- Cohort 1 :: Target cohort
+- Cohort 2 :: Individuals with at least 1 affected relative of disorder 1
+- Cohort 3 :: Individuals with at least 1 affected relative of disorder 2
+
+#+BEGIN_SRC R :exports both :results output
+c1_tte <- inner_join(d1_tte, d2_tte, by = join_by(person_id)) |>
+  rename(
+    born_at_year           = born_at_year.x,
+    relatives              = relatives.x,
+    d1_failure_status      = failure_status.x,
+    d1_failure_time        = failure_time.x,
+    d1_diagnosed_relatives = diagnosed_relatives.x,
+    d2_failure_status      = failure_status.y,
+    d2_failure_time        = failure_time.y,
+    d2_diagnosed_relatives = diagnosed_relatives.y
+  ) |>
+  select(person_id, relatives, born_at_year, starts_with("d1_"), starts_with("d2_"))
+
+c2_tte <- c1_tte |> filter(d1_diagnosed_relatives > 0)
+c3_tte <- c1_tte |> filter(d2_diagnosed_relatives > 0)
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :exports both :results output
+print("c1_tte:")
+print(c1_tte)
+print("c2_tte:")
+print(c2_tte)
+print("c3_tte:")
+print(c3_tte)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[1] "c1_tte:"
+       person_id relatives born_at_year d1_failure_status d1_failure_time d1_diagnosed_relatives
+    1:        20         2         1987                 0              36                      0
+    2:        26         0         1990                 0              33                      0
+    3:        34         1         1990                 0              33                      0
+    4:        61         2         1993                 0              30                      0
+    5:        71         1         1986                 0              37                      0
+   ---
+11333:     99962         0         1993                 0              30                      0
+11334:     99968         2         1995                 0              28                      0
+11335:     99970         2         1994                 1              18                      2
+11336:     99977         4         1984                 0              39                      0
+11337:     99993         0         1988                 0              35                      0
+       d2_failure_status d2_failure_time d2_diagnosed_relatives
+    1:                 0              36                      2
+    2:                 0              33                      0
+    3:                 0              33                      0
+    4:                 0              30                      0
+    5:                 0              37                      0
+   ---
+11333:                 1              26                      0
+11334:                 0              28                      1
+11335:                 0              29                      2
+11336:                 0              39                      0
+11337:                 0              35                      0
+[1] "c2_tte:"
+      person_id relatives born_at_year d1_failure_status d1_failure_time d1_diagnosed_relatives
+   1:        76         4         1981                 1              15                      1
+   2:        85         4         1989                 0              34                      2
+   3:       120         7         1994                 0              29                      7
+   4:       121         2         1989                 0              34                      1
+   5:       130         3         1995                 0              28                      2
+  ---
+2540:     99865         4         1995                 0              28                      1
+2541:     99870         4         1988                 0              35                      3
+2542:     99903         4         1984                 0              39                      2
+2543:     99934         1         1982                 1              41                      1
+2544:     99970         2         1994                 1              18                      2
+      d2_failure_status d2_failure_time d2_diagnosed_relatives
+   1:                 0              42                      0
+   2:                 0              34                      0
+   3:                 1              11                      4
+   4:                 0              34                      0
+   5:                 0              28                      0
+  ---
+2540:                 0              28                      1
+2541:                 1              30                      4
+2542:                 0              39                      0
+2543:                 0              41                      1
+2544:                 0              29                      2
+[1] "c3_tte:"
+      person_id relatives born_at_year d1_failure_status d1_failure_time d1_diagnosed_relatives
+   1:        20         2         1987                 0              36                      0
+   2:        74         5         1995                 0              28                      0
+   3:       100         5         1984                 0              39                      0
+   4:       120         7         1994                 0              29                      7
+   5:       152         3         1985                 0              38                      0
+  ---
+2493:     99895         4         1991                 0              32                      0
+2494:     99934         1         1982                 1              41                      1
+2495:     99949         3         1982                 0              41                      0
+2496:     99968         2         1995                 0              28                      0
+2497:     99970         2         1994                 1              18                      2
+      d2_failure_status d2_failure_time d2_diagnosed_relatives
+   1:                 0              36                      2
+   2:                 0              28                      5
+   3:                 0              39                      2
+   4:                 1              11                      4
+   5:                 0              38                      1
+  ---
+2493:                 0              32                      1
+2494:                 0              41                      1
+2495:                 0              41                      1
+2496:                 0              28                      1
+2497:                 0              29                      2
+#+end_example
+
+** Risk estimates
+
+Like earlier pipelines, we will use the class ~CumulativeIncidenceAnalysis~
+to produce the estimates:
+
+#+BEGIN_SRC R :exports code :results output
+cif_analysis <- CumulativeIncidenceAnalysis$new()
+#+END_SRC
+
+#+RESULTS:
+
+Like the non-stratified pipeline, we need to create the 5 risk estimates:
+
+- re_d1_c1 :: Risk estimates of disorder 1, cohort 1
+- re_d1_c2 :: Risk estimates of disorder 1, cohort 2
+- re_d1_c3 :: Risk estimates of disorder 1, cohort 3
+- re_d2_c1 :: Risk estimates of disorder 2, cohort 1
+- re_d2_c3 :: Risk estimates of disorder 2, cohort 3
+
+But this time we will supply the column ~born_at_year~ as a grouping column, in order
+to stratify the analysis on birth year:
+
+#+BEGIN_SRC R :exports code :results output
+run_cif_stratified <- function(disorder, cohort) {
+  onset <- get(paste0(disorder, "_earliest_onset_age"))
+  tte   <- get(paste0(cohort, "_tte")) |>
+    rename(
+      failure_status = !!as.name(paste0(disorder, "_failure_status")),
+      failure_time   = !!as.name(paste0(disorder, "_failure_time"))
+    )
+
+  cif_analysis$run(
+    tte = tte,
+    earliest_onset = onset,
+    group_columns = list("born_at_year")
+  )
+}
+
+re_d1_c1 <- run_cif_stratified("d1", "c1")
+re_d1_c2 <- run_cif_stratified("d1", "c2")
+re_d1_c3 <- run_cif_stratified("d1", "c3")
+re_d2_c1 <- run_cif_stratified("d2", "c1")
+re_d2_c3 <- run_cif_stratified("d2", "c3")
+#+END_SRC
+
+#+RESULTS:
+
+Now we can see that the results have been stratified by birth year:
+
+#+BEGIN_SRC R :exports both :results output
+print("re_d1_c1:")
+print(re_d1_c1)
+print("re_d1_c2:")
+print(re_d1_c2)
+print("re_d1_c3:")
+print(re_d1_c3)
+print("re_d2_c1:")
+print(re_d2_c1)
+print("re_d2_c3:")
+print(re_d2_c3)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[1] "re_d1_c1:"
+     time   estimate     variance         l95        u95 cases born_at_year
+  1:   10 0.00990099 1.388528e-05 0.002597584 0.01720440     3         1981
+  2:   11 0.01414427 1.975116e-05 0.005433745 0.02285480     4         1981
+  3:   13 0.01555870 2.169513e-05 0.006429572 0.02468783     7         1981
+  4:   14 0.01980198 2.749305e-05 0.009525142 0.03007882     8         1981
+  5:   15 0.02121641 2.941436e-05 0.010586541 0.03184627    14         1981
+ ---
+333:   23 0.05706522 7.321201e-05 0.040294979 0.07383546    35         1995
+334:   24 0.06114130 7.810260e-05 0.043819991 0.07846262    38         1995
+335:   25 0.06521739 8.294801e-05 0.047366863 0.08306792    42         1995
+336:   27 0.07065217 8.933827e-05 0.052126805 0.08917754    46         1995
+337:   28 0.07608696 9.564821e-05 0.056918528 0.09525539    62         1995
+[1] "re_d1_c2:"
+     time   estimate     variance          l95        u95 cases born_at_year
+  1:   10 0.01851852 0.0001128948 -0.002306482 0.03934352     3         1981
+  2:   14 0.03703704 0.0002215396  0.007864526 0.06620955     4         1981
+  3:   15 0.04320988 0.0002568124  0.011800731 0.07461902     8         1981
+  4:   16 0.06790123 0.0003931753  0.029037798 0.10676467     9         1981
+  5:   18 0.07407407 0.0004260889  0.033616654 0.11453149    11         1981
+ ---
+235:   21 0.07185629 0.0004018444  0.032566736 0.11114584     9         1995
+236:   22 0.08982036 0.0004926120  0.046319225 0.13332149    11         1995
+237:   25 0.10179641 0.0005509717  0.055790590 0.14780222    13         1995
+238:   27 0.11377246 0.0006076087  0.065459892 0.16208502    17         1995
+239:   28 0.13772455 0.0007157075  0.085290204 0.19015890    24         1995
+[1] "re_d1_c3:"
+     time    estimate     variance           l95        u95 cases born_at_year
+  1:   10 0.006802721 4.627701e-05 -0.0065303672 0.02013581     1         1981
+  2:   13 0.013605442 9.192227e-05 -0.0051859283 0.03239681     2         1981
+  3:   15 0.020408163 1.369358e-04 -0.0025272479 0.04334357     3         1981
+  4:   18 0.027210884 1.813175e-04  0.0008191492 0.05360262     4         1981
+  5:   19 0.034013605 2.250675e-04  0.0046097384 0.06341747     6         1981
+ ---
+149:   14 0.018518519 1.128948e-04 -0.0023064819 0.03934352     2         1995
+150:   16 0.030864198 1.857981e-04  0.0041483651 0.05758003     4         1995
+151:   21 0.043209877 2.568139e-04  0.0118006412 0.07461911     5         1995
+152:   27 0.049382716 2.916148e-04  0.0159129338 0.08285250     7         1995
+153:   28 0.061728395 3.597994e-04  0.0245510555 0.09890573    10         1995
+[1] "re_d2_c1:"
+     time    estimate     variance           l95         u95 cases born_at_year
+  1:    1 0.000000000 0.000000e+00  0.0000000000 0.000000000     1         1981
+  2:    2 0.001414427 2.000604e-06 -0.0013577991 0.004186653     2         1981
+  3:   10 0.002828854 3.995545e-06 -0.0010888901 0.006746599     3         1981
+  4:   11 0.004243281 5.984822e-06 -0.0005515541 0.009038117     4         1981
+  5:   12 0.005657709 7.968436e-06  0.0001250402 0.011190377     8         1981
+ ---
+390:   23 0.047554348 6.162496e-05  0.0321683236 0.062940372    37         1995
+391:   25 0.050271739 6.496065e-05  0.0344747876 0.066068691    40         1995
+392:   26 0.054347826 6.992654e-05  0.0379581974 0.070737455    42         1995
+393:   27 0.057065217 7.321204e-05  0.0402949751 0.073835460    43         1995
+394:   28 0.058423913 7.484726e-05  0.0414674200 0.075380406    67         1995
+[1] "re_d2_c3:"
+     time    estimate     variance           l95        u95 cases born_at_year
+  1:    2 0.000000000 0.000000e+00  0.0000000000 0.00000000     1         1981
+  2:   10 0.006802721 4.627701e-05 -0.0065303672 0.02013581     2         1981
+  3:   12 0.013605442 9.192227e-05 -0.0051859283 0.03239681     4         1981
+  4:   13 0.027210884 1.813153e-04  0.0008193116 0.05360246     5         1981
+  5:   15 0.034013605 2.250653e-04  0.0046098821 0.06341733     7         1981
+ ---
+273:   21 0.074074074 4.261025e-04  0.0336160064 0.11453214    13         1995
+274:   22 0.080246914 4.585440e-04  0.0382769482 0.12221688    15         1995
+275:   25 0.092592593 5.220097e-04  0.0478122530 0.13737293    18         1995
+276:   27 0.111111111 6.136665e-04  0.0625583077 0.15966391    19         1995
+277:   28 0.117283951 6.432769e-04  0.0675735710 0.16699433    25         1995
+#+end_example
+
+** Heritability
+
+Like in earlier heritability pipelines, we will use the class ~HeritabilityAnalysis~
+to produce the heritability estimates:
+
+#+BEGIN_SRC R :exports code :results output
+h2_analysis <- HeritabilityAnalysis$new()
+#+END_SRC
+
+#+RESULTS:
+
+Like the non-stratified pipeline, we need to create the two heritability estimates:
+
+- h_d1 :: Heritability of disorder 1 (cohort 1 vs cohort 2)
+  - Inputs :: ~re_d1_c1~ and ~re_d1_c2~
+- h_d2 :: Heritability of disorder 2 (cohort 1 vs cohort 3)
+  - Inputs :: ~re_d2_c1~ and ~re_d2_c3~
+
+But this time when combining the risk estimates into a single dataset, we need to group
+everything on both time and birth year (This is needed to get the last risk estimate
+per birth year):
+
+#+BEGIN_SRC R :exports code :results output
+run_h2_stratified <- function(c1_estimates, c2_estimates) {
+  combined_estimates <- c1_estimates |>
+    inner_join(c2_estimates, by = join_by(time, born_at_year)) |>
+    rename(
+      cohort1_estimates = estimate.x,
+      cohort1_cases     = cases.x,
+      cohort2_estimates = estimate.y,
+      cohort2_cases     = cases.y
+    ) |>
+    select(time, born_at_year, starts_with("cohort"))
+
+  h2_analysis$run(
+    relationship_kind = relationship_kind,
+    estimates         = combined_estimates
+  )
+}
+
+h2_d1 <- run_h2_stratified(re_d1_c1, re_d1_c2)
+h2_d2 <- run_h2_stratified(re_d2_c1, re_d2_c3)
+#+END_SRC
+
+#+RESULTS:
+
+
+Now we have heritability calculated for the two disorders:
+
+#+BEGIN_SRC R :exports both :results output
+print("h2_d1:")
+print(h2_d1)
+print("h2_d2:")
+print(h2_d2)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[1] "h2_d1:"
+     time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases        h2
+  1:   10         1981        0.00990099             3        0.01851852             3 0.1897796
+  2:   14         1981        0.01980198             8        0.03703704             4 0.2330437
+  3:   15         1981        0.02121641            14        0.04320988             8 0.2742857
+  4:   16         1981        0.02970297            16        0.06790123             9 0.3659205
+  5:   18         1981        0.03536068            21        0.07407407            11 0.3449456
+ ---
+235:   21         1995        0.04755435            29        0.07185629             9 0.2050215
+236:   22         1995        0.05298913            32        0.08982036            11 0.2807061
+237:   25         1995        0.06521739            42        0.10179641            13 0.2564497
+238:   27         1995        0.07065217            46        0.11377246            17 0.2871882
+239:   28         1995        0.07608696            62        0.13772455            24 0.3807872
+            se         l95       u95
+  1: 0.2289073 -0.25887878 0.6384380
+  2: 0.2137768 -0.18595877 0.6520461
+  3: 0.1579613 -0.03531843 0.5838897
+  4: 0.1671083  0.03838827 0.6934527
+  5: 0.1580202  0.03522595 0.6546652
+ ---
+235: 0.1786962 -0.14522304 0.5552660
+236: 0.1724692 -0.05733348 0.6187456
+237: 0.1695281 -0.07582539 0.5887249
+238: 0.1565296 -0.01960972 0.5939862
+239: 0.1387699  0.10879812 0.6527762
+[1] "h2_d2:"
+     time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases        h2
+  1:   10         1981       0.002828854             3       0.006802721             2 0.2029079
+  2:   12         1981       0.005657709             8       0.013605442             4 0.2373668
+  3:   13         1981       0.011315417             9       0.027210884             5 0.2850293
+  4:   15         1981       0.014144272            12       0.034013605             7 0.3044562
+  5:   17         1981       0.016973126            15       0.047619048             8 0.3874100
+ ---
+261:   21         1995       0.039402174            31       0.074074074            13 0.3017525
+262:   22         1995       0.042119565            35       0.080246914            15 0.3174403
+263:   25         1995       0.050271739            40       0.092592593            18 0.3224440
+264:   27         1995       0.057065217            43       0.111111111            19 0.3766518
+265:   28         1995       0.058423913            67       0.117283951            25 0.4007060
+            se          l95       u95
+  1: 0.1984962 -0.186144774 0.5919605
+  2: 0.1564562 -0.069287365 0.5440209
+  3: 0.1683133 -0.044864689 0.6149233
+  4: 0.1521134  0.006313957 0.6025984
+  5: 0.1502413  0.092937080 0.6818829
+ ---
+261: 0.1460430  0.015508108 0.5879968
+262: 0.1398445  0.043345000 0.5915356
+263: 0.1367915  0.054332698 0.5905553
+264: 0.1406920  0.100895452 0.6524082
+265: 0.1224882  0.160629083 0.6407830
+#+end_example
+
+** Genetic correlation
+
+Now that the risk and heritability estimates have been produced, the only thing left is to
+produce a table that contains all the risk estimates and heritabilities, which finally
+can be passed to the genetic correlation analysis:
+
+#+BEGIN_SRC R :exports both :results output
+re_combined <- inner_join(re_d1_c1, re_d1_c3, by = join_by(time, born_at_year)) |>
+  rename(
+    re_d1_c1_estimates = estimate.x,
+    re_d1_c1_cases     = cases.x,
+    re_d1_c3_estimates = estimate.y,
+    re_d1_c3_cases     = cases.y,
+  ) |>
+  select(time, born_at_year, starts_with("re_")) |>
+  inner_join(re_d2_c1, by = join_by(time, born_at_year)) |>
+  rename(
+    re_d2_c1_estimates = estimate,
+    re_d2_c1_cases     = cases
+  ) |>
+  select(time, born_at_year, starts_with("re_"))
+
+# Join both h2 estimates into a single estimate
+h2_combined <- inner_join(h2_d1, h2_d2, by = join_by(time, born_at_year)) |>
+  rename(
+    h2_d1 = h2.x,
+    h2_d2 = h2.y
+  ) |>
+  select(time, born_at_year, starts_with("h2_"))
+
+# Join cumulative incidence and heritability estimates into a single dataset
+combined <- inner_join(re_combined, h2_combined, by = join_by(time, born_at_year)) |>
+  group_by(born_at_year) |>
+  arrange(desc(time)) |>
+  filter(row_number()==1) |>
+  arrange(born_at_year) |>
+  as.data.table()
+#+END_SRC
+
+#+RESULTS:
+
+Now the 3 risk estimates and 2 heritability estimates have been combined into a
+single dataset, ready to be passed into the genetic correlation analysis.
+This is what the dataset looks like:
+
+#+BEGIN_SRC R :exports both :results output
+print(combined)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+    time born_at_year re_d1_c1_estimates re_d1_c1_cases re_d1_c3_estimates re_d1_c3_cases
+ 1:   42         1981         0.11456860             75         0.09523810             14
+ 2:   41         1982         0.07856192             52         0.07361963             10
+ 3:   40         1983         0.08622909             61         0.07096774              9
+ 4:   39         1984         0.09628611             59         0.09150327             14
+ 5:   38         1985         0.08269720             57         0.09693878             15
+ 6:   37         1986         0.09308176             63         0.08139535             12
+ 7:   36         1987         0.09567497             70         0.10752688             20
+ 8:   35         1988         0.11506849             70         0.11309524             17
+ 9:   34         1989         0.09043250             65         0.09142857             14
+10:   33         1990         0.09329829             65         0.09090909             12
+11:   32         1991         0.09338521             69         0.06395349             13
+12:   31         1992         0.07493188             61         0.09554140             14
+13:   30         1993         0.08502538             74         0.08823529             15
+14:   29         1994         0.07908847             61         0.11797753             18
+15:   28         1995         0.07608696             62         0.06172840             10
+    re_d2_c1_estimates re_d2_c1_cases     h2_d1     h2_d2
+ 1:         0.10466761             75 0.5728992 0.5512362
+ 2:         0.08788282             68 0.4228159 0.2867122
+ 3:         0.09652510             80 0.5098714 0.7106747
+ 4:         0.07977992             62 0.4388647 0.5153989
+ 5:         0.09033079             86 0.3358886 0.4166856
+ 6:         0.09056604             80 0.4614900 0.3841002
+ 7:         0.08256881             71 0.3719894 0.5566200
+ 8:         0.08082192             70 0.3838582 0.6770462
+ 9:         0.07994758             75 0.6438973 0.6476040
+10:         0.07752957             71 0.3936846 0.5524429
+11:         0.08430610             87 0.6672897 0.3949376
+12:         0.06811989             76 0.5271642 0.2736415
+13:         0.06345178             80 0.6170098 0.2950681
+14:         0.05764075             72 0.4035510 0.2777850
+15:         0.05842391             67 0.3807872 0.4007060
+#+end_example
+
+Now, we can simply pass in the relationship kind and the combined dataset
+into the genetic correlation analysis:
+
+#+BEGIN_SRC R :exports both :results output
+gc_analysis <- GeneticCorrelationAnalysis$new()
+
+gc_d1_d2 <- gc_analysis$run(
+  relationship_kind = relationship_kind,
+  estimates         = combined
+)
+#+END_SRC
+
+#+RESULTS:
+
+Which produces a single genetic correlation per year:
+
+#+BEGIN_SRC R :exports both :results output
+print(gc_d1_d2 |> select(born_at_year, rhh, rhog, se, l95, u95) |> arrange(born_at_year))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+    born_at_year          rhh        rhog        se         l95       u95
+ 1:         1981 -0.120708191 -0.21479727 0.1963614 -0.50557651 0.2641601
+ 2:         1982 -0.037815105 -0.10860920 0.2063008 -0.44216464 0.3665344
+ 3:         1983 -0.115412223 -0.19172823 0.2162323 -0.53922761 0.3084032
+ 4:         1984 -0.030562162 -0.06426093 0.1843503 -0.39188869 0.3307644
+ 5:         1985  0.099072080  0.26481915 0.1821442 -0.25793059 0.4560747
+ 6:         1986 -0.080802717 -0.19192102 0.1942056 -0.46144578 0.2998403
+ 7:         1987  0.073219214  0.16090901 0.1635724 -0.24738265 0.3938211
+ 8:         1988 -0.011014719 -0.02160623 0.1754182 -0.35483441 0.3328050
+ 9:         1989  0.006556658  0.01015359 0.1798569 -0.34596296 0.3590763
+10:         1990 -0.015412308 -0.03304835 0.1895956 -0.38701963 0.3561950
+11:         1991 -0.212571759 -0.41407988 0.1778502 -0.56115817 0.1360146
+12:         1992  0.140265234  0.36930574 0.1722626 -0.19736946 0.4778999
+13:         1993  0.020804646  0.04875882 0.1617655 -0.29625566 0.3378650
+14:         1994  0.232658006  0.69488729 0.1561652 -0.07342586 0.5387419
+15:         1995 -0.106818205 -0.27345834 0.1796353 -0.45890336 0.2452670
+#+end_example
+
+The genetic correlations can then be passed to the meta analysis function, which
+produces a single result for all years combined:
+
+#+BEGIN_SRC R :exports both :results output
+meta <- gc_analysis$run_meta(gc_d1_d2)
+
+print(meta)
+#+END_SRC
+
+#+RESULTS:
+:     fixed_meta   fixed_se   fixed_l95  fixed_u95    rand_meta    rand_se   rand_l95  rand_u95
+: 1: 0.001389898 0.04657329 -0.08989375 0.09267354 -0.002171573 0.05523903 -0.1104401 0.1060969
+
+All done!

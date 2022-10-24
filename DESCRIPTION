@@ -1,0 +1,47 @@
+Package: IbpRiskEstimations
+Title: R package for estimating risk, heritability and genetic correlation
+Description: Estimates risk
+Version: 0.1.0
+Authors@R:
+    person(given = "Joeri",
+           family = "Meijsen",
+           role = c("aut", "cre"),
+           email = "joeri.jeroen.meijsen@regionh.dk")
+    person(given = "Richard",
+           family = "Zetterberg",
+           role = c("aut", "cre"),
+           email = "richard.zetterberg@regionh.dk")
+License: GPL-3
+Encoding: UTF-8
+URL: https://github.com/BioPsyk/ibp-risk-estimations
+BugReports: https://github.com/BioPsyk/ibp-risk-estimations/issues
+Suggests:
+    knitr,
+    rmarkdown,
+    pkgdown,
+    testthat (>= 3.0.0),
+    waldo,
+    microbenchmark
+Imports:
+    R6,
+    cmprsk,
+    data.table,
+    dplyr,
+    dtplyr,
+    parallel,
+    jinjar,
+    readr,
+    tidyr
+VignetteBuilder: knitr
+RoxygenNote: 7.2.3
+Roxygen: list(markdown = TRUE)
+Collate:
+    'Analysis-class.R'
+    'ArgumentsValidator-class.R'
+    'CumulativeIncidenceAnalysis-class.R'
+    'GeneticCorrelationAnalysis-class.R'
+    'HeritabilityAnalysis-class.R'
+    'TTERetriever-class.R'
+Depends:
+    R (>= 2.10)
+Config/testthat/edition: 3

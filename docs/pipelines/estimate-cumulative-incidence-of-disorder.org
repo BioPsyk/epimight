@@ -1,0 +1,329 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[swedish]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{background}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \usepackage[most]{tcolorbox}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \sectionfont{\color{light_grey}}
+#+LATEX_HEADER: \subsectionfont{\color{light_grey}}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \renewenvironment{quote}{%
+#+LATEX_HEADER:   \tcolorbox[
+#+LATEX_HEADER:     top=10pt,
+#+LATEX_HEADER:     bottom=10pt
+#+LATEX_HEADER:   ]
+#+LATEX_HEADER:   \parskip=0.5\baselineskip \advance\parskip by 0pt plus 2pt
+#+LATEX_HEADER:   \parindent=0pt
+#+LATEX_HEADER: }{%
+#+LATEX_HEADER:   \endtcolorbox
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \definecolor{light-gray}{gray}{0.95}
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{light-gray},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX: \color{light_grey}
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: Pipeline: estimate cumulative incidence of disorder
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+#+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
+
+#+BEGIN_SRC R :exports none :tangle no
+devtools::load_all(".")
+source("./quality-assurance/utils.R")
+#+END_SRC
+
+#+RESULTS:
+
+This is a guide for using the pre-assembled pipeline that estimates cumulative
+incidence risk estimates of a single disorder from TTE (time-to-event) data.
+
+All code shown in this guide have been written to [[./estimate-cumulative-incidence-of-disorder.R][this R file]], so that you don't have
+to copy all code snippets manually.
+
+There are 3 different things you can configure when running this pipeline:
+
+- Study period
+- Disorder to study
+- Cohort to estimate the risk in
+
+In this guide we are going to answer the following research question:
+"What is the lifetime risk of schizophrenia in Danish millenials (born between 1981 and 1996)?"
+
+We start by importing all the needed libraries:
+
+#+BEGIN_SRC R :exports code :eval no
+library(data.table)
+library(dplyr)
+library(dtplyr)
+library(readr)
+library(IbpRiskEstimations)
+#+END_SRC
+
+* Arguments
+
+** Study period
+
+The first thing we need to do is to define the arguments that reflects the research question.
+Since we want to study millenials, we will use the millenials start year as the start year of
+the study:
+
+#+BEGIN_SRC R :exports code
+# Arguments for research question:
+# What is the lifetime risk of schizophrenia in millenials (people born from 1981 to 1996)?
+
+study_period_start <- as.Date("1981-01-01")
+study_period_end   <- as.Date("2016-12-31")
+#+END_SRC
+
+#+RESULTS:
+: 2016-12-31
+
+The reason why we use ~2016-12-31~ as the end date, is because the registry data in the
+~ibp-registry~ database ends at that date.
+
+** Disorder to study
+
+Next, we need to define what the earliest age of onset we want to use for
+the disorder. Since we are studying schizophrenia, we are going to use 10:
+
+#+BEGIN_SRC R :exports code
+earliest_onset_age <- 10
+#+END_SRC
+
+#+RESULTS:
+: 10
+
+** Cohort to estimate the risk in
+
+Next we define the millenials period (1981 to 1996) as the allowed date of birth:
+
+#+BEGIN_SRC R :exports code
+born_at_start <- as.Date("1981-01-01")
+born_at_end   <- as.Date("1996-01-01")
+#+END_SRC
+
+#+RESULTS:
+: 1996-01-01
+
+* Data processing
+
+Now that we have defined all arguments to use, it's time to read and process the
+TTE data that we are going to analyze. The TTE data needs to fulfill the following
+requirements in order to be used by this pipeline:
+
+1. Each row represents an individual
+2. Each individual can only appear once
+3. The following columns *must* exist:
+   - person_id :: A combination of letters/numbers that uniquely identifies an individual
+   - failure_status :: Non-negative integer that can be 0, 1 or 2:
+     - 0 :: Censoring
+     - 1 :: Affected by disorder
+     - 2 :: Competing risk
+   - failure_time :: Non-negative integer that represents the age of the individual when the failure/event occured
+4. Can contain any other column used in pre-analysis filtering
+
+Since we are only studying millenials, our TTE data also needs to contain a column that
+contains each individuals birth date. In this guide, we call this column ~born_at~.
+The file format of the data is not important, what is important is that we can read the
+data and convert into a ~data.table~.
+
+The example data in this guide is contained in a file called ~tte_SCZ.csv~,
+so we simply read it and convert it into a ~data.table~:
+
+#+BEGIN_SRC R :eval no :exports code
+tte <- read_csv("./tmp/data/tte_SCZ.csv") |> as.data.table()
+#+END_SRC
+
+#+BEGIN_SRC R :exports results :results output :tangle no
+set.seed(6)
+n_count <- 100000
+
+tte <- generate_random_tte(n_count)
+tte <- generate_failure(tte, 20, 10) |>
+  select(-born_at_year, -dead_at_year, -relatives) |>
+  as.data.table()
+#+END_SRC
+
+#+RESULTS:
+
+Note that the example data in this guide contains 100000 randomly generated individuals:
+
+- Born between ~1890-01-01~ and todays date
+- Age of death from normal distribution, mean = ~68~, sd = ~8.2~
+- Age of onset from normal distribution, mean = ~20~, sd = ~10~
+- If death appears after study end, the following probablities of ~failure_status~:
+  - censored (0) :: ~0.9~
+  - affected (1) :: ~0.1~
+- If death appears before study end, the following probablities of ~failure_status~:
+  - affected (1) :: ~0.1~
+  - competing risk (2) :: ~0.9~
+
+After the data has been read, we need to apply our millenials filter to it:
+
+#+BEGIN_SRC R :exports both :results output
+tte <- tte |>
+  filter(
+    born_at >= born_at_start,
+    born_at <= born_at_end
+  )
+#+END_SRC
+
+#+RESULTS:
+
+Here's what the filtered data looks like, note that we have less than 100000 individuals now
+that we have filtered out non-millenials:
+
+#+BEGIN_SRC R :exports both :results output
+print(tte)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+       person_id    born_at failure_status failure_time
+    1:        20 1987-07-21              0           36
+    2:        26 1990-07-14              0           33
+    3:        34 1990-11-28              0           33
+    4:        61 1993-01-22              0           30
+    5:        71 1986-09-01              0           37
+   ---
+11333:     99962 1993-05-13              0           30
+11334:     99968 1995-02-10              0           28
+11335:     99970 1994-12-23              1           18
+11336:     99977 1984-01-20              0           39
+11337:     99993 1988-07-25              0           35
+#+end_example
+
+* Analysis
+
+Now that we have the TTE data for schizophrenia in millenials, we can run the
+actual analysis. Since we are going to produce cumulative incidence risk estimates,
+we will use the class ~CumulativeIncidenceAnalysis~. We start out by creating the
+instance:
+
+#+BEGIN_SRC R :exports code
+cif_analysis <- CumulativeIncidenceAnalysis$new()
+#+END_SRC
+
+#+RESULTS:
+
+This class defaults to the age of onset range 1 to 100 years. In our case, we
+want to use the range 10 to 100 years, therefor we need to provide both
+the TTE data and the earliest onset age:
+
+#+BEGIN_SRC R :exports code :results output
+estimates <- cif_analysis$run(
+  tte = tte,
+  earliest_onset_age=earliest_onset_age
+)
+#+END_SRC
+
+#+RESULTS:
+
+And here's what the produced data looks like:
+
+#+BEGIN_SRC R :exports both :results output
+print(estimates)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+    time    estimate     variance         l95         u95 cases
+ 1:    1 0.002822616 2.482930e-07 0.001845986 0.003799247     8
+ 2:    2 0.003528270 3.101466e-07 0.002436751 0.004619790    21
+ 3:    3 0.004674958 4.104714e-07 0.003419248 0.005930669    35
+ 4:    4 0.005909853 5.182540e-07 0.004498877 0.007320828    49
+ 5:    5 0.007144747 6.257676e-07 0.005594308 0.008695186    67
+ 6:    6 0.008732469 7.636041e-07 0.007019765 0.010445172    80
+ 7:    7 0.009879157 8.628760e-07 0.008058524 0.011699789   105
+ 8:    8 0.012084326 1.053132e-06 0.010072967 0.014095684   117
+ 9:    9 0.013142807 1.144150e-06 0.011046333 0.015239281   133
+10:   10 0.014554115 1.265199e-06 0.012349526 0.016758704   157
+11:   11 0.016671077 1.446115e-06 0.014314131 0.019028023   182
+12:   12 0.018876246 1.633729e-06 0.016371071 0.021381421   210
+13:   13 0.021346035 1.842837e-06 0.018685362 0.024006708   254
+14:   14 0.025227132 2.169262e-06 0.022340416 0.028113848   276
+15:   15 0.027167681 2.331477e-06 0.024174977 0.030160385   319
+16:   16 0.030960572 2.646617e-06 0.027772018 0.034149125   373
+17:   17 0.035723736 3.038779e-06 0.032307109 0.039140364   417
+18:   18 0.039604834 3.355359e-06 0.036014642 0.043195025   469
+19:   19 0.044191585 3.726073e-06 0.040408259 0.047974911   517
+20:   20 0.048425509 4.064977e-06 0.044473872 0.052377147   555
+21:   21 0.051777366 4.331032e-06 0.047698459 0.055856273   603
+22:   22 0.056011290 4.664269e-06 0.051778372 0.060244209   649
+23:   23 0.060068801 4.980654e-06 0.055694676 0.064442927   690
+24:   24 0.063685278 5.260201e-06 0.059190076 0.068180481   732
+25:   25 0.067389962 5.544173e-06 0.062775018 0.072004907   771
+26:   26 0.070830026 5.805694e-06 0.066107491 0.075552560   811
+27:   27 0.074358296 6.071751e-06 0.069528764 0.079187828   847
+28:   28 0.077533739 6.309325e-06 0.072610629 0.082456849   882
+29:   29 0.080621566 6.538690e-06 0.075609769 0.085633363   922
+30:   30 0.084390669 6.838922e-06 0.079265102 0.089516236   970
+31:   31 0.089250699 7.256036e-06 0.083971138 0.094530259  1006
+32:   32 0.093203794 7.625433e-06 0.087791513 0.098616075  1032
+33:   33 0.096308034 7.942721e-06 0.090784300 0.101831768  1048
+34:   34 0.098409949 8.181342e-06 0.092803855 0.104016043  1064
+35:   35 0.100743785 8.478639e-06 0.095036742 0.106450828  1068
+36:   36 0.101400536 8.574030e-06 0.095661478 0.107139594  1075
+37:   37 0.102702854 8.791185e-06 0.096891574 0.108514134  1082
+38:   38 0.104221123 9.090288e-06 0.098311811 0.110130435  1085
+39:   39 0.105008967 9.281084e-06 0.099037962 0.110979972  1090
+40:   40 0.106673138 9.799669e-06 0.100537584 0.112808692  1092
+41:   41 0.107553263 1.016749e-05 0.101303624 0.113802902  1096
+42:   42 0.110257647 1.193023e-05 0.103487901 0.117027394  1097
+    time    estimate     variance         l95         u95 cases
+#+end_example
+
+* Next steps
+
+The [[./estimate-heritability-of-disorder.org]["estimate heritability of disorder"]]-pipeline uses the cumulative incidence estimates
+to calculate heritability, so the next logical step from here is to look at the guide
+of that pipeline.

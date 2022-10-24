@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+# Make sure we are in the directory of the script.
+project_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+export IBP_PROJECT_DIR="${project_dir}"
+
+session="ibp-registry-risk-estimation"
+
+# Setup new session
+#---------------------------------------------------------------------------------
+
+tmux new-session -d -s $session
+
+tmux send-keys "nix develop" C-m
+tmux send-keys "./scripts/start-test-watcher.py" C-m
+tmux split
+
+# CLI commands
+#---------------------------------------------------------------------------------
+
+tmux selectp -t 1
+tmux send-keys "nix develop" C-m
+
+# Attach to session
+#---------------------------------------------------------------------------------
+
+tmux unbind C-b
+tmux set -g prefix C-a
+tmux setw -g mode-keys vi
+tmux bind -n C-h select-pane -L
+tmux bind -n C-j select-pane -D
+tmux bind -n C-k select-pane -U
+tmux bind -n C-l select-pane -R
+tmux bind -n C-q kill-session
+
+tmux attach-session -t $session

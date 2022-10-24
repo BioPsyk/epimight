@@ -1,0 +1,544 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[swedish]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{background}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \usepackage[most]{tcolorbox}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \sectionfont{\color{light_grey}}
+#+LATEX_HEADER: \subsectionfont{\color{light_grey}}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \renewenvironment{quote}{%
+#+LATEX_HEADER:   \tcolorbox[
+#+LATEX_HEADER:     top=10pt,
+#+LATEX_HEADER:     bottom=10pt
+#+LATEX_HEADER:   ]
+#+LATEX_HEADER:   \parskip=0.5\baselineskip \advance\parskip by 0pt plus 2pt
+#+LATEX_HEADER:   \parindent=0pt
+#+LATEX_HEADER: }{%
+#+LATEX_HEADER:   \endtcolorbox
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \definecolor{light-gray}{gray}{0.95}
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{light-gray},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX: \color{light_grey}
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: Pipeline: estimate heritability of disorder
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+#+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
+
+#+BEGIN_SRC R :exports none :tangle no
+devtools::load_all(".")
+source("./quality-assurance/utils.R")
+#+END_SRC
+
+#+RESULTS:
+
+This is a guide for using the pre-assembled pipeline that estimates heritability
+of a single disorder using TTE (time-to-event) data.
+
+All code shown in this guide have been written to [[./estimate_heritability_of_disorder.R][this R file]], so that you don't have
+to copy all code snippets manually.
+
+This pipeline is similar to the [[./estimate_cumulative_incidence_of_disorder.org]["estimate cumulative incidence of disorder"]]-pipeline.
+The difference is that the TTE data also contains how many relatives (of the specific kind)
+each individual have and how many of those relatives are also affected by the disorder.
+It then constructs a second cohort, which contains all individuals from the target cohort
+that have at least 1 affected relative. The heritability estimate is then
+derived from comparing the risk estimates from these two cohorts.
+
+The diagram below shows how all data and results are derived, with a single
+origin, the survival data for cohort 1:
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:h2-dag
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/h2-dag.png :exports results
+@startuml
+!include ../diagrams/archimate.puml
+
+!define SurvivalData(e_alias, e_label) file "e_label" as e_alias #aac1e3
+!define RiskEstimate(e_alias, e_label) file "e_label" as e_alias #aae3b8
+!define Heritability(e_alias, e_label) file "e_label" as e_alias #e2e3aa
+
+SurvivalData(c1, "<b>Survival data</b>\nCohort 1")
+SurvivalData(c2, "<b>Survival data</b>\nCohort 2")
+
+RiskEstimate(re_d1_c1, "<b>Risk estimate</b>\nCohort 1")
+RiskEstimate(re_d1_c2, "<b>Risk estimate</b>\nCohort 2")
+
+Heritability(h_d1, "<b>Heritability</b>")
+
+c1 --> c2
+
+c1 --> re_d1_c1
+c2 --> re_d1_c2
+
+re_d1_c1 --> h_d1
+re_d1_c2 --> h_d1
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Data derivation
+#+RESULTS: fig:h2-dag
+[[file:../diagrams/h2-dag.png]]
+
+In this context, "relatives" refers to relatives of one specific kind of
+genealogical relationship. Here are some examples of available relationships:
+
+- Parent/offspring
+- Full siblings
+- Half siblings
+- Grand parent/grand child
+
+That means that this pipeline has 4 things to configure:
+
+- Study period
+- Disorder to study
+- Cohort to estimate the risk in
+- Relatives relationship kind
+
+We'll use the same research question as the [[./estimate_cumulative_incidence_disorder.org]["estimate cumulative incidence of disorder"]]-pipeline,
+but we'll extend it to be: "What is the heritability of schizophrenia in Danish millenials
+and their full siblings (people born from 1981 to 1996)?"
+
+We start by importing all the needed libraries:
+
+#+BEGIN_SRC R :exports code :eval no
+library(data.table)
+library(dplyr)
+library(dtplyr)
+library(readr)
+library(IbpRiskEstimations)
+#+END_SRC
+
+* Arguments
+
+** Study period
+
+The first thing we need to do is to define the arguments that reflects the research question.
+Since we want to study millenials, we will use the millenials start year as the start year of
+the study:
+
+#+BEGIN_SRC R :exports code
+# Arguments for research question:
+# What is the lifetime risk of schizophrenia in millenials (people born from 1981 to 1996)?
+
+study_period_start <- as.Date("1981-01-01")
+study_period_end   <- as.Date("2016-12-31")
+#+END_SRC
+
+#+RESULTS:
+: 2016-12-31
+
+The reason why we use ~2016-12-31~ as the end date, is because the registry data in the
+~ibp-registry~ database ends at that date.
+
+** Disorder to study
+
+We'll use the same age of onset as the previous pipeline:
+
+#+BEGIN_SRC R :exports code
+earliest_onset_age <- 10
+#+END_SRC
+
+#+RESULTS:
+: 10
+
+** Cohort to estimate the risk in
+
+Next we define the millenials period (1981 to 1996) as the allowed date of birth:
+
+#+BEGIN_SRC R :exports code
+born_at_start <- as.Date("1981-01-01")
+born_at_end   <- as.Date("1996-01-01")
+#+END_SRC
+
+#+RESULTS:
+: 1996-01-01
+
+** Relatives relationship kind
+
+The library uses a list of codes that represents the different relationship kinds.
+Here's a list of the most common ones (there are 30 in total):
+
+|------+--------------------------|
+| Code | Description              |
+|------+--------------------------|
+| PO   | Parent/offspring         |
+| 1G   | Grand parent/grand child |
+| FS   | Full siblings            |
+| HS   | Half siblings            |
+| Av   | Avuncular                |
+| 1C   | First cousin             |
+|------+--------------------------|
+
+We are going to use "full siblings" so we define ~FS~ as our value:
+
+#+BEGIN_SRC R :exports code
+relationship_kind <- "FS"
+#+END_SRC
+
+#+RESULTS:
+: FS
+
+* Data processing
+
+Now that we have defined all arguments to use, it's time to read and process the
+TTE data that we are going to analyze. The TTE data needs to fulfill the same
+requirements as the [[./estimate_cumulative_incidence_of_disorder.org][previous pipeline]], but also these requirements:
+
+The survival data needs
+to fulfill the following requirements in order to be used by this pipeline:
+
+5. These additional columns *must* also exist:
+   - relatives :: Non-negative integer that represents the amount of relatives the individual have
+   - diagnosed_relatives :: Non-negative integer that represents how many relatives are diagnosed with the disorder
+
+This time we also need the ~born_at~ column with the birth dates in order to filter out millenials.
+
+The example data in this guide is contained in a file called ~tte_SCZ_FS.csv~,
+so we simply read it and convert it into a ~data.table~:
+
+#+BEGIN_SRC R :eval no :exports code
+tte <- read_csv("./tte_SCZ_FS.csv") |> as.data.table()
+#+END_SRC
+
+#+BEGIN_SRC R :exports results :results output :tangle no
+set.seed(6)
+n_count <- 100000
+
+tte <- generate_random_tte(n_count)
+tte <- generate_failure(tte, 20, 10)
+tte <- generate_diagnosed_relatives(tte, "diagnosed_relatives") |>
+  select(-born_at_year, -dead_at_year) |>
+  relocate(relatives, .after = failure_time) |>
+  as.data.table()
+#+END_SRC
+
+#+RESULTS:
+
+The example data in this guide contains the same 100000 randomly generated in the [[./estimate_cumulative_incidence_of_disorder.org][previous pipeline]],
+with the addition of:
+
+- Amount of relatives sampled with the following probablities (0-9): ~c(0.2, 0.22, 0.23, 0.16, 0.09, 0.05, 0.03, 0.01, 0.008, 0.002)~
+- If the individual is diagnosed, the following probablities of ~diagnosed_relatives~:
+  - No diagnosed relatives :: ~0.45~
+  - Probablity per relative count :: ~(1 - 0.55) / relatives~
+- If the individual is unaffected, the following probablities of ~diagnosed_relatives~:
+  - No diagnosed relatives :: ~0.75~
+  - Probablity per relative count :: ~(1 - 0.55) / relatives~
+
+#+RESULTS:
+
+After the data has been read, we need to apply our millenials filter to it:
+
+#+BEGIN_SRC R :exports both :results output
+tte <- tte |>
+  filter(
+    born_at >= born_at_start,
+    born_at <= born_at_end
+  )
+#+END_SRC
+
+#+RESULTS:
+
+Here's what the filtered data looks like, note that we have less than 100000 individuals now
+that we have filtered out non-millenials:
+
+#+BEGIN_SRC R :exports both :results output
+print(tte)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+       person_id    born_at failure_status failure_time relatives diagnosed_relatives
+    1:        20 1987-07-21              0           36         2                   0
+    2:        26 1990-07-14              0           33         0                   0
+    3:        34 1990-11-28              0           33         1                   0
+    4:        61 1993-01-22              0           30         2                   0
+    5:        71 1986-09-01              0           37         1                   0
+   ---
+11333:     99962 1993-05-13              0           30         0                   0
+11334:     99968 1995-02-10              0           28         2                   0
+11335:     99970 1994-12-23              1           18         2                   2
+11336:     99977 1984-01-20              0           39         4                   0
+11337:     99993 1988-07-25              0           35         0                   0
+#+end_example
+
+* Analysis
+
+** Risk estimates
+
+Now that we have the survival data for schizophrenia in millenials, we can run the
+actual analysis. Since we are going to produce cumulative incidence risk estimates,
+we will use the class ~CumulativeIncidenceAnalysis~. We start out by creating the
+instance:
+
+#+BEGIN_SRC R :exports code
+cif_analysis <- CumulativeIncidenceAnalysis$new()
+#+END_SRC
+
+#+RESULTS:
+
+Compared to the previous pipeline, we are going to run the analysis twice, once with the
+whole survival dataset and once with a subset that only contains individuals that have
+atleast one affected relative. The lifetime prevalence for these two cohorts are then
+compared when calculating heritability. To do that, we need to add the subset onto the
+survival dataset and then add a grouping column for the two sets:
+
+#+BEGIN_SRC R :exports both :results output
+tte <- tte |>
+  mutate(cohort = "all") |>
+  union_all(
+    tte |>
+      filter(diagnosed_relatives > 0) |>
+      mutate(cohort = "affected_relatives")
+  )
+#+END_SRC
+
+#+RESULTS:
+
+When running the analysis separately on different groups, you use the ~run~
+as before, but you also supply the column that contains the group values:
+
+#+BEGIN_SRC R :exports code :results output
+estimates <- cif_analysis$run(
+  tte = tte,
+  earliest_onset_age = earliest_onset_age,
+  group_columns = list("cohort")
+)
+#+END_SRC
+
+#+RESULTS:
+
+Note: You can use multiple columns to group the results on. The analysis will then
+produce results for each permutation of the columns available values.
+
+Here are the results, grouped by the ~cohort~ column:
+
+#+BEGIN_SRC R :exports both :results output
+print(estimates)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+    time    estimate     variance         l95         u95 cases             cohort
+ 1:    1 0.006289308 2.457630e-06 0.003216706 0.009361910     5 affected_relatives
+ 2:    2 0.008254717 3.219261e-06 0.004738091 0.011771343    11 affected_relatives
+ 3:    3 0.010613208 4.129210e-06 0.006630471 0.014595944    17 affected_relatives
+ 4:    4 0.012971698 5.034784e-06 0.008573867 0.017369529    21 affected_relatives
+ 5:    5 0.014544025 5.636070e-06 0.009890990 0.019197060    30 affected_relatives
+ 6:    6 0.018081761 6.981857e-06 0.012902908 0.023260614    36 affected_relatives
+ 7:    7 0.020440252 7.873580e-06 0.014940612 0.025939891    42 affected_relatives
+ 8:    8 0.022798742 8.760930e-06 0.016997470 0.028600014    47 affected_relatives
+ 9:    9 0.024764151 9.497048e-06 0.018724075 0.030804227    50 affected_relatives
+10:   10 0.025943396 9.937260e-06 0.019764919 0.032121873    63 affected_relatives
+11:   11 0.031053459 1.183221e-05 0.024311579 0.037795339    75 affected_relatives
+12:   12 0.035770440 1.356317e-05 0.028552244 0.042988637    83 affected_relatives
+13:   13 0.038915094 1.470742e-05 0.031398582 0.046431607   105 affected_relatives
+14:   14 0.047562893 1.781402e-05 0.039290539 0.055835247   117 affected_relatives
+15:   15 0.052279874 1.948375e-05 0.043628514 0.060931234   140 affected_relatives
+16:   16 0.061320755 2.263515e-05 0.051995949 0.070645561   166 affected_relatives
+17:   17 0.071540881 2.612021e-05 0.061523909 0.081557852   187 affected_relatives
+18:   18 0.079795597 2.887511e-05 0.069263620 0.090327575   213 affected_relatives
+19:   19 0.090015723 3.221170e-05 0.078891878 0.101139569   234 affected_relatives
+20:   20 0.098270440 3.484669e-05 0.086700561 0.109840320   243 affected_relatives
+21:   21 0.101808176 3.595956e-05 0.090054999 0.113561354   263 affected_relatives
+22:   22 0.109669811 3.839739e-05 0.097524772 0.121814851   284 affected_relatives
+23:   23 0.117924528 4.090480e-05 0.105389214 0.130459842   301 affected_relatives
+24:   24 0.124606918 4.289536e-05 0.111770222 0.137443615   318 affected_relatives
+25:   25 0.131289308 4.485082e-05 0.118163282 0.144415335   335 affected_relatives
+26:   26 0.137971698 4.677116e-05 0.124567613 0.151375783   354 affected_relatives
+27:   27 0.145440252 4.887587e-05 0.131737892 0.159142611   374 affected_relatives
+28:   28 0.153301887 5.104397e-05 0.139298911 0.167304862   387 affected_relatives
+29:   29 0.158411950 5.242718e-05 0.144220514 0.172603386   403 affected_relatives
+30:   30 0.165131216 5.439401e-05 0.150676031 0.179586400   419 affected_relatives
+31:   31 0.172379127 5.671020e-05 0.157619388 0.187138865   436 affected_relatives
+32:   32 0.180626228 5.954893e-05 0.165501587 0.195750869   444 affected_relatives
+33:   33 0.184841656 6.114901e-05 0.169515163 0.200168149   452 affected_relatives
+34:   34 0.189417983 6.306933e-05 0.173852694 0.204983273   457 affected_relatives
+35:   36 0.192559774 6.454941e-05 0.176812905 0.208306644   462 affected_relatives
+36:   37 0.196584900 6.713484e-05 0.180525768 0.212644032   468 affected_relatives
+37:   38 0.202222901 7.146273e-05 0.185654221 0.218791580   470 affected_relatives
+38:   39 0.204486098 7.361524e-05 0.187669740 0.221302456   472 affected_relatives
+39:   40 0.207327219 7.711912e-05 0.190115307 0.224539131   473 affected_relatives
+40:   41 0.209219040 8.033043e-05 0.191652423 0.226785657   476 affected_relatives
+41:   42 0.217691693 1.023754e-04 0.197860637 0.237522749   476 affected_relatives
+42:    1 0.002822616 2.482930e-07 0.001845986 0.003799247     8                all
+43:    2 0.003528270 3.101466e-07 0.002436751 0.004619790    21                all
+44:    3 0.004674958 4.104714e-07 0.003419248 0.005930669    35                all
+45:    4 0.005909853 5.182540e-07 0.004498877 0.007320828    49                all
+46:    5 0.007144747 6.257676e-07 0.005594308 0.008695186    67                all
+47:    6 0.008732469 7.636041e-07 0.007019765 0.010445172    80                all
+48:    7 0.009879157 8.628760e-07 0.008058524 0.011699789   105                all
+49:    8 0.012084326 1.053132e-06 0.010072967 0.014095684   117                all
+50:    9 0.013142807 1.144150e-06 0.011046333 0.015239281   133                all
+51:   10 0.014554115 1.265199e-06 0.012349526 0.016758704   157                all
+52:   11 0.016671077 1.446115e-06 0.014314131 0.019028023   182                all
+53:   12 0.018876246 1.633729e-06 0.016371071 0.021381421   210                all
+54:   13 0.021346035 1.842837e-06 0.018685362 0.024006708   254                all
+55:   14 0.025227132 2.169262e-06 0.022340416 0.028113848   276                all
+56:   15 0.027167681 2.331477e-06 0.024174977 0.030160385   319                all
+57:   16 0.030960572 2.646617e-06 0.027772018 0.034149125   373                all
+58:   17 0.035723736 3.038779e-06 0.032307109 0.039140364   417                all
+59:   18 0.039604834 3.355359e-06 0.036014642 0.043195025   469                all
+60:   19 0.044191585 3.726073e-06 0.040408259 0.047974911   517                all
+61:   20 0.048425509 4.064977e-06 0.044473872 0.052377147   555                all
+62:   21 0.051777366 4.331032e-06 0.047698459 0.055856273   603                all
+63:   22 0.056011290 4.664269e-06 0.051778372 0.060244209   649                all
+64:   23 0.060068801 4.980654e-06 0.055694676 0.064442927   690                all
+65:   24 0.063685278 5.260201e-06 0.059190076 0.068180481   732                all
+66:   25 0.067389962 5.544173e-06 0.062775018 0.072004907   771                all
+67:   26 0.070830026 5.805694e-06 0.066107491 0.075552560   811                all
+68:   27 0.074358296 6.071751e-06 0.069528764 0.079187828   847                all
+69:   28 0.077533739 6.309325e-06 0.072610629 0.082456849   882                all
+70:   29 0.080621566 6.538690e-06 0.075609769 0.085633363   922                all
+71:   30 0.084390669 6.838922e-06 0.079265102 0.089516236   970                all
+72:   31 0.089250699 7.256036e-06 0.083971138 0.094530259  1006                all
+73:   32 0.093203794 7.625433e-06 0.087791513 0.098616075  1032                all
+74:   33 0.096308034 7.942721e-06 0.090784300 0.101831768  1048                all
+75:   34 0.098409949 8.181342e-06 0.092803855 0.104016043  1064                all
+76:   35 0.100743785 8.478639e-06 0.095036742 0.106450828  1068                all
+77:   36 0.101400536 8.574030e-06 0.095661478 0.107139594  1075                all
+78:   37 0.102702854 8.791185e-06 0.096891574 0.108514134  1082                all
+79:   38 0.104221123 9.090288e-06 0.098311811 0.110130435  1085                all
+80:   39 0.105008967 9.281084e-06 0.099037962 0.110979972  1090                all
+81:   40 0.106673138 9.799669e-06 0.100537584 0.112808692  1092                all
+82:   41 0.107553263 1.016749e-05 0.101303624 0.113802902  1096                all
+83:   42 0.110257647 1.193023e-05 0.103487901 0.117027394  1097                all
+    time    estimate     variance         l95         u95 cases             cohort
+#+end_example
+
+** Heritability
+
+After producing the risk estimates, we can calculate the heritability.
+To do that we need a dataset that contains the last risk estimate
+(highest value of ~time~ column) that exists in both cohorts.
+To make sure we only pick the last risk estimates that exists in both cohorts,
+we will first split the risk estimates into two separate datasets, one for each cohort:
+
+#+BEGIN_SRC R :exports both :results output
+cohort1 <- estimates |> filter(cohort == "all")
+cohort2 <- estimates |> filter(cohort == "affected_relatives")
+#+END_SRC
+
+#+RESULTS:
+
+Then we join the two datasets with an inner join. An inner join will only keep rows that
+have matches in both datasets, all other rows are removed:
+
+#+BEGIN_SRC R :exports both :results output
+combined <- cohort1 |>
+  inner_join(cohort2, by = join_by(time)) |>
+  rename(
+    cohort1_estimates = estimate.x,
+    cohort1_cases     = cases.x,
+    cohort2_estimates = estimate.y,
+    cohort2_cases     = cases.y
+  ) |>
+  select(time, cohort1_estimates, cohort1_cases, cohort2_estimates, cohort2_cases)
+#+END_SRC
+
+#+RESULTS:
+
+Now we have a combined dataset where each row represents risk estimates from both cohorts.
+Since we are only interest in the last risk estimate, we need to sort the dataset on
+the ~time~ (largest first) column and pick the first row:
+
+#+BEGIN_SRC R :exports both :results output
+combined <- combined |>
+  arrange(desc(time)) |>
+  filter(row_number() == 1) |>
+  as.data.table()
+
+print(combined)
+#+END_SRC
+
+#+RESULTS:
+:    time cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases
+: 1:   55         0.1145497          9611          0.219867          4147
+
+Now we can simply run the heritability calculation by passing in the the estimate and
+cases columns from the combined dataset along with the relationship kind:
+
+#+BEGIN_SRC R :exports both :results output
+h2_analysis <- HeritabilityAnalysis$new()
+
+results <- h2_analysis$run(
+  relationship_kind = relationship_kind,
+  estimates         = combined
+)
+#+END_SRC
+
+#+RESULTS:
+
+And here's what the results look like:
+
+#+BEGIN_SRC R :exports both :results output
+print(results)
+#+END_SRC
+
+#+RESULTS:
+:    time cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases        h2         se
+: 1:   55         0.1145497          9611          0.219867          4147 0.5364879 0.01314766
+:          l95       u95
+: 1: 0.5107185 0.5622573
+
+All done!
+
+The results are joined with the input risk estimates, so when you analyse multiple rows,
+you can see which risk estimates produced which heritabilities. In the pre-assembled
+pipeline [[./estimate_heritability_of_disorder_by_yob.org][estimate heritability of disorder stratified by year of birth]] where we get one
+heritability per birth year, you can see why this is needed.

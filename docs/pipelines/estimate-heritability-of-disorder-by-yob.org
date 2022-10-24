@@ -1,0 +1,455 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[swedish]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{background}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \usepackage[most]{tcolorbox}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \sectionfont{\color{light_grey}}
+#+LATEX_HEADER: \subsectionfont{\color{light_grey}}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \renewenvironment{quote}{%
+#+LATEX_HEADER:   \tcolorbox[
+#+LATEX_HEADER:     top=10pt,
+#+LATEX_HEADER:     bottom=10pt
+#+LATEX_HEADER:   ]
+#+LATEX_HEADER:   \parskip=0.5\baselineskip \advance\parskip by 0pt plus 2pt
+#+LATEX_HEADER:   \parindent=0pt
+#+LATEX_HEADER: }{%
+#+LATEX_HEADER:   \endtcolorbox
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \definecolor{light-gray}{gray}{0.95}
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{light-gray},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX: \color{light_grey}
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: Pipeline: estimate heritability of disorder stratified by year of birth
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+#+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
+
+#+BEGIN_SRC R :exports none :tangle no
+devtools::load_all(".")
+source("./quality-assurance/utils.R")
+#+END_SRC
+
+#+RESULTS:
+
+This is a guide for making the [[./estimate-heritability-of-disorder.org]["estimate heritability of disorder"]]-pipeline more robust
+by adding year of birth stratification.
+
+All code shown in this guide have been written to [[./estimate-heritability-of-disorder-by-yob.R][this R file]], so that you don't have
+to copy all code snippets manually.
+
+We'll use all the same arguments and code as the original pipeline, but we will start changing
+the pipeline at the part where we produce the risk estimates.
+
+We start by importing all the needed libraries:
+
+#+BEGIN_SRC R :exports code :eval no
+library(data.table)
+library(dplyr)
+library(dtplyr)
+library(readr)
+library(IbpRiskEstimations)
+#+END_SRC
+
+#+BEGIN_SRC R :exports none
+study_period_start <- as.Date("1981-01-01")
+study_period_end   <- as.Date("2016-12-31")
+
+icd_codes_regexp <- "^F20|^295[^7]9"
+earliest_onset_age <- 10
+
+born_at_start <- as.Date("1981-01-01")
+born_at_end   <- as.Date("1996-01-01")
+
+relationship_kind <- "FS"
+#+END_SRC
+
+#+BEGIN_SRC R :eval no :exports code
+tte <- read_csv("./tte_SCZ_FS.csv") |> as.data.table()
+#+END_SRC
+
+#+BEGIN_SRC R :exports results :results output :tangle no
+set.seed(6)
+n_count <- 100000
+
+tte <- generate_random_tte(n_count)
+tte <- generate_failure(tte, 20, 10)
+tte <- generate_diagnosed_relatives(tte, "diagnosed_relatives") |>
+  select(-born_at_year, -dead_at_year) |>
+  relocate(relatives, .after = failure_time) |>
+  as.data.table()
+#+END_SRC
+
+#+BEGIN_SRC R :exports both :results output
+tte <- tte |>
+  filter(
+    born_at >= born_at_start,
+    born_at <= born_at_end
+  )
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :exports both :results output
+print(tte)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+       person_id    born_at failure_status failure_time relatives diagnosed_relatives
+    1:        20 1987-07-21              0           36         2                   0
+    2:        26 1990-07-14              0           33         0                   0
+    3:        34 1990-11-28              0           33         1                   0
+    4:        61 1993-01-22              0           30         2                   0
+    5:        71 1986-09-01              0           37         1                   0
+   ---
+11333:     99962 1993-05-13              0           30         0                   0
+11334:     99968 1995-02-10              0           28         2                   0
+11335:     99970 1994-12-23              1           18         2                   2
+11336:     99977 1984-01-20              0           39         4                   0
+11337:     99993 1988-07-25              0           35         0                   0
+#+end_example
+
+* Analysis
+
+** Risk estimates
+
+#+BEGIN_SRC R :exports none
+cif_analysis <- CumulativeIncidenceAnalysis$new()
+#+END_SRC
+
+#+RESULTS:
+
+In this updated version of the pipeline, we are going to use the same two cohorts
+as the original version:
+
+1. All individuals
+2. Individuals with at least 1 affected relative
+
+In the original version of the pipeline, the results looked something like this:
+
+#+BEGIN_EXAMPLE
+    time   estimate     variance        l95        u95 cases             cohort
+ 1:   10 0.05769079 2.261547e-04 0.02821599 0.08716559     1 affected_relatives
+ 2:   11 0.06229293 2.451218e-04 0.03160702 0.09297885     2 affected_relatives
+27:   10 0.02128324 2.227802e-05 0.01203229 0.03053419     1                all
+28:   11 0.02250389 2.371205e-05 0.01295984 0.03204794     3                all
+#+END_EXAMPLE
+
+Where you have risk estimates separated on the two cohorts. In this updated version,
+the results will look something like this:
+
+#+BEGIN_EXAMPLE
+    time   estimate     variance        l95        u95 cases             cohort  born_at_year
+ 1:   10 0.05769079 2.261547e-04 0.02821599 0.08716559     1 affected_relatives          1960
+ 2:   11 0.06229293 2.451218e-04 0.03160702 0.09297885     2 affected_relatives          1960
+27:   10 0.02128324 2.227802e-05 0.01203229 0.03053419     1                all          1960
+28:   11 0.02250389 2.371205e-05 0.01295984 0.03204794     3                all          1960
+ 1:   10 0.05769079 2.261547e-04 0.02821599 0.08716559     1 affected_relatives          1961
+ 3:   12 0.06696774 2.645270e-04 0.03509033 0.09884516     3 affected_relatives          1961
+27:   10 0.02128324 2.227802e-05 0.01203229 0.03053419     1                all          1961
+29:   12 0.02497864 2.664947e-05 0.01486069 0.03509659     4                all          1961
+ 1:   10 0.05769079 2.261547e-04 0.02821599 0.08716559     1 affected_relatives          1962
+ 3:   12 0.06696774 2.645270e-04 0.03509033 0.09884516     3 affected_relatives          1962
+27:   10 0.02128324 2.227802e-05 0.01203229 0.03053419     1                all          1962
+29:   12 0.02497864 2.664947e-05 0.01486069 0.03509659     4                all          1962
+#+END_EXAMPLE
+
+Where you have risk estimates separated on the two cohorts and the year of birth.
+
+To pull that of, we simply add a new column that contains the year of birth:
+
+#+BEGIN_SRC R :exports code :results output
+tte <- tte |>
+  mutate(
+    born_at_year = as.character(format(born_at, "%Y"))
+  )
+#+END_SRC
+
+#+RESULTS:
+
+And then like before, we create the two cohorts:
+
+#+BEGIN_SRC R :exports code :results output
+tte <- tte |>
+  mutate(cohort = "all") |>
+  union_all(
+    tte |>
+      filter(diagnosed_relatives > 0) |>
+      mutate(cohort = "affected_relatives")
+  )
+#+END_SRC
+
+#+RESULTS:
+
+Now the survival data have the same amount of rows as before, but with one extra column added:
+
+#+BEGIN_SRC R :exports both :results output
+print(tte)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+       person_id    born_at failure_status failure_time relatives diagnosed_relatives
+    1:        20 1987-07-21              0           36         2                   0
+    2:        26 1990-07-14              0           33         0                   0
+    3:        34 1990-11-28              0           33         1                   0
+    4:        61 1993-01-22              0           30         2                   0
+    5:        71 1986-09-01              0           37         1                   0
+   ---
+13877:     99865 1995-03-19              0           28         4                   1
+13878:     99870 1988-01-16              0           35         4                   3
+13879:     99903 1984-04-11              0           39         4                   2
+13880:     99934 1982-09-09              1           41         1                   1
+13881:     99970 1994-12-23              1           18         2                   2
+       born_at_year             cohort
+    1:         1987                all
+    2:         1990                all
+    3:         1990                all
+    4:         1993                all
+    5:         1986                all
+   ---
+13877:         1995 affected_relatives
+13878:         1988 affected_relatives
+13879:         1984 affected_relatives
+13880:         1982 affected_relatives
+13881:         1994 affected_relatives
+#+end_example
+
+Now when we run the analysis, we supply *both* the ~affected_relatives~ column and the
+~born_at_year~ column:
+
+#+BEGIN_SRC R :exports code :results output
+estimates <- cif_analysis$run(
+  tte = tte,
+  earliest_onset_age = earliest_onset_age,
+  group_columns = list("born_at_year", "cohort")
+)
+#+END_SRC
+
+#+RESULTS:
+
+Now, you'll see that the estimates are grouped on all the possible permutations of the
+two columns:
+
+#+BEGIN_SRC R :exports both :results output
+print(estimates)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+     time   estimate     variance          l95        u95 cases born_at_year             cohort
+  1:    3 0.00000000 0.000000e+00  0.000000000 0.00000000     2         1981 affected_relatives
+  2:    7 0.01234568 7.573455e-05 -0.004711026 0.02940238     3         1981 affected_relatives
+  3:   10 0.01851852 1.128948e-04 -0.002306482 0.03934352     6         1981 affected_relatives
+  4:   14 0.03703704 2.215396e-04  0.007864526 0.06620955     7         1981 affected_relatives
+  5:   15 0.04320988 2.568124e-04  0.011800731 0.07461902    11         1981 affected_relatives
+ ---
+693:   23 0.05706522 7.321201e-05  0.040294979 0.07383546    40         1995                all
+694:   24 0.06114130 7.810260e-05  0.043819991 0.07846262    43         1995                all
+695:   25 0.06521739 8.294801e-05  0.047366863 0.08306792    47         1995                all
+696:   27 0.07065217 8.933827e-05  0.052126805 0.08917754    51         1995                all
+697:   28 0.07608696 9.564821e-05  0.056918528 0.09525539    67         1995                all
+#+end_example
+
+** Heritability
+
+After producing the risk estimates, we can calculate the heritability.
+To do that we need a dataset that contains the last risk estimate
+(highest value of ~time~ column) for each year of birth, that exists
+in both cohorts:
+
+#+BEGIN_SRC R :exports both :results output
+cohort1 <- estimates |> filter(cohort == "all")
+cohort2 <- estimates |> filter(cohort == "affected_relatives")
+#+END_SRC
+
+#+RESULTS:
+
+Then to make sure we only use risk estimates that exists in both cohorts, we
+join the two cohorts using an inner join. An inner join will only keep rows that
+have matches in both datasets, all other rows are removed. Since the results are
+stratified by year of birth, we need to make sure the risk estimates exists in both
+cohorts, for all years:
+
+#+BEGIN_SRC R :exports both :results output
+combined <- cohort1 |>
+  inner_join(cohort2, by = join_by(time, born_at_year)) |>
+  rename(
+    cohort1_estimates = estimate.x,
+    cohort1_cases     = cases.x,
+    cohort2_estimates = estimate.y,
+    cohort2_cases     = cases.y
+  ) |>
+  select(time, born_at_year, cohort1_estimates, cohort1_cases, cohort2_estimates, cohort2_cases)
+#+END_SRC
+
+#+RESULTS:
+
+Now we have a combined dataset where each row represents risk estimates from both cohorts.
+Since we are only interested in the last risk estimate in each year of birth, we need to
+sort the risk estimates so that the last risk estimate is first and then pick the first
+risk estimate per year of birth:
+
+#+BEGIN_SRC R :exports both :results output
+combined <- combined |>
+  group_by(born_at_year) |>
+  arrange(desc(time)) |>
+  filter(row_number() == 1) |>
+  as.data.table()
+#+END_SRC
+
+#+RESULTS:
+
+If we order the dataset by year of birth, we can see that we have the latest
+risk estimate for each year with the estimates and amount of cases for
+both cohorts:
+
+#+BEGIN_SRC R :exports both :results output
+print(combined |> arrange(born_at_year))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+    time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases
+ 1:   42         1981        0.11456860            82         0.2283951            37
+ 2:   41         1982        0.07856192            58         0.1491713            28
+ 3:   40         1983        0.08622909            69         0.1775148            31
+ 4:   39         1984        0.09628611            71         0.1754386            32
+ 5:   38         1985        0.08269720            64         0.1377246            22
+ 6:   37         1986        0.09308176            75         0.1761364            31
+ 7:   36         1987        0.09567497            76         0.1609195            30
+ 8:   35         1988        0.11506849            85         0.1868132            33
+ 9:   34         1989        0.09043250            72         0.2138728            37
+10:   33         1990        0.09329829            76         0.1623377            25
+11:   32         1991        0.09338521            76         0.2236025            37
+12:   31         1992        0.07493188            71         0.1656805            35
+13:   30         1993        0.08502538            84         0.2000000            38
+14:   29         1994        0.07908847            71         0.1460674            33
+15:   28         1995        0.07608696            67         0.1377246            27
+#+end_example
+
+Now we can simply run the heritability calculation by passing in the the estimate and
+cases columns from the combined dataset along with the relationship kind:
+
+#+BEGIN_SRC R :exports both :results output
+h2_analysis <- HeritabilityAnalysis$new()
+
+results <- h2_analysis$run(
+  relationship_kind = relationship_kind,
+  estimates         = combined
+)
+#+END_SRC
+
+#+RESULTS:
+
+And here's what the results look like:
+
+#+BEGIN_SRC R :exports both :results output
+print(results)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+    time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases        h2
+ 1:   42         1981        0.11456860            82         0.2283951            37 0.5728992
+ 2:   41         1982        0.07856192            58         0.1491713            28 0.4228159
+ 3:   40         1983        0.08622909            69         0.1775148            31 0.5098714
+ 4:   39         1984        0.09628611            71         0.1754386            32 0.4388647
+ 5:   38         1985        0.08269720            64         0.1377246            22 0.3358886
+ 6:   37         1986        0.09308176            75         0.1761364            31 0.4614900
+ 7:   36         1987        0.09567497            76         0.1609195            30 0.3719894
+ 8:   35         1988        0.11506849            85         0.1868132            33 0.3838582
+ 9:   34         1989        0.09043250            72         0.2138728            37 0.6438973
+10:   33         1990        0.09329829            76         0.1623377            25 0.3936846
+11:   32         1991        0.09338521            76         0.2236025            37 0.6672897
+12:   31         1992        0.07493188            71         0.1656805            35 0.5271642
+13:   30         1993        0.08502538            84         0.2000000            38 0.6170098
+14:   29         1994        0.07908847            71         0.1460674            33 0.4035510
+15:   28         1995        0.07608696            67         0.1377246            27 0.3807872
+           se        l95       u95
+ 1: 0.1405539 0.29741346 0.8483849
+ 2: 0.1338718 0.16042721 0.6852046
+ 3: 0.1334634 0.24828314 0.7714597
+ 4: 0.1363247 0.17166819 0.7060611
+ 5: 0.1474090 0.04696688 0.6248103
+ 6: 0.1358931 0.19513960 0.7278405
+ 7: 0.1371848 0.10310717 0.6408716
+ 8: 0.1427937 0.10398244 0.6637339
+ 9: 0.1290935 0.39087401 0.8969206
+10: 0.1469175 0.10572633 0.6816428
+11: 0.1309452 0.41063715 0.9239423
+12: 0.1197242 0.29250485 0.7618236
+13: 0.1222951 0.37731142 0.8567081
+14: 0.1228196 0.16282468 0.6442773
+15: 0.1313003 0.12343861 0.6381358
+#+end_example
+
+Since the results are stratified by year of birth, we need to run a meta
+analysis to get a single value:
+
+#+BEGIN_SRC R :exports both :results output
+meta <- h2_analysis$run_meta(results)
+
+print(meta)
+#+END_SRC
+
+#+RESULTS:
+:    fixed_meta   fixed_se fixed_l95 fixed_u95 rand_meta   rand_se  rand_l95  rand_u95
+: 1:  0.4815083 0.03441536 0.4140542 0.5489624 0.4791536 0.0443187 0.3922889 0.5660182
+
+There are actually two results one for the fixed effects model and one for the random effects model.
+
+The next logical step is to use the [[./estimate_genetic_correlation_between_two_disorders.org][estimate genetic correlation between two disorders]]-pipeline,
+since that pipeline builds upon the results of this pipeline.
