@@ -78,7 +78,7 @@
 
 #+BEGIN_SRC R :exports none :tangle no
 devtools::load_all(".")
-source("./quality-assurance/utils.R")
+source("./tests/utils.R")
 #+END_SRC
 
 #+RESULTS:

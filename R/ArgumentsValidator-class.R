@@ -75,9 +75,19 @@ ArgumentsValidator <- R6::R6Class(
         stop("Rule for argument '", key, "' did not have 'items' specified")
       }
 
+      amount <- length(value)
+
+      if (!is.null(rule$minimum_length) && amount < rule$minimum_length) {
+        stop("Argument '", key, "' had too few elements: ", amount, " < ", rule$minimum_length)
+      }
+
+      if (!is.null(rule$maximum_length) && amount > rule$maximum_length) {
+        stop("Argument '", key, "' had too many elements: ", amount, " > ", rule$maximum_length)
+      }
+
       index <- 0
       for (elem in value) {
-        self$check_type(
+        value[[index + 1]] <- self$check_type(
           sprintf("%s[%d]", key, index),
           rule$items,
           elem
@@ -85,7 +95,7 @@ ArgumentsValidator <- R6::R6Class(
         index <- index + 1
       }
 
-      return()
+      return(value)
     },
     #' @description
     #' Checks that the given named list against the given ruleset.
@@ -114,10 +124,46 @@ ArgumentsValidator <- R6::R6Class(
 
         prop_value <- value[[prop_key]]
 
-        self$check_type(full_key, prop_rule, prop_value)
+        value[[prop_key]] <- self$check_type(full_key, prop_rule, prop_value)
       }
 
-      return()
+      return(value)
+    },
+    #' @description
+    #' Checks that the given generic named list against the given ruleset.
+    #'
+    #' @param key Key of element in parent named list.
+    #' @param rule Ruleset that contains rules for all members in the given value to validated.
+    #' @param value List to validate
+    check_generic_named_list = function(key, rule, value) {
+      if (!self$is_named_list(value)) {
+        stop("Argument '", key, "' was not a named list")
+      }
+
+      if (is.null(rule$items)) {
+        stop("Rule for argument '", key, "' did not have 'items' specified")
+      }
+
+      amount <- length(value)
+
+      if (!is.null(rule$minimum_length) && amount < rule$minimum_length) {
+        stop("Argument '", key, "' had too few elements: ", amount, " < ", rule$minimum_length)
+      }
+
+      if (!is.null(rule$maximum_length) && amount > rule$maximum_length) {
+        stop("Argument '", key, "' had too many elements: ", amount, " > ", rule$maximum_length)
+      }
+
+      prop_rule <- rule$items
+
+      for (prop_key in names(value)) {
+        full_key  <- sprintf("%s[[%s]]", key, prop_key)
+        prop_value <- value[[prop_key]]
+
+        value[[prop_key]] <- self$check_type(full_key, prop_rule, prop_value)
+      }
+
+      return(value)
     },
     #' @description
     #' Checks that the given data.table against the given ruleset.
@@ -146,10 +192,10 @@ ArgumentsValidator <- R6::R6Class(
 
         col_value <- value[[col_key]]
 
-        self$check_type(full_key, col_rule, col_value)
+        value[[col_key]] <- self$check_type(full_key, col_rule, col_value)
       }
 
-      return()
+      return(value)
     },
     #' @description
     #' Checks that the given numeric value falls within the range of the given ruleset.
@@ -165,6 +211,8 @@ ArgumentsValidator <- R6::R6Class(
       if (!is.null(rule$maximum) && value > rule$maximum) {
         stop("Argument '", key, "' was larger than maximum value: ", rule$maximum)
       }
+
+      return(value)
     },
     #' @description
     #' Checks that the given value exists in the enum of the given rule.
@@ -173,10 +221,10 @@ ArgumentsValidator <- R6::R6Class(
     #' @param rule Ruleset that contains the enum list to check against.
     #' @param value String/numeric to validate
     check_enum = function(key, enum, value) {
-      if (is.null(enum)) return()
+      if (is.null(enum)) return(value)
 
       for (comp in enum) {
-        if (comp == value) return()
+        if (comp == value) return(value)
       }
 
       stop(
@@ -184,6 +232,20 @@ ArgumentsValidator <- R6::R6Class(
         value, "', was not one of allowed values: '",
         paste(enum, collapse = ", "),
         "'"
+      )
+    },
+
+    check_date = function(key, rule, value) {
+      if (inherits(value, "Date")) {
+        return(value)
+      }
+
+      if (!is.character(value)) {
+        stop("Argument '", key, "' was not a Date (see `as.Date` for details) or date formatted string")
+      }
+
+      return(
+        as.Date(value)
       )
     },
     #' @description
@@ -198,31 +260,41 @@ ArgumentsValidator <- R6::R6Class(
       if (is.null(type)) {
         stop("Rule for argument '", key, "' did not have 'type' specified")
       } else if (type == "list") {
-        self$check_list(key, rule, value)
-        return()
+        return(
+          self$check_list(key, rule, value)
+        )
       } else if (type == "named_list") {
-        self$check_named_list(key, rule, value)
-        return()
+        return(
+          self$check_named_list(key, rule, value)
+        )
+      } else if (type == "generic_named_list") {
+        return(
+          self$check_generic_named_list(key, rule, value)
+        )
       } else if (type == "data.table") {
-        self$check_data.table(key, rule, value)
-        return()
-      }
-
-      max_compare <- 10
-
-      if (length(value) > max_compare) {
-        value <- value[1:max_compare]
+        return(
+          self$check_data.table(key, rule, value)
+        )
+      } else if (type == "date") {
+        return(
+          self$check_date(key, rule, value)
+        )
       }
 
       if (type == "string" && !is.character(value)) {
         stop("Argument '", key, "' was not a string")
-      } else if (type == "date" && !inherits(value, "Date")) {
-        stop("Argument '", key, "' was not a Date (see `as.Date` for details)")
       } else if (type == "integer" && !self$is_integer(value)) {
         stop("Argument '", key, "' was not an integer")
       } else if (type == "numeric" && !is.numeric(value)) {
         stop("Argument '", key, "' was not a numeric")
       }
+
+      if (!is.null(value)) {
+        value <- self$check_range(key, rule, value)
+        value <- self$check_enum(key, rule$enum, value)
+      }
+
+      return(value)
     },
     #' @description
     #' Applies the rule for the argument of the given key.
@@ -233,6 +305,12 @@ ArgumentsValidator <- R6::R6Class(
     handle_rule = function(args, key) {
       rule  <- private$rules[[key]]
       value <- args[[key]]
+
+      if (is.null(rule)) {
+        stop("Rule for key '", key, "' is NULL")
+      } else if (!self$is_named_list(rule)) {
+        stop("Rule for key '", key, "' is not a named list: (", class(rule), ") -> ", rule)
+      }
 
       if (is.null(value)) {
         if (isTRUE(rule$required)) {
@@ -249,9 +327,7 @@ ArgumentsValidator <- R6::R6Class(
       }
 
       if (!is.null(value)) {
-        self$check_type(key, rule, value)
-        self$check_range(key, rule, value)
-        self$check_enum(key, rule$enum, value)
+        value <- self$check_type(key, rule, value)
       }
 
       args[[key]] <- value

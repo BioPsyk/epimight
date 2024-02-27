@@ -331,3 +331,4 @@ sprite $tArtifact jar:archimate/technology-artifact
 !define Collection(e_alias, e_label) collections "e_label" as e_alias #ffffff
 !define Folder(e_alias, e_label) folder "e_label" as e_alias #ffffff
 !define File(e_alias, e_label) file "e_label" as e_alias #ffffff
+!define Database(e_alias, e_label) database "e_label" as e_alias #ffffff

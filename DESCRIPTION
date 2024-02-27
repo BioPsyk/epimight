@@ -1,7 +1,7 @@
 Package: IbpRiskEstimations
 Title: R package for estimating risk, heritability and genetic correlation
 Description: Estimates risk
-Version: 0.1.0
+Version: 0.4.0
 Authors@R:
     person(given = "Joeri",
            family = "Meijsen",
@@ -31,7 +31,9 @@ Imports:
     parallel,
     jinjar,
     readr,
-    tidyr
+    tidyr,
+    yaml,
+    rjson
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)

@@ -6,7 +6,7 @@ library(dtplyr)
 library(readr)
 
 devtools::load_all(".")
-source("./quality-assurance/utils.R")
+source("./tests/utils.R")
 
 n_count <- 100000
 

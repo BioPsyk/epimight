@@ -87,23 +87,33 @@ CumulativeIncidence_GenPop_byYOB = function(cuminc_data, earliest_onset, latest_
 
 		res = NULL
 
-		# Calculate upper and lower conficence interval
-		# controls are defined as: everybody regardless of disorder status that have a follow-up time larger than a given time point e.g., everybody with a follow up time larger than 20
-		for(i in 1:nrow(x))
-		{
-			res   = rbind(res, c(x[i,2] - qnorm(0.975)* sqrt(x[i,3]), x[i,2] + qnorm(0.975)* sqrt(x[i,3]),year))
-		}
+    cases_c = 0
+    # Calculate upper and lower conficence interval
+    # controls are defined as: everybody regardless of disorder status that have a follow-up time larger than a given time point e.g., everybody with a follow up time larger than 20
+    for(i in 1:nrow(x))
+    {
+      if(year == "all")
+      {
+        cases = sum(cuminc_data[cuminc_data[,3] == x[i,1],2] == 1)
+      } else{
+        cases = sum(cuminc_data[cuminc_data[,3] == x[i,1] & cuminc_data$born_at == year,2] == 1)
+      }
+                                        #population =  nrow(cuminc_data[cuminc_data[,2] >= x[i, 1],])
+      cases_c = cases_c + cases
+      res   = rbind(res, c(x[i,2] - qnorm(0.975)* sqrt(x[i,3]), x[i,2] + qnorm(0.975)* sqrt(x[i,3]),year,cases_c))
+                                        #res   = rbind(res, c(x[i,2] - qnorm(0.975)* sqrt(x[i,3]), x[i,2] + qnorm(0.975)* sqrt(x[i,3]),year))
+    }
 
-		#colnames(res) = c("L95","U95","Cases", "Controls")
-		colnames(res) = c("L95","U95","Year")
-		final = rbind(final,cbind(x,res))
+                                        #colnames(res) = c("L95","U95","Year")
+
+    colnames(res) = c("L95","U95","Year", "N Affected Individuals")
+    final = rbind(final,cbind(x,res))
 	}
 
-
-	for(col in 1:5)
-	{
-		final[,col] = as.numeric(final[,col])
-	}
+  for(col in 1:5)
+  {
+    final[,col] = as.numeric(final[,col])
+  }
 
 	mat = cbind(unique(final$Time))
 	colnames(mat)= "Time"
@@ -118,6 +128,7 @@ CumulativeIncidence_GenPop_byYOB = function(cuminc_data, earliest_onset, latest_
 
 	colnames(mat)[1] = "Age"
 	mat = list(final, mat)
+  names(mat) = c("Combined", "General_population")
 	return(mat)
 }
 
@@ -266,7 +277,6 @@ CumulativeIncidence_familial_withinDisorder_byYOB = function(survival_data, earl
 	{
 		print("No individuals left after filtering. Returning NULL")
 		return(NULL)
-		exit
 	}
 
 	# Having any affected family member given that you have at least 1 family member
@@ -326,18 +336,28 @@ CumulativeIncidence_familial_withinDisorder_byYOB = function(survival_data, earl
 			# Remove TTE below and above hreshold
 			x = x[(x[,1] >= earliest_onset & x[,1] <= latest_onset),]
 			x = data.frame(x |> group_by(time) |> top_n(-1, est))
+      cuminc_data$born_at = as.character(cuminc_data$born_at)
 
       if (nrow(x) == 0) {
         next
       }
 
 			res = NULL
+      cases_c = 0
 
 			# Calculate upper and lower conficence interval
 			# controls are defined as: everybody regardless of disorder status that have a follow-up time larger than a given time point e.g., everybody with a follow up time larger than 20
 			for(i in 1:nrow(x))
 			{
-				res   = rbind(res, c(x[i,2] - qnorm(0.975)* sqrt(x[i,3]), x[i,2] + qnorm(0.975)* sqrt(x[i,3]),year))
+        if(year == "all")
+        {
+          cases = sum(cuminc_data[cuminc_data[,2] == x[i,1] & cuminc_data$diagnosed_relatives == x[i,4],3] == 1)
+        } else{
+          cases = sum(cuminc_data[cuminc_data[,2] == x[i,1] & cuminc_data$diagnosed_relatives == x[i,4] & cuminc_data$born_at == year,3] == 1)
+        }
+        cases_c = cases_c + cases
+
+				res   = rbind(res, c(x[i,2] - qnorm(0.975)* sqrt(x[i,3]), x[i,2] + qnorm(0.975)* sqrt(x[i,3]), year, cases_c))
 			}
 
 			final = rbind(final,cbind(x,res))
@@ -348,31 +368,42 @@ CumulativeIncidence_familial_withinDisorder_byYOB = function(survival_data, earl
 	{
 		print("No CIF could be calculated. Returning NULL")
 		return(NULL)
-		exit
 	}
 
-	colnames(final) = c("Time", "Estimate", "Variance", "N Affected Family Members", "L95","U95","Year")
+  colnames(final) = c("Time", "Estimate", "Variance", "N Affected Family Members", "L95","U95","Year","N Affected Individuals")
 
-	for(col in c(1:3,5:6))
-	{
-		final[,col] = as.numeric(final[,col])
-	}
+  for(col in c(1:3,5:6))
+  {
+    final[,col] = as.numeric(final[,col])
+  }
 
-	mat = cbind(unique(final$Time))
-	colnames(mat)= "Time"
+  return(final)
 
-#	counter=2
-#	for(year in c("all", sort(unique(cuminc_data$born_at))))
-#	{
-#		mat = merge(mat, final[final$Year == year,c(1,2)], by="Time", all.x=T)
-#		colnames(mat)[counter] = year
-#		counter = counter + 1
-#	}
+	#test = list()
 
-#	colnames(mat)[1] = "Age"
-#	mat = list(final, mat)
-	return(final)
+	#counter2=1
+	#for(sel in unique(final$`N Affected Family Members`))
+	#{
+	#	counter1=2
+	#	mat = cbind(unique(final$Time))
+	#	colnames(mat)= "Time"
 
+	#	for(year in c("all", sort(unique(cuminc_data$born_at))))
+	#	{
+  #    mat = merge(mat, final[final$Year == year & final$`N Affected Family Members` == sel,c(1,2)], by="Time", all.x=T)
+  #    colnames(mat)[counter1] = year
+  #    counter1 = counter1 + 1
+	#	}
+	#	colnames(mat)[1] = "Age"
+	#	test[[counter2]] = mat
+	#	counter2 = counter2 + 1
+	#}
+
+  #                                      #final <- append(final,test)
+	#final = c(list(final),test)
+  #names(final) = c("Combined", unique(final[[1]]$`N Affected Family Members`))
+
+	#return(final)
 }
 
 CumulativeIncidence_familial_betweenDisorder = function(
@@ -900,3 +931,339 @@ QueryGenerator <- R6::R6Class(
     }
   )
 )
+
+h2.calculation = function(K1,Kr,A1,Ar,ar=1/2)
+{
+	# h2 estimate
+	T1   = qnorm(K1, lower.tail= FALSE) # lifetime prevalence unaffected/general population represeting the upper tail z value
+	y    = dnorm(T1)
+	i    = y/K1
+	Tr   = qnorm(Kr, lower.tail= FALSE) # lifetime prevalence in the relatives of the affected ones represeting the upper tail z value
+	yr   = dnorm(Tr)
+
+	num  = T1-Tr * sqrt(1 - (1 - T1/i) * (T1^2 -Tr^2))
+	den  = ar * (i + (i-T1)*Tr^2)
+	h2   = num/den
+	# se estimation
+	Wg   = (((K1^2)/(y^2)) * (1-K1)) / A1
+	vvg  = (1/i - ar*h2*(i-T1))^2 # there is a + in Wray and a - in Falconer
+	Wr   = Kr^2/yr^2 * (1-Kr) / Ar
+	vvr  = (1/i)^2
+
+	se   = 1/ar * sqrt(vvg * Wg + vvr * Wr)
+	ci.l = h2 - 1.96 * se
+	ci.u = h2 + 1.96 * se
+	output = rbind(c(h2, se, ci.l, ci.u))
+
+	colnames(output) = c("h2", "se", "L95", "U95")
+	return(output)
+}
+
+dk_h2byYOB = function(phenotype_ICDcode, survival_data, earliest_onset, latest_onset, nFamMember, relationship_kind, effect)
+{
+  family_type <- relationship_kind
+	baseline    <- "Genpop"
+	# Get family type database with relationship coefficient
+	types = c("FS","PO","HS","mHS","pHS","Av","1G","1C")
+	coefs = c(0.5,0.5,0.25,0.25,0.25,0.25,0.25,0.125)
+	dat = cbind(types,coefs)
+
+	# h2 for ADHD, ANO and ASD can only be calculated using FS in the iPSYCH window given that it is only and ICD10 disorder
+	# Calculate familial risk for disorder more than 0 affected family members
+	fam = CumulativeIncidence_familial_withinDisorder_byYOB(survival_data, earliest_onset, latest_onset, nFamMember)
+  gp  = CumulativeIncidence_GenPop_byYOB(survival_data, earliest_onset, latest_onset)
+  gp  = gp[[1]] |>
+    mutate(`N Affected Family Members` = baseline) |>
+    relocate(`N Affected Family Members`, .after = Variance) |>
+    relocate(Year, .after = U95) |>
+    relocate(`N Affected Individuals`, .after = Year) |>
+    as.data.frame()
+
+	fam = rbind(gp, fam) |>
+    filter(
+      Year != "all",
+      `N Affected Family Members` %in% list(baseline, "Any")
+    ) |>
+    as.data.frame()
+
+	# Get relationship coefficient based on the type of family relationship
+	relatedness = as.numeric(dat[dat[,1] %in% family_type,2])
+	cat("Requested Baseline for h2 calculation:\t ", baseline, "\n")
+	cat("Relationship coefficient:\t\t ", relatedness, "\n")
+  cat("Requested meta-analysis:\t\t ", effect, "\n")
+
+	h2_output = NULL
+	for(year in unique(fam$Year))
+	{
+		genpop = fam[fam[,4] == baseline & fam[,7] == year,]
+		family = fam[fam[,4] == "Any" & fam[,7] == year,]
+
+		if(nrow(family) == 0 | nrow(genpop) == 0)
+		{
+			next
+		}
+
+    timeObserved = table(c(
+                						unique(genpop[genpop$Year == year,"Time"]),
+                						unique(family[family$Year == year,"Time"])
+						              ))
+
+    lastFam = max(
+      as.numeric( # Get the largest value of the column names
+        names( # Get column names, as the failure time values are used as column names
+          timeObserved[timeObserved==2] # Keep failure times observed twice (once in each cohort)
+        )
+      )
+    )
+
+		h2 = h2.calculation	(
+			as.numeric(genpop[genpop[,1] == lastFam,2]),
+			as.numeric(family[family[,1] == lastFam,2]),
+			as.numeric(genpop[genpop[,1] == lastFam,8]),
+			as.numeric(family[family[,1] == lastFam,8]),
+			ar=relatedness
+		)
+
+		h2_output = rbind(h2_output, c(year,h2))
+	}
+
+	colnames(h2_output) = c("Year","h2","se", "L95", "U95")
+	h2_output = data.frame(h2_output)
+
+	for(i in 2:ncol(h2_output))
+	{
+		h2_output[,i] = as.numeric(h2_output[,i])
+	}
+
+	meta = h2_output[1,]
+
+	if(effect == "fixed")
+	{
+    wkfixed=(1 / (h2_output[which(h2_output[,1] != "all"),3]^2))
+		metah2fixed=sum(h2_output[which(h2_output[,1] != "all"),2]*wkfixed,na.rm=T)/sum(wkfixed,na.rm=T)
+		metaSEfixed=sqrt((1 / sum(wkfixed,na.rm=T)))
+		meta[1,1]   = "Meta_fixed"
+		meta[1,2]   = metah2fixed
+		meta[1,3]   = metaSEfixed
+		meta[1,4]   = metah2fixed - 1.96*metaSEfixed
+		meta[1,5]   = metah2fixed + 1.96*metaSEfixed
+	} else if (effect == "random") {
+			wkstar = (1 / ((h2_output[which(h2_output[,1] != "all"),3]^2) + var(h2_output[which(h2_output[,1] != "all"),2], na.rm=T)))
+			metaRrandom  = sum(h2_output[which(h2_output[,1] != "all"),2]*wkstar,na.rm=T)/sum(wkstar,na.rm=T)
+			metaSErandom=sqrt((1 / sum(wkstar,na.rm=T)))
+			meta[1,1]   = "Meta_random"
+			meta[1,2]   = metaRrandom
+			meta[1,3]   = metaSErandom
+			meta[1,4]   = metaRrandom - 1.96*metaSErandom
+			meta[1,5]   = metaRrandom + 1.96*metaSErandom
+	}
+
+	h2_output = rbind(h2_output,meta)
+
+	if(!(baseline == "Genpop"))
+	{
+		baseline = paste(baseline,"affected",family_type)
+	}
+
+	h2_output = cbind(paste(phenotype_ICDcode,collapse="/"), baseline,paste("Any affected",family_type), h2_output)
+
+	colnames(h2_output) = c("ICD Codes", "Baseline risk population", "Familial risk population", "Year","h2", "Variance", "L95","U95")
+
+	return(h2_output)
+}
+
+rhog.calculation <- function(Kc, Krc, Kf, Ac, Arc, Af, h2c,h2f,ar=1/2)
+{
+  Tc <- qnorm(Kc, lower.tail= FALSE)
+  yc <- dnorm(Tc)
+  Trc <- qnorm(Krc, lower.tail= FALSE)
+  yrc <- dnorm(Trc)
+  Tf <- qnorm(Kf, lower.tail= FALSE)
+  yf <- dnorm(Tf)
+
+  i <- yf/Kf
+  num <- Tc-Trc * sqrt(1 - (1 - Tf/i) * (Tc^2 -Trc^2))
+  den <- ar * (i + (i-Tf)*Trc^2)
+  rhh <- num/den
+  rhog <- rhh/sqrt(h2f*h2c)
+  # se estimation
+  Wg <- Kf^2/yf^2 * (1-Kf) / Af
+  vvg <- (1/i - ar*rhh*(i-Tf))^2 # there is a + in Wray and a - in Falconer
+  Wr <- Krc^2/yrc^2 *(1-Krc) / Arc + Kc^2/yc^2 * (1-Kc) / Ac
+  vvr <- (1/i)^2
+  se <- 1/ar * sqrt(vvg * Wg + vvr * Wr)
+  ci.l <- rhh - 1.96 * se
+  ci.u <- rhh + 1.96 * se
+  ci.l.r <- ci.l/sqrt(h2f*h2c)
+  ci.u.r <- ci.u/sqrt(h2f*h2c)
+  result = c(rhh, rhog, se, ci.l, ci.u, ci.l.r, ci.u.r)
+  names(result) = c("rhh","rhog", "SE","U95","L95","U95_h2","L95_h2")
+  return(result)
+}
+
+dk_rg_byYOB = function(survival_data, d1_earliest_onset, d2_earliest_onset, nFamMember, relationship_kind, effect)
+{
+  # column order:
+  # person_id failure_time failure_status relatives diagnosed_relative born_at
+
+  d1_tte <- survival_data |>
+    select(person_id, d1_failure_time, d1_failure_status, relatives, d1_diagnosed_relatives, born_at) |>
+    rename(
+      failure_time        = d1_failure_time,
+      failure_status      = d1_failure_status,
+      diagnosed_relatives = d1_diagnosed_relatives
+    ) |>
+    as.data.frame()
+
+  d2_tte <- survival_data |>
+    select(person_id, d2_failure_time, d2_failure_status, relatives, d2_diagnosed_relatives, born_at) |>
+    rename(
+      failure_time        = d2_failure_time,
+      failure_status      = d2_failure_status,
+      diagnosed_relatives = d2_diagnosed_relatives
+    ) |>
+    as.data.frame()
+
+  d1_d2_tte <- survival_data |>
+    select(person_id, d1_failure_time, d1_failure_status, relatives, d2_diagnosed_relatives, born_at) |>
+    rename(
+      failure_time        = d1_failure_time,
+      failure_status      = d1_failure_status,
+      diagnosed_relatives = d2_diagnosed_relatives
+    ) |>
+    as.data.frame()
+
+  h2 <- "meta"
+  effect <- "fixed"
+  phenotype_ICDcode_target <- "d1"
+  phenotype_ICDcode_targetfamily <- "d2"
+
+	types = c("FS","PO","HS","mHS","pHS","AV","1G","1C")
+	coefs = c(0.5,0.5,0.25,0.25,0.25,0.25,0.25,0.125)
+	dat = cbind	(types,coefs)
+  family_type <- relationship_kind
+
+  # h1_d1
+  outphen1 = dk_h2byYOB("d1", d1_tte, d1_earliest_onset, 100, nFamMember, relationship_kind, effect) |>
+    filter_all(
+      all_vars(!is.infinite(.) & !is.na(.))
+    )
+  # h1_d2
+  outphen2 = dk_h2byYOB("d2", d2_tte, d2_earliest_onset, 100, nFamMember, relationship_kind, effect) |>
+    filter_all(
+      all_vars(!is.infinite(.) & !is.na(.))
+    )
+
+	#re_d1_c1 = CumulativeIncidence_GenPop_byYOB(d1_tte, earliest_onset = d1_earliest_onset, latest_onset = 100)
+	genpop_phen1 = CumulativeIncidence_GenPop_byYOB(d1_tte, d1_earliest_onset, 100)
+
+  # re_d1_c3 = CumulativeIncidence_familial_withinDisorder_byYOB(
+  betweendisorder_phen1_phen2 = CumulativeIncidence_familial_withinDisorder_byYOB(d1_d2_tte, d1_earliest_onset, 100, nFamMember)
+
+	#re_d2_c1 = CumulativeIncidence_GenPop_byYOB(d2_tte, earliest_onset = d2_earliest_onset, latest_onset = 100)
+  genpop_phen2 = CumulativeIncidence_GenPop_byYOB(d2_tte, d2_earliest_onset, 100)
+
+	#betweendisorder_phen1_phen2 = betweendisorder_phen1_phen2[[1]][betweendisorder_phen1_phen2[[1]][,4] == "Any",]
+	betweendisorder_phen1_phen2 = betweendisorder_phen1_phen2[betweendisorder_phen1_phen2[,4] == "Any",]
+
+  #write.table(betweendisorder_phen1_phen2, paste("/home/jmei/h2_rg/results/CVD_MH_project/data/data_fullPOP/CIF_CROSS_",phenotype1,"_",phenotype2), col.names=T, row.names=F)
+	genpop_phen1 = genpop_phen1[[1]]
+	genpop_phen2 = genpop_phen2[[1]]
+
+	rg=NULL
+	for(year in unique(genpop_phen1[,6]))
+	{
+		checker=length(betweendisorder_phen1_phen2[betweendisorder_phen1_phen2[,4] == "Any" & betweendisorder_phen1_phen2[,7] == year,2])!=0 &
+            length(genpop_phen2[genpop_phen2[,6] == year,2]) != 0  &
+            length(genpop_phen1[genpop_phen1[,6] == year,2]) != 0
+
+		h2outphen1 = as.numeric(outphen1[outphen1[,4] == year,5])
+		h2outphen2 = as.numeric(outphen2[outphen2[,4] == year,5])
+
+		if(checker == TRUE & length(h2outphen1) == 1 & length(h2outphen2) == 1)
+		{
+			relatedness = as.numeric(dat[dat[,1] %in% family_type,2])
+      timeObserved = table(c(unique(genpop_phen1[genpop_phen1$Year == year,"Time"]),unique(genpop_phen2[genpop_phen2$Year == year,"Time"]),unique(betweendisorder_phen1_phen2[betweendisorder_phen1_phen2$Year == year,"Time"])))
+      if(3 %in% unname(timeObserved) == TRUE)
+      {
+        #selectedTime = as.numeric(max(names(timeObserved[timeObserved==3])))
+        selectedTime = max(as.numeric(names(timeObserved[timeObserved==3])))
+        rg.psych.cvd = rhog.calculation(
+                        									genpop_phen1[genpop_phen1[,6] == year & genpop_phen1[,1] == selectedTime,2], #1 lifetime prevalence phen1
+                        									betweendisorder_phen1_phen2[betweendisorder_phen1_phen2[,4] == "Any" & betweendisorder_phen1_phen2[,7] == year & betweendisorder_phen1_phen2[,1] == selectedTime,2],
+                        									genpop_phen2[genpop_phen2[,6] == year & genpop_phen2[,1] == selectedTime,2],
+                        									as.numeric(genpop_phen1[genpop_phen1[,6] == year & genpop_phen1[,1] == selectedTime,7]),
+                        									as.numeric(betweendisorder_phen1_phen2[betweendisorder_phen1_phen2[,4] == "Any" & betweendisorder_phen1_phen2[,7] == year & betweendisorder_phen1_phen2[,1] == selectedTime,8]),
+                        									as.numeric(genpop_phen2[genpop_phen2[,6] == year & genpop_phen2[,1] == selectedTime,7]),
+                        									h2outphen1,			#7 h2 phen1
+                        									h2outphen2,			#8 h2 phen2
+                        									ar=relatedness		#9 relatedness e.g., 0.5
+								                        )
+
+      } else{
+              rg.psych.cvd = matrix(ncol=7, nrow=1,NA)
+			        colnames(rg.psych.cvd) = c("rhh", "rhog", "se", "L95", "U95", "L95_h2", "U95_h2")
+      }
+		} else {
+			rg.psych.cvd = matrix(ncol=7, nrow=1,NA)
+			colnames(rg.psych.cvd) = c("rhh", "rhog", "se", "L95", "U95", "L95_h2", "U95_h2")
+		}
+
+		rg.psych.cvd = cbind(paste(phenotype_ICDcode_target,collapse="_"), paste(phenotype_ICDcode_targetfamily,collapse="_"), family_type,year, rbind(rg.psych.cvd))
+		colnames(rg.psych.cvd) = c("Phenotype1", "Phenotype2", "Relatedness", "Year","rhh", "rhog", "se", "L95", "U95", "L95_h2", "U95_h2")
+		rownames(rg.psych.cvd) = NULL
+		rg = rbind(rg,rg.psych.cvd)
+	}
+
+
+	rg = data.frame(rg)
+
+	for(i in 5:11)
+	{
+		rg[,i] = as.numeric(rg[,i])
+    rg[grepl("NaN|-Inf|Inf", rg[,i]),i] = NA
+	}
+
+  if(any(is.na(rg)) == TRUE)
+  {
+     rg[which(is.na(rowSums(rg[,5:ncol(rg)],))),5:ncol(rg)] = NA
+  }
+
+	meta = rg[1:2,]
+  h2w = sqrt((as.numeric(outphen1[grepl("Meta",outphen1[,4]),5]))*(as.numeric(outphen2[grepl("Meta",outphen2[,4]),5])))
+
+	wk=(1 / (rg[which(rg[,4] != "all"),7]^2))
+	metaRfixed=sum(rg[which(rg[,4] != "all"),5]*wk,na.rm=T)/sum(wk,na.rm=T)
+
+	wkstar = (1 / ((rg[which(rg[,4] != "all"),7]^2) + var(rg[which(rg[,4] != "all"),5], na.rm=T)))
+	metaRrandom  = sum(rg[which(rg[,4] != "all"),5]*wkstar,na.rm=T)/sum(wkstar,na.rm=T)
+
+	metaRgfixed=metaRfixed/h2w
+	metaRgrandom=metaRrandom/h2w
+
+	metaSEfixed=sqrt((1 / sum(wk,na.rm=T)))
+	metaSErandom=sqrt((1 / sum(wkstar,na.rm=T)))
+
+	meta[1,4]   = "Meta_fixed"
+	meta[1,5]   = metaRfixed
+	meta[1,6]   = metaRgfixed
+	meta[1,7]   = metaSEfixed
+	meta[1,8]   = metaRfixed - 1.96*metaSEfixed
+	meta[1,9]   = metaRfixed + 1.96*metaSEfixed
+	meta[1,10]  = (metaRfixed - (1.96*metaSEfixed)) / h2w
+	meta[1,11]  = (metaRfixed + (1.96*metaSEfixed)) / h2w
+
+
+	meta[2,4]   = "Meta_random"
+	meta[2,5]   = metaRrandom
+	meta[2,6]   = metaRgrandom
+	meta[2,7]   = metaSErandom
+	meta[2,8]   = metaRrandom - 1.96*metaSErandom
+	meta[2,9]   = metaRrandom + 1.96*metaSErandom
+	meta[2,10]  = (metaRrandom - (1.96*metaSErandom)) / h2w
+	meta[2,11]  = (metaRrandom + (1.96*metaSErandom)) / h2w
+
+	rg = rbind(rg,meta)
+
+	return(rg)
+}

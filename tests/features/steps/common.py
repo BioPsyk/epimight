@@ -21,6 +21,9 @@ def tabulate_realdict(results, table):
 
   print(tabulate(rows, columns, tablefmt="github"))
 
+  for _ in rows:
+    print("\n")
+
   print("\n")
 
 def pretty_print_assert(f):

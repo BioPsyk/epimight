@@ -11,11 +11,14 @@ source("../utils.R")
 
 set.seed(6)
 
-tte <- generate_random_tte(100)
+tte <- generate_random_tte(10000)
 tte <- generate_failure(tte, 20, 10)
-tte <- generate_diagnosed_relatives(tte, "diagnosed_relatives")
-tte <- tte |>
+tte <- generate_diagnosed_relatives(tte, "diagnosed_relatives") |>
   select(-born_at_year, -dead_at_year) |>
+  relocate(failure_time, .after = person_id) |>
+  relocate(failure_status, .after = failure_time) |>
+  relocate(relatives, .after = failure_status) |>
+  relocate(diagnosed_relatives, .after = relatives) |>
   as.data.frame()
 
 tte_dt <- data.table(tte)
@@ -91,8 +94,11 @@ describe("run", {
     new_summary   <- analysis$make_group_summary(tte_year_dt, new_results, "born_at_year")
 
     new_results <- new_results |>
-      select(-cases) |>
-      rename(year = born_at_year) |>
+      mutate(cases = as.character(cases)) |>
+      rename(
+        year = born_at_year,
+        `N Affected Individuals` = cases
+      ) |>
       rename_with(capitalize) |>
       as.data.frame()
 
@@ -145,7 +151,7 @@ describe("run", {
       ) |>
       as.data.frame()
 
-    expect_dataframe_equal(old_results, new_results, c("N Affected Individuals"))
+    expect_dataframe_equal(old_results, new_results)
   })
 
   it("Produces same results as CumulativeIncidence_familial_withinDisorder_byYOB", {
@@ -181,7 +187,6 @@ describe("run", {
       )
 
     new_results <- analysis$run(tte = group_tte, group_columns = group_columns) |>
-      select(-cases) |>
       relocate(diagnosed_relatives, .after = variance) |>
       arrange(
         match(
@@ -195,9 +200,11 @@ describe("run", {
       ) |>
       rename(
         "N Affected Family Members" = diagnosed_relatives,
-        "Year"                      = born_at_year
+        "Year"                      = born_at_year,
+        "N Affected Individuals"    = cases
       ) |>
       rename_with(capitalize) |>
+      mutate(`N Affected Individuals` = as.character(`N Affected Individuals`)) |>
       as.data.frame()
 
     expect_dataframe_equal(old_results, new_results)
@@ -238,8 +245,6 @@ describe("run", {
       rename_with(capitalize) |>
       as.data.frame()
 
-    # Ignoring the column "N Affected Individuals" is needed here because the legacy
-    # code incorrectly calculates the amount of affected individuals as always 0.
-    expect_dataframe_equal(old_results, new_results, c("N Affected Individuals"))
+    expect_dataframe_equal(old_results, new_results)
   })
 })

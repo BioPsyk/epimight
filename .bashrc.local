@@ -10,7 +10,9 @@ session="ibp-registry-risk-estimation"
 # Setup new session
 #---------------------------------------------------------------------------------
 
-tmux new-session -d -s $session
+tmux new-session -d -s $session \
+     -e "PGUSER=postgres" \
+     -e "PGPASSWORD=devpass"
 
 tmux send-keys "nix develop" C-m
 tmux send-keys "./scripts/start-test-watcher.py" C-m

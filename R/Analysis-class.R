@@ -52,6 +52,8 @@ Analysis <- R6::R6Class(
         )
 
         validator$check_type("results", rule, args$results)
+
+        return(args)
       })
 
       args <- validator$run(...)

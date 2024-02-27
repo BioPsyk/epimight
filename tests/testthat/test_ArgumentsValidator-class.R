@@ -3,191 +3,193 @@ library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
 library(data.table, quietly = TRUE, warn.conflicts = FALSE)
 
 #=================================================================================
-# Preparation
-#=================================================================================
-
-gen_pop_risk_validator <- ArgumentsValidator$new(
-  phenotype_icd_codes = list(
-    required = TRUE,
-    type = "list",
-    items = list(
-      type = "string"
-    )
-  ),
-  born_at_min = list(
-    type = "date"
-  ),
-  born_at_max = list(
-    type = "date"
-  ),
-  study_end_at = list(
-    required = TRUE,
-    type = "date"
-  ),
-  gender = list(
-    type = "string",
-    enum = IbpRiskEstimations:::genders
-  ),
-  diagnosis_kind = list(
-    type = "list",
-    items = list(
-      type = "string",
-      enum = IbpRiskEstimations:::diagnosis_kinds
-    )
-  ),
-  earliest_onset = list(
-    type = "integer",
-    default = 1,
-    minimum = 1
-  ),
-  latest_onset = list(
-    type = "integer",
-    default = 100,
-    minimum = 1
-  )
-)
-
-gen_pop_risk_validator$add_post_validation(function(args, ...) {
-  if (args$earliest_onset > args$latest_onset) {
-    stop("Argument 'earliest_onset' was larger than 'latest_onset'")
-  }
-
-  if (is.null(args$born_at_max)) return()
-
-  if (args$study_end_at <= args$born_at_max) {
-    stop("Argument 'study_end_at' was earlier than 'born_at_max'")
-  }
-
-  if (is.null(args$born_at_min)) return()
-
-  if (args$born_at_min >= args$born_at_max) {
-    stop("Argument 'born_at_min' was same or later than 'born_at_max'")
-  }
-})
-
-#=================================================================================
 # Tests
 #=================================================================================
 
-test_that("Supplying correct values is successful", {
-  gen_pop_risk_validator$run(
-    phenotype_icd_codes = list("F20", "F30"),
-    born_at_min = as.Date("1980-12-01"),
-    born_at_max = as.Date("2020-12-01"),
-    study_end_at = as.Date("2020-12-02"),
-    gender = "male"
+describe("gen_pop_risk_validator", {
+  gen_pop_risk_validator <- ArgumentsValidator$new(
+    phenotype_icd_codes = list(
+      required = TRUE,
+      type = "list",
+      items = list(
+        type = "string"
+      )
+    ),
+    born_at_min = list(
+      type = "date"
+    ),
+    born_at_max = list(
+      type = "date"
+    ),
+    study_end_at = list(
+      required = TRUE,
+      type = "date"
+    ),
+    gender = list(
+      type = "string",
+      enum = IbpRiskEstimations:::genders
+    ),
+    diagnosis_kind = list(
+      type = "list",
+      items = list(
+        type = "string",
+        enum = IbpRiskEstimations:::diagnosis_kinds
+      )
+    ),
+    earliest_onset = list(
+      type = "integer",
+      default = 1,
+      minimum = 1
+    ),
+    latest_onset = list(
+      type = "integer",
+      default = 100,
+      minimum = 1
+    )
   )
 
-  expect_no_error(
+  gen_pop_risk_validator$add_post_validation(function(args, ...) {
+    if (args$earliest_onset > args$latest_onset) {
+      stop("Argument 'earliest_onset' was larger than 'latest_onset'")
+    }
+
+    if (is.null(args$born_at_max)) return()
+
+    if (args$study_end_at <= args$born_at_max) {
+      stop("Argument 'study_end_at' was earlier than 'born_at_max'")
+    }
+
+    if (is.null(args$born_at_min)) return()
+
+    if (args$born_at_min >= args$born_at_max) {
+      stop("Argument 'born_at_min' was same or later than 'born_at_max'")
+    }
+  })
+
+  #=================================================================================
+  # Tests
+  #=================================================================================
+
+  it("Supplying correct values is successful", {
     gen_pop_risk_validator$run(
       phenotype_icd_codes = list("F20", "F30"),
-      study_end_at = as.Date("2020-12-01"),
+      born_at_min = as.Date("1980-12-01"),
+      born_at_max = as.Date("2020-12-01"),
+      study_end_at = as.Date("2020-12-02"),
       gender = "male"
     )
-  )
 
-  expect_no_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = list("F20", "F30"),
-      born_at_min = as.Date("1980-12-01"),
-      born_at_max = as.Date("2020-12-01"),
-      study_end_at = as.Date("2020-12-02"),
-      gender = "male"
+    expect_no_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30"),
+        study_end_at = as.Date("2020-12-01"),
+        gender = "male"
+      )
     )
-  )
 
-  expect_no_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = list("F20", "F30"),
-      born_at_min = as.Date("1980-12-01"),
-      born_at_max = as.Date("2020-12-01"),
-      study_end_at = as.Date("2020-12-02"),
-      gender = "male",
-      earliest_onset = 2,
-      latest_onset = 80
+    expect_no_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30"),
+        born_at_min = as.Date("1980-12-01"),
+        born_at_max = as.Date("2020-12-01"),
+        study_end_at = as.Date("2020-12-02"),
+        gender = "male"
+      )
     )
-  )
-})
 
-test_that("Not supplying required arguments fails", {
-  expect_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = list("F20", "F30")
+    expect_no_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30"),
+        born_at_min = as.Date("1980-12-01"),
+        born_at_max = as.Date("2020-12-01"),
+        study_end_at = as.Date("2020-12-02"),
+        gender = "male",
+        earliest_onset = 2,
+        latest_onset = 80
+      )
     )
-  )
+  })
 
-  expect_error(
-    gen_pop_risk_validator$run(
-      study_end_at = as.Date("2020-12-01")
+  it("Not supplying required arguments fails", {
+    expect_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30")
+      )
     )
-  )
 
-  expect_error(
-    gen_pop_risk_validator$run()
-  )
-})
-
-test_that("Supplying incorrect types fails", {
-  expect_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = "^F20|F30$",
-      study_end_at = as.Date("2020-12-01")
+    expect_error(
+      gen_pop_risk_validator$run(
+        study_end_at = as.Date("2020-12-01")
+      )
     )
-  )
 
-  expect_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = list("F20", "F30"),
-      study_end_at = "2020-12-01"
+    expect_error(
+      gen_pop_risk_validator$run()
     )
-  )
+  })
 
-  expect_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = list("F20", "F30"),
-      study_end_at = as.Date("2020-12-01"),
-      gender = 120
+  it("Supplying incorrect types fails", {
+    expect_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = "^F20|F30$",
+        study_end_at = as.Date("2020-12-01")
+      )
     )
-  )
-})
 
-test_that("Supplying incorrect values fails", {
-  expect_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = list("F20", "F30"),
-      study_end_at = as.Date("2020-12-01"),
-      gender = "both"
+    expect_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30"),
+        study_end_at = "a date/2020"
+      )
     )
-  )
 
-  expect_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = list("F20", "F30"),
-      born_at_max = as.Date("2020-12-01"),
-      study_end_at = as.Date("2020-12-01")
+    expect_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30"),
+        study_end_at = as.Date("2020-12-01"),
+        gender = 120
+      )
     )
-  )
+  })
 
-  expect_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = list("F20", "F30"),
-      born_at_min = as.Date("1980-12-01"),
-      born_at_max = as.Date("1980-12-01"),
-      study_end_at = as.Date("2020-12-02")
+  it("Supplying incorrect values fails", {
+    expect_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30"),
+        study_end_at = as.Date("2020-12-01"),
+        gender = "both"
+      )
     )
-  )
 
-  expect_error(
-    gen_pop_risk_validator$run(
-      phenotype_icd_codes = list("F20", "F30"),
-      born_at_min = as.Date("1980-12-01"),
-      born_at_max = as.Date("2020-12-01"),
-      study_end_at = as.Date("2020-12-02"),
-      gender = "male",
-      earliest_onset = 2,
-      latest_onset = 1
+    expect_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30"),
+        born_at_max = as.Date("2020-12-01"),
+        study_end_at = as.Date("2020-12-01")
+      )
     )
-  )
+
+    expect_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30"),
+        born_at_min = as.Date("1980-12-01"),
+        born_at_max = as.Date("1980-12-01"),
+        study_end_at = as.Date("2020-12-02")
+      )
+    )
+
+    expect_error(
+      gen_pop_risk_validator$run(
+        phenotype_icd_codes = list("F20", "F30"),
+        born_at_min = as.Date("1980-12-01"),
+        born_at_max = as.Date("2020-12-01"),
+        study_end_at = as.Date("2020-12-02"),
+        gender = "male",
+        earliest_onset = 2,
+        latest_onset = 1
+      )
+    )
+  })
 })
 
 describe("heritability validator", {
@@ -358,5 +360,96 @@ describe("named list type", {
       ),
       status = "dead"
     )
+  })
+})
+
+describe("generic named list type", {
+  validator <- ArgumentsValidator$new(
+    diagnosis_filters = list(
+      required = TRUE,
+      type = "generic_named_list",
+      minimum_length = 1,
+      maximum_length = 2,
+      items = list(
+        type = "string"
+      )
+    )
+  )
+
+  it("fails when too few elements are given", {
+    expect_error(
+      validator$run(diagnosis_filters = list())
+    )
+  })
+
+  it("fails when too many elements are given", {
+    expect_error(
+      validator$run(
+        diagnosis_filters = list(
+          target1 = "SCZ",
+          target2 = "MDD",
+          excl = "CHD"
+        )
+      )
+    )
+  })
+
+  it("succeeds when all properties are given", {
+    validator$run(
+      diagnosis_filters = list(
+        target = "SCZ",
+        excl = "CHD"
+      )
+    )
+  })
+})
+
+describe("list type minimum length", {
+  validator <- ArgumentsValidator$new(
+    genders = list(
+      required = TRUE,
+      type = "list",
+      minimum_length = 1,
+      maximum_length = 2,
+      items = list(
+        type = "string"
+      )
+    )
+  )
+
+  it("fails when too few elements are given", {
+    expect_error(
+      validator$run(genders = list())
+    )
+  })
+
+  it("fails when too many elements are given", {
+    expect_error(
+      validator$run(genders = list("male", "female", "male"))
+    )
+  })
+
+  it("works as expected when same or more elements given", {
+    validator$run(genders = list("male"))
+    validator$run(genders = list("male", "female"))
+  })
+})
+
+describe("date type", {
+  validator <- ArgumentsValidator$new(
+    born_at = list(
+      required = TRUE,
+      type = "date"
+    )
+  )
+
+  it("works when proper date types are put in", {
+    validator$run(born_at = as.Date("2020-12-03"))
+    validator$run(born_at = as.Date("1800-03-28"))
+  })
+
+  it("works when strings with date format is put in", {
+    validator$run(born_at = "2020-12-03")
+    validator$run(born_at = "1800-03-28")
   })
 })

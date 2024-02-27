@@ -81,7 +81,7 @@ generate_failure <- function(tte, mean, sd) {
 
 generate_random_tte <- function(n_count) {
   birth_dates <- seq(
-    as.Date("1890-01-01"),
+    as.Date("1950-01-01"),
     Sys.Date(),
     by = "day"
   )

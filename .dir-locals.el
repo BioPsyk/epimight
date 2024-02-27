@@ -55,10 +55,10 @@
                  (interactive)
                  (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/build-container-image.sh)"))
 
-               (defun ibp/generate-constants ()
+               (defun ibp/generate-internal-data ()
                  "Generates constants from database"
                  (interactive)
-                 (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/generate-constants.py)"))
+                 (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/generate-internal-data.py)"))
 
                (defun ibp/kill-dev-env ()
                  "Kills all processes and tmux"
@@ -73,7 +73,7 @@
                (global-set-key (kbd "<f5>") 'ibp/run-benchmarks)
                (global-set-key (kbd "<f6>") 'ibp/build-package)
                (global-set-key (kbd "<f7>") 'ibp/build-container-image)
-               (global-set-key (kbd "<f8>") 'ibp/generate-constants)
+               (global-set-key (kbd "<f8>") 'ibp/generate-internal-data)
                (global-set-key (kbd "<f12>") 'ibp/kill-dev-env)
 
                )))))

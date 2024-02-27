@@ -1,4 +1,8 @@
 
+#person_id, gender, born_at, father_id, mother_id, status, status_changed, birthplace_id
+#diagnosed_at, diagnosis_kind, diagnosis_icd_edition, diagnosis_icd_id, failure_status, failure_at, failure_time
+
+
 #' @title Generates raw SQL queries by provided column filters.
 #' @description
 #' R6 class that generates raw SQL queries for different types of advanced data retrieval
@@ -8,6 +12,7 @@
 #' @import R6
 #' @import jinjar
 #' @import readr
+#' @import yaml
 #' @export
 TTERetriever <- R6::R6Class(
   "TTERetriever",
@@ -21,162 +26,75 @@ TTERetriever <- R6::R6Class(
 
       return(results)
     },
-    create_validators = function() {
-      single_disorder_rules = list(
-        diagnosis_filters = list(
-          type = "named_list",
-          required = TRUE,
-          description = "
-          The filters to apply on each diagnosis collected for a single individual.
-          From the results of that filtering, the diagnosis that occured first is selected
-          as the 'time-to-event' for that individual.
-          ",
-          properties = list(
-            icd_codes_regexp = list(
-              required = TRUE,
-              description = "
-              POSIX regular expression that is run on a diagnosis ICD code to determine if the
-              diagnosis should be included or not. When the regexp matches, the diagnosis is
-              included and when it doesn't match, the diagnosis is excluded.
+    make_env = function() {
+      env <- c()
 
-              For details, see the PostgreSQL documentation:
-              https://www.postgresql.org/docs/13/functions-matching.html#FUNCTIONS-POSIX-REGEXP
-              ",
-              type = "string"
-            ),
-            diagnosis_kind = list(
-              type = "list",
-              description = "Which kinds of diagnoses to investigate.",
-              items = list(
-                type = "string",
-                enum = IbpRiskEstimations:::diagnosis_kinds
-              )
-            ),
-            record_origin = list(
-              type = "string",
-              description = "
-              Which register the medical records originates from.
-
-              - pcrr = Psychiatric Central Research Register
-              - npr  = National Patient Register
-              ",
-              enum = list("pcrr", "npr")
-            )
-          )
-        ),
-        sample_filters = list(
-          type = "named_list",
-          description = "
-          The filters to apply on each individual in the population.
-          The results of that filtering becomes the sample under study.
-          ",
-          properties = list(
-            born_at_min = list(type = "date"),
-            born_at_max = list(type = "date"),
-            gender = list(
-              type = "string",
-              enum = IbpRiskEstimations:::genders
-            ),
-            status = list(
-              type = "list",
-              items = list(
-                type = "string",
-                enum = IbpRiskEstimations:::civil_statuses
-              )
-            ),
-            diagnosis_earliest_onset = list(
-              type = "integer",
-              minimum = 1
-            ),
-            diagnosis_latest_onset = list(
-              type = "integer",
-              minimum = 1
-            )
-          )
-        ),
-        study_end_at = list(
-          required = TRUE,
-          description = "
-          The study end date to use when determining the failure status/time.
-          If an individual isn't diagnosed or deceased before this date, they
-          have 'survived' the period, and is marked as 'censored (0)'.
-          ",
-          type = "date"
-        )
-      )
-
-      single_disorder_with_relatives_rules <- copy(single_disorder_rules)
-      single_disorder_with_relatives_rules$relationship_filters = list(
-        type = "named_list",
-        required = TRUE,
-        properties = list(
-          component = list(
-            type = "string",
-            description = "
-            The genealogy is divided into two 'components' (lingo for 'group' in graph theory):
-
-            - pedigree1 = Everyone with Danish ancestry
-            - rest = Everyone without Danish ancestry
-            ",
-            enum = list("pedigree1", "rest")
-          ),
-          kind = list(
-            type = "string",
-            required = TRUE,
-            enum = as.list(names(IbpRiskEstimations:::relationship_kinds))
-          )
-        )
-      )
-
-      two_disorders_exclusion_rules <- copy(single_disorder_rules)
-      two_disorders_exclusion_rules$exclusion_diagnosis_filters = copy(single_disorder_rules$diagnosis_filters)
-
-      two_disorders_exclusion_with_relatives_rules <- copy(two_disorders_exclusion_rules)
-      two_disorders_exclusion_with_relatives_rules$relationship_filters = copy(single_disorder_with_relatives_rules$relationship_filters)
-
-      self$single_disorder_validator <- rlang::exec(
-        ArgumentsValidator$new,
-        !!!single_disorder_rules
-      )
-
-      self$single_disorder_with_relatives_validator <- rlang::exec(
-        ArgumentsValidator$new,
-        !!!single_disorder_with_relatives_rules
-      )
-
-      self$two_disorders_exclusion_validator <- rlang::exec(
-        ArgumentsValidator$new,
-        !!!two_disorders_exclusion_rules
-      )
-
-      self$two_disorders_exclusion_with_relatives_validator <- rlang::exec(
-        ArgumentsValidator$new,
-        !!!two_disorders_exclusion_with_relatives_rules
-      )
-
-      vertical_relationship_checker <- function(args, rules) {
-        verticals <- vertical_relationship_kinds
-        if (args$relationship_filters$kind %in% verticals) {
-          args$using_vertical_relationship <- TRUE
-        }
-
-        return(args)
+      if (!is.null(self$username)) {
+        env <- append(env, sprintf("PGUSER=%s", self$username))
       }
 
-      self$single_disorder_with_relatives_validator$add_post_validation(vertical_relationship_checker)
-      self$two_disorders_exclusion_with_relatives_validator$add_post_validation(vertical_relationship_checker)
+      if (!is.null(self$password)) {
+        env <- append(env, sprintf("PGPASSWORD=%s", self$password))
+      }
+
+      return(env)
     }
   ),
   public = list(
-    single_disorder_validator = NULL,
-    single_disorder_with_relatives_validator = NULL,
-    two_disorders_exclusion_validator = NULL,
-    two_disorders_exclusion_with_relatives_validator = NULL,
-    initialize = function() {
+    output_directory=NULL,
+    hostname=NULL,
+    username=NULL,
+    password=NULL,
+    validator = NULL,
+    rules_post_validate = function(args, rules) {
+      if (!is.null(args[["output_columns"]])) {
+        cols <- list(
+          "gender",
+          "born_at",
+          "father_id",
+          "mother_id",
+          "status",
+          "status_changed",
+          "birthplace_id"
+        )
+
+        for (diag in names(args$samples$diagnosis_filters)) {
+          cols <- append(cols, paste0(diag, "_diagnosed_at"))
+          cols <- append(cols, paste0(diag, "_diagnosis_kind"))
+          cols <- append(cols, paste0(diag, "_diagnosis_icd_edition"))
+          cols <- append(cols, paste0(diag, "_diagnosis_icd_id"))
+          cols <- append(cols, paste0(diag, "_record_patient_kind"))
+        }
+
+        rules$output_columns$items$enum <- cols
+
+        self$validator$check_type("output_columns", rules$output_columns, args$output_columns)
+      }
+
+      verticals <- IbpRiskEstimations:::vertical_relationship_kinds
+
+      if (is.null(args[["relatives"]])) return (args)
+      if (is.null(args$relatives[["relationship_filters"]])) return (args)
+      if (!(args$relatives$relationship_filters$kind %in% verticals)) return(args)
+
+      args$relatives$using_vertical_relationship <- TRUE
+
+      return(args)
+    },
+    initialize = function(output_directory, hostname, username=NULL, password=NULL) {
+      if (!dir.exists(output_directory)) {
+        stop("Given output_directory does not exist, or is not accessible")
+      }
+
+      self$output_directory <- output_directory
+      self$hostname         <- hostname
+      self$username         <- username
+      self$password         <- password
+
       private$sql_dir <- system.file("extdata", "sql", package = "IbpRiskEstimations")
 
       if (!dir.exists(private$sql_dir)) {
-        stop("sql_dir (", private$sql_dir, ") does not exist!")
+        stop("Internal package error, sql_dir (", private$sql_dir, ") does not exist!")
       }
 
       private$jinjar_config <- jinjar::jinjar_config(
@@ -185,106 +103,60 @@ TTERetriever <- R6::R6Class(
         lstrip = TRUE
       )
 
-      private$create_validators()
+      rules          <- IbpRiskEstimations:::tte_retriever_rules
+      self$validator <- rlang::exec(ArgumentsValidator$new, !!!rules)
+
+      self$validator$add_post_validation(self$rules_post_validate)
     },
     #' @description
     #' Generates an SQL query that retrieves TTE for a single disorder.
     #'
     #' @returns Generated SQL query as a string.
-    single_disorder = function(...) {
-      data <- self$single_disorder_validator$run(...)
+    generate_query = function(...) {
+      data <- self$validator$run(...)
 
       return(
-        private$render_template("single-disorder.sql", data)
+        private$render_template("base.sql", data)
       )
     },
-    #' @description
-    #' Generates an SQL query that retrieves TTE for a single disorder along with a count of
-    #' how many relatives each sample have and how many of those relatives are affected by the disorder.
-    #'
-    #' @returns Generated SQL query as a string.
-    single_disorder_with_relatives = function(...) {
-      data <- self$single_disorder_with_relatives_validator$run(...)
-
-      return(
-        private$render_template("single-disorder-with-relatives.sql", data)
-      )
-    },
-    #' @description
-    #' Generates an SQL query that retrieves TTE for two disorders and removes samples which was diagnosed
-    #' with the exclusion disorder before the target disorder.
-    #'
-    #' @returns Generated SQL query as a string.
-    two_disorders_exclusion = function(...) {
-      data <- self$two_disorders_exclusion_validator$run(...)
-
-      return(
-        private$render_template("two-disorders-exclusion.sql", data)
-      )
-    },
-    #' @description
-    #' Generates an SQL query that retrieves TTE for two disorders and removes samples which was diagnosed
-    #' with the exclusion disorder before the target disorder, along with a count of how many relatives each
-    #' sample have and how many of those relatives are affected by the disorder.
-    #'
-    #' @returns Generated SQL query as a string.
-    two_disorders_exclusion_with_relatives = function(...) {
-      data <- self$two_disorders_exclusion_with_relatives_validator$run(...)
-
-      return(
-        private$render_template("two-disorders-exclusion-with-relatives.sql", data)
-      )
-    },
-
     #' @description
     #' Executes the given query using the PostgreSQL client psql outside of R
     #' and saves the results as a CSV-file of the given output path, along with
     #' a SQL file with the run querry (named "{output path}.sql").
     #'
+    #' @param output_prefix The
     #' @param query SQL query to execute.
     #' @param output_path Path of file to output the results into.
     #' @param hostname Hostname to use when connecting to the database.
     #' @param username Username to authenticate with when connecting to the database.
     #' @param password Password to authenticate with when connecting to the database.
-    execute_query = function(query, output_path, hostname, username=NULL, password=NULL) {
-      env <- c()
-
-      if (!is.null(username)) {
-        env <- append(env, sprintf("PGUSER=%s", username))
-      }
-
-      if (!is.null(password)) {
-        env <- append(env, sprintf("PGPASSWORD=%s", password))
-      }
-
-      query_lines <- strsplit(query, split = "\n")[[1]]
-
-      query_file <- file(paste0(output_path, ".sql"))
-      writeLines(query_lines, query_file)
-      close(query_file)
+    execute_query = function(output_path, query) {
+      data_path <- paste0(output_path, ".csv")
 
       output <- system2(
         "psql",
         args=c(
-          "-h", hostname,
+          "-h", self$hostname,
           "-P", "footer=off",
           "-A",
           "-F','",
-          "-o", output_path,
+          "-o", data_path,
           "ibp_registry"
         ),
-        env=env,
+        env=private$make_env(),
         input=query,
         stdout=TRUE,
         stderr=TRUE
       )
 
       if (length(output) == 0) {
-        return()
+        return(data_path)
       }
 
+      query_lines <- strsplit(query, split = "\n")[[1]]
+
       for (i in 1:length(query_lines)) {
-        query_lines[[i]] = paste0(
+        query_lines[[i]] <- paste0(
           i,
           ": ",
           query_lines[[i]]
@@ -297,6 +169,75 @@ TTERetriever <- R6::R6Class(
         "\n---\n\nExecuting the query above resulted in the following error from the database: \n\n---\n",
         paste(output, collapse = "\n"),
         "\n---\n"
+      )
+    },
+    write_args = function(args, args_path) {
+      yaml::write_yaml(
+        args,
+        args_path,
+        handlers = list(
+          Date = function(d) format(d, "%Y-%m-%d")
+        )
+      )
+    },
+    read_args = function(args_path) {
+      yaml::read_yaml(
+        args_path,
+        handlers = list(
+          # This is needed so that homogeneous lists are converted into lists and not vectors.
+          seq = function(s) return(s)
+        )
+      )
+    },
+    #' @description
+    #' Generates an SQL query and executes it using the PostgreSQL client psql
+    #' outside of R and saves the results as a CSV-file of the given output path, along with
+    #' a SQL file with the run querry (named "{output path}.sql").
+    #'
+    #' @param output_prefix The output prefix to use for all files that are output.
+    #' @param args The TTE arguments to use when generating the query.
+    run = function(output_prefix, args) {
+      query <- rlang::exec(self$generate_query, !!!args)
+
+      if (!is.character(output_prefix)) {
+        stop("Given output_prefix (first argument) was not a string: ", class(output_prefix))
+      } else if (!grepl("^[A-Za-z0-9_-]+$", output_prefix)) {
+        stop(
+          "Given output_prefix (first argument) contained illegal characters (Only A-Z, a-z, 0-9, _ and - are allowed): '", class(output_prefix), "'"
+        )
+      }
+
+      output_path <- file.path(self$output_directory, output_prefix)
+      data_path   <- self$execute_query(output_path, query)
+      args_path   <- paste0(output_path, ".yaml")
+      query_path  <- paste0(output_path, ".sql")
+
+      query_lines <- strsplit(query, split = "\n")[[1]]
+      query_file  <- file(query_path)
+      writeLines(query_lines, query_file)
+      close(query_file)
+
+      self$write_args(args, args_path)
+
+      return(list(
+        data  = data_path,
+        query = query_path,
+        args  = args_path
+      ))
+    },
+    #' @description
+    #' Reads the arguments YAML file from the given path then generates an SQL query and
+    #' executes it using the PostgreSQL client psql outside of R and saves the results
+    #' as a CSV-file of the given output path, along with a SQL file with the run query
+    #' (named "{output path}.sql").
+    #'
+    #' @param output_prefix The output prefix to use for all files that are output.
+    #' @param args_path Path to the arguments YAML file.
+    run_from_file = function(output_prefix, args_path) {
+      args <- self$read_args(args_path)
+
+      return(
+        self$run(output_prefix, args)
       )
     }
   )

@@ -17,6 +17,6 @@ with pkgs; mkShell {
     waldo
     # Requirements
     dplyr dtplyr data_table cmprsk ggplot2 stringr readr tidyr rlang
-    jinjar
+    jinjar yaml rjson
   ]);
 }
