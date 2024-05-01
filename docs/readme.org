@@ -1,0 +1,174 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+OPTIONS: num:3
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[english]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{white},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \DeclareUnicodeCharacter{202F}{ }
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: IBP Risk Estimates
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+
+~ibp-risk-estimates~ is an R package that can estimate *cumulative incidence*, *heritability* and
+*genetic correlation* from survival data. Here are 3 reasons why you should use this package:
+
+- Well documented :: Step-by-step guides, data format specifications and example code makes sure you can get started quickly.
+- Modular :: Well defined boundaries and separation of concerns makes sure you are free to pick which parts you deem relevant and that you can integrate them into your project effortlessly.
+- Robust :: A rigorous test suite makes sure the package works as expected and careful input arguments validation makes sure the package is used correctly.
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:package-scope
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ./docs/diagrams/package-scope.png :exports results
+@startuml
+!include <material/account>
+!include <material/account_search>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ./docs/diagrams/ibp.puml
+
+Collection(registry_data, "<color:#255ba7><$ma_database{scale=0.35}></color>  **Registry data**")
+Rectangle(data_processing, "**Data processing**")
+
+Boundary1(scope, "Scope of this R package") {
+  File(tte_data, "<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**")
+  Rectangle(analysis, "**Analysis**")
+  File(estimates, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**")
+  File(heritability, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**")
+  File(genetic_correlation, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**")
+}
+
+Rectangle(plotting, "**Plotting**")
+Collection(plots, "<color:#255ba7><$ma_chart_line{scale=0.35}></color>  **Plots**")
+
+Arrow_Down(registry_data, data_processing)
+Arrow_Right(data_processing, tte_data)
+Arrow_Down(tte_data, analysis)
+Arrow_Down(analysis, estimates)
+Arrow_Down(analysis, heritability)
+Arrow_Down(analysis, genetic_correlation)
+
+estimates .RIGHT.>> heritability
+heritability .RIGHT.>> genetic_correlation
+
+Arrow_Down(estimates, plotting)
+Arrow_Down(heritability, plotting)
+Arrow_Down(genetic_correlation, plotting)
+
+Arrow_Down(plotting, plots)
+
+legend right
+  <img:https://biopsyk.dk/wp-content/uploads/2023/09/logo-biopsyk-opti.png{scale=0.5}>
+endlegend
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Package scope
+#+RESULTS: fig:package-scope
+[[file:./docs/diagrams/package-scope.png]]
+
+* Documentation
+
+If you learn best by seeing step-by-step instructions, you can go through the guides that
+demonstrates 5 different usage scenarios:
+
+- [[./docs/cumulative-incidence/guide.org][Guide: estimate cumulative incidence of disorder]]
+- [[./docs/heritability/guide.org][Guide: estimate heritability of disorder]]
+- [[./docs/heritability/guide-yob.org][Guide: estimate heritability of disorder stratified by year of birth]]
+- [[./docs/genetic-correlation/guide.org][Guide: estimate genetic correlation between two disorders]]
+- [[./docs/genetic-correlation/guide-yob.org][Guide: estimate genetic correlation between two disorders stratified by year of birth]]
+
+If you learn best by looking at example code and figuring out how everyting works by yourself,
+you can download the complete code for each each code and start tinkering:
+
+- [[./docs/cumulative-incidence/guide.R][Example code: estimate cumulative incidence of disorder]]
+- [[./docs/heritability/guide.R][Example code: estimate heritability of disorder]]
+- [[./docs/heritability/guide-yob.R][Example code: estimate heritability of disorder stratified by year of birth]]
+- [[./docs/genetic-correlation/guide.R][Example code: estimate genetic correlation between two disorders]]
+- [[./docs/genetic-correlation/guide-yob.R][Example code: estimate genetic correlation between two disorders stratified by year of birth]]
+
+If you learn best by reading reference documentation, you can can view the reference documentation
+of the 3 analysis classes here:
+
+- [[./docs/cumulative-incidence/index.org][Reference: Cumulative incidence]]
+- [[./docs/heritability/index.org][Reference: Heritability]]
+- [[./docs/genetic-correlation/index.org][Reference: Genetic correlation]]
+
+* Getting started
+
+Once you have gotten familiar with how this package works and want to start using it, you can
+either install it manually inside this [[https://en.wikipedia.org/wiki/Conda_(package_manager)][conda]] environment:
+
+#+BEGIN_SRC yaml
+name: IbpRiskEstimationsEnv
+dependencies:
+  - "conda-forge::r-r6",
+  - "conda-forge::r-cmprsk",
+  - "conda-forge::r-data.table",
+  - "conda-forge::r-dplyr",
+  - "conda-forge::r-dtplyr",
+  - "conda-forge::r-jinjar",
+  - "conda-forge::r-readr",
+  - "conda-forge::r-tidyr",
+  - "conda-forge::r-yaml",
+  - "conda-forge::r-rjson"
+#+END_SRC
+
+Or you can use our pre-packaged container image that contains R, all the needed dependencies and
+the ~ibp-risk-estimations~ R package:

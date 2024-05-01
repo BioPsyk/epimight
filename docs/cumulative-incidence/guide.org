@@ -1,6 +1,7 @@
 # -*- org-confirm-babel-evaluate: nil -*-
 #+OPTIONS: ^:nil
 #+OPTIONS: html-postamble:nil
+#+OPTIONS: num:3
 #+LANGUAGE: en-us
 #+HTML_DOCTYPE: html5
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
@@ -8,9 +9,8 @@
 #+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
 #+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [a4paper,12pt]
-#+LATEX_HEADER: \usepackage[swedish]{babel}
+#+LATEX_HEADER: \usepackage[english]{babel}
 #+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
-#+LATEX_HEADER: \usepackage{background}
 #+LATEX_HEADER: \usepackage{helvet}
 #+LATEX_HEADER: \usepackage[margin=1in]{geometry}
 #+LATEX_HEADER: \usepackage{parskip}
@@ -23,40 +23,26 @@
 #+LATEX_HEADER: \usepackage[document]{ragged2e}
 #+LATEX_HEADER: \usepackage[T1]{fontenc}
 #+LATEX_HEADER: \usepackage{sectsty}
-#+LATEX_HEADER: \usepackage[most]{tcolorbox}
-#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
-#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
-#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
 #+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
 #+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
 #+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
 #+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
 #+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
 #+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
 #+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
-#+LATEX_HEADER: \sectionfont{\color{light_grey}}
-#+LATEX_HEADER: \subsectionfont{\color{light_grey}}
 #+LATEX_HEADER: \tolerance=1
 #+LATEX_HEADER: \emergencystretch=\maxdimen
 #+LATEX_HEADER: \hyphenpenalty=10000
 #+LATEX_HEADER: \hbadness=10000
 #+LATEX_HEADER: \makeatletter
-#+LATEX_HEADER: \renewenvironment{quote}{%
-#+LATEX_HEADER:   \tcolorbox[
-#+LATEX_HEADER:     top=10pt,
-#+LATEX_HEADER:     bottom=10pt
-#+LATEX_HEADER:   ]
-#+LATEX_HEADER:   \parskip=0.5\baselineskip \advance\parskip by 0pt plus 2pt
-#+LATEX_HEADER:   \parindent=0pt
-#+LATEX_HEADER: }{%
-#+LATEX_HEADER:   \endtcolorbox
-#+LATEX_HEADER: }
 #+LATEX_HEADER: \makeatother
-#+LATEX_HEADER: \definecolor{light-gray}{gray}{0.95}
 #+LATEX_HEADER: \lstset{
 #+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
 #+LATEX_HEADER:   columns=fullflexible,
-#+LATEX_HEADER:   backgroundcolor=\color{light-gray},
+#+LATEX_HEADER:   backgroundcolor=\color{white},
 #+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
 #+LATEX_HEADER:   breakatwhitespace=false,
 #+LATEX_HEADER:   breaklines=true,
@@ -69,12 +55,14 @@
 #+LATEX_HEADER:   stepnumber=2,
 #+LATEX_HEADER:   tabsize=2,
 #+LATEX_HEADER: }
-#+LATEX: \color{light_grey}
+#+LATEX_HEADER: \DeclareUnicodeCharacter{202F}{ }
 #+LATEX: \frenchspacing
 #+LATEX: \raggedright
-#+TITLE: Pipeline: estimate cumulative incidence of disorder
+#+TITLE: Guide: estimate cumulative incidence of disorder
 #+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
 #+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
+
+#+LATEX: \clearpage
 
 #+BEGIN_SRC R :exports none :tangle no
 devtools::load_all(".")
@@ -83,10 +71,10 @@ source("./tests/utils.R")
 
 #+RESULTS:
 
-This is a guide for using the pre-assembled pipeline that estimates cumulative
-incidence risk estimates of a single disorder from TTE (time-to-event) data.
+This is a guide for estimating cumulative incidence risk estimates of a single
+disorder from TTE data.
 
-All code shown in this guide have been written to [[./estimate-cumulative-incidence-of-disorder.R][this R file]], so that you don't have
+All code shown in this guide have been written to [[./guide.R][this R file]], so that you don't have
 to copy all code snippets manually.
 
 There are 3 different things you can configure when running this pipeline:
@@ -180,7 +168,7 @@ The example data in this guide is contained in a file called ~tte_SCZ.csv~,
 so we simply read it and convert it into a ~data.table~:
 
 #+BEGIN_SRC R :eval no :exports code
-tte <- read_csv("./tmp/data/tte_SCZ.csv") |> as.data.table()
+tte <- read_csv("./tte_SCZ.csv") |> as.data.table()
 #+END_SRC
 
 #+BEGIN_SRC R :exports results :results output :tangle no
@@ -229,17 +217,17 @@ print(tte)
 #+RESULTS:
 #+begin_example
        person_id    born_at failure_status failure_time
-    1:        20 1987-07-21              0           36
-    2:        26 1990-07-14              0           33
-    3:        34 1990-11-28              0           33
-    4:        61 1993-01-22              0           30
-    5:        71 1986-09-01              0           37
+    1:        12 1995-12-01              0           29
+    2:        14 1981-11-29              0           43
+    3:        16 1985-12-24              0           39
+    4:        19 1993-02-14              0           31
+    5:        20 1993-08-20              0           31
    ---
-11333:     99962 1993-05-13              0           30
-11334:     99968 1995-02-10              0           28
-11335:     99970 1994-12-23              1           18
-11336:     99977 1984-01-20              0           39
-11337:     99993 1988-07-25              0           35
+20249:     99990 1995-10-07              0           29
+20250:     99992 1984-01-09              1           38
+20251:     99997 1994-06-04              0           30
+20252:     99999 1992-07-21              0           32
+20253:    100000 1993-09-03              1            1
 #+end_example
 
 * Analysis
@@ -277,53 +265,59 @@ print(estimates)
 #+RESULTS:
 #+begin_example
     time    estimate     variance         l95         u95 cases
- 1:    1 0.002822616 2.482930e-07 0.001845986 0.003799247     8
- 2:    2 0.003528270 3.101466e-07 0.002436751 0.004619790    21
- 3:    3 0.004674958 4.104714e-07 0.003419248 0.005930669    35
- 4:    4 0.005909853 5.182540e-07 0.004498877 0.007320828    49
- 5:    5 0.007144747 6.257676e-07 0.005594308 0.008695186    67
- 6:    6 0.008732469 7.636041e-07 0.007019765 0.010445172    80
- 7:    7 0.009879157 8.628760e-07 0.008058524 0.011699789   105
- 8:    8 0.012084326 1.053132e-06 0.010072967 0.014095684   117
- 9:    9 0.013142807 1.144150e-06 0.011046333 0.015239281   133
-10:   10 0.014554115 1.265199e-06 0.012349526 0.016758704   157
-11:   11 0.016671077 1.446115e-06 0.014314131 0.019028023   182
-12:   12 0.018876246 1.633729e-06 0.016371071 0.021381421   210
-13:   13 0.021346035 1.842837e-06 0.018685362 0.024006708   254
-14:   14 0.025227132 2.169262e-06 0.022340416 0.028113848   276
-15:   15 0.027167681 2.331477e-06 0.024174977 0.030160385   319
-16:   16 0.030960572 2.646617e-06 0.027772018 0.034149125   373
-17:   17 0.035723736 3.038779e-06 0.032307109 0.039140364   417
-18:   18 0.039604834 3.355359e-06 0.036014642 0.043195025   469
-19:   19 0.044191585 3.726073e-06 0.040408259 0.047974911   517
-20:   20 0.048425509 4.064977e-06 0.044473872 0.052377147   555
-21:   21 0.051777366 4.331032e-06 0.047698459 0.055856273   603
-22:   22 0.056011290 4.664269e-06 0.051778372 0.060244209   649
-23:   23 0.060068801 4.980654e-06 0.055694676 0.064442927   690
-24:   24 0.063685278 5.260201e-06 0.059190076 0.068180481   732
-25:   25 0.067389962 5.544173e-06 0.062775018 0.072004907   771
-26:   26 0.070830026 5.805694e-06 0.066107491 0.075552560   811
-27:   27 0.074358296 6.071751e-06 0.069528764 0.079187828   847
-28:   28 0.077533739 6.309325e-06 0.072610629 0.082456849   882
-29:   29 0.080621566 6.538690e-06 0.075609769 0.085633363   922
-30:   30 0.084390669 6.838922e-06 0.079265102 0.089516236   970
-31:   31 0.089250699 7.256036e-06 0.083971138 0.094530259  1006
-32:   32 0.093203794 7.625433e-06 0.087791513 0.098616075  1032
-33:   33 0.096308034 7.942721e-06 0.090784300 0.101831768  1048
-34:   34 0.098409949 8.181342e-06 0.092803855 0.104016043  1064
-35:   35 0.100743785 8.478639e-06 0.095036742 0.106450828  1068
-36:   36 0.101400536 8.574030e-06 0.095661478 0.107139594  1075
-37:   37 0.102702854 8.791185e-06 0.096891574 0.108514134  1082
-38:   38 0.104221123 9.090288e-06 0.098311811 0.110130435  1085
-39:   39 0.105008967 9.281084e-06 0.099037962 0.110979972  1090
-40:   40 0.106673138 9.799669e-06 0.100537584 0.112808692  1092
-41:   41 0.107553263 1.016749e-05 0.101303624 0.113802902  1096
-42:   42 0.110257647 1.193023e-05 0.103487901 0.117027394  1097
+ 1:    1 0.002468770 1.216016e-07 0.001785303 0.003152237    21
+ 2:    2 0.003505653 1.724948e-07 0.002691632 0.004319675    37
+ 3:    3 0.004295660 2.111993e-07 0.003394931 0.005196389    56
+ 4:    4 0.005233793 2.570808e-07 0.004240029 0.006227556    70
+ 5:    5 0.005925048 2.908326e-07 0.004868061 0.006982035    99
+ 6:    6 0.007356935 3.605970e-07 0.006179982 0.008533888   130
+ 7:    7 0.008887572 4.349489e-07 0.007594963 0.010180181   164
+ 8:    8 0.010566336 5.162300e-07 0.009158118 0.011974553   197
+ 9:    9 0.012195724 5.948544e-07 0.010684066 0.013707382   247
+10:   10 0.014664494 7.134827e-07 0.013008954 0.016320035   294
+11:   11 0.016985138 8.244445e-07 0.015205512 0.018764764   333
+12:   12 0.018910779 9.161154e-07 0.017034820 0.020786737   387
+13:   13 0.021577050 1.042440e-06 0.019575928 0.023578172   455
+14:   14 0.024934578 1.200516e-06 0.022787083 0.027082073   528
+15:   15 0.028538982 1.368977e-06 0.026245759 0.030832204   588
+16:   16 0.031501506 1.506478e-06 0.029095873 0.033907139   667
+17:   17 0.035402163 1.686198e-06 0.032857077 0.037947248   738
+18:   18 0.038907816 1.846437e-06 0.036244546 0.041571087   822
+19:   19 0.043055350 2.034447e-06 0.040259774 0.045850926   899
+20:   20 0.046857256 2.205298e-06 0.043946661 0.049767851   984
+21:   21 0.051054165 2.392243e-06 0.048022713 0.054085617  1076
+22:   22 0.055596702 2.592622e-06 0.052440842 0.058752561  1162
+23:   23 0.059842986 2.778090e-06 0.056576196 0.063109777  1238
+24:   24 0.063595517 2.940511e-06 0.060234587 0.066956447  1313
+25:   25 0.067298672 3.099431e-06 0.063848116 0.070749228  1386
+26:   26 0.070903076 3.252812e-06 0.067368173 0.074437980  1459
+27:   27 0.074507480 3.404910e-06 0.070890877 0.078124084  1531
+28:   28 0.078062509 3.553669e-06 0.074367746 0.081757272  1580
+29:   29 0.080481904 3.654193e-06 0.076735248 0.084228560  1668
+30:   30 0.084827873 3.833360e-06 0.080990465 0.088665280  1728
+31:   31 0.088000413 3.974007e-06 0.084093242 0.091907584  1787
+32:   32 0.091366988 4.136123e-06 0.087380919 0.095353058  1836
+33:   33 0.094386522 4.294146e-06 0.090325021 0.098448022  1878
+34:   34 0.097209423 4.456572e-06 0.093071822 0.101347023  1909
+35:   35 0.099502459 4.603159e-06 0.095297361 0.103707556  1937
+36:   36 0.101795468 4.767067e-06 0.097516159 0.106074778  1963
+37:   37 0.104168773 4.957995e-06 0.099804608 0.108532938  1969
+38:   38 0.104792538 5.015903e-06 0.100402962 0.109182115  1988
+39:   39 0.107097005 5.268933e-06 0.102598073 0.111595938  1992
+40:   40 0.107680630 5.347160e-06 0.103148423 0.112212836  1998
+41:   41 0.108772025 5.532410e-06 0.104161979 0.113382070  2001
+42:   43 0.109500265 5.700054e-06 0.104820893 0.114179637  2003
     time    estimate     variance         l95         u95 cases
 #+end_example
 
 * Next steps
 
-The [[./estimate-heritability-of-disorder.org]["estimate heritability of disorder"]]-pipeline uses the cumulative incidence estimates
-to calculate heritability, so the next logical step from here is to look at the guide
-of that pipeline.
+The next natural step would be to estimate heritability for the disorder, since
+cumulative incidence is used as inputs to the heritability calculation.
+
+Heritability is done using the ~HeritabilityAnalysis~ class of this package. You
+can either:
+
+- Read the [[../heritability/index.org][reference documentation of ~HeritabilityAnalysis~]]
+- Read the [[../heritability/guide.org][guide on how to estimate heritability for a single disorder]]
+- Read the [[../heritability/guide-yob.org][guide on how to estimate heritability for a single disorder, stratified by birth year]]

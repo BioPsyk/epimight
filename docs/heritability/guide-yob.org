@@ -1,6 +1,7 @@
 # -*- org-confirm-babel-evaluate: nil -*-
 #+OPTIONS: ^:nil
 #+OPTIONS: html-postamble:nil
+#+OPTIONS: num:3
 #+LANGUAGE: en-us
 #+HTML_DOCTYPE: html5
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
@@ -8,9 +9,8 @@
 #+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
 #+LATEX_CLASS: article
 #+LATEX_CLASS_OPTIONS: [a4paper,12pt]
-#+LATEX_HEADER: \usepackage[swedish]{babel}
+#+LATEX_HEADER: \usepackage[english]{babel}
 #+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
-#+LATEX_HEADER: \usepackage{background}
 #+LATEX_HEADER: \usepackage{helvet}
 #+LATEX_HEADER: \usepackage[margin=1in]{geometry}
 #+LATEX_HEADER: \usepackage{parskip}
@@ -23,40 +23,26 @@
 #+LATEX_HEADER: \usepackage[document]{ragged2e}
 #+LATEX_HEADER: \usepackage[T1]{fontenc}
 #+LATEX_HEADER: \usepackage{sectsty}
-#+LATEX_HEADER: \usepackage[most]{tcolorbox}
-#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
-#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
-#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
 #+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
 #+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
 #+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
 #+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
 #+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
 #+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
 #+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
-#+LATEX_HEADER: \sectionfont{\color{light_grey}}
-#+LATEX_HEADER: \subsectionfont{\color{light_grey}}
 #+LATEX_HEADER: \tolerance=1
 #+LATEX_HEADER: \emergencystretch=\maxdimen
 #+LATEX_HEADER: \hyphenpenalty=10000
 #+LATEX_HEADER: \hbadness=10000
 #+LATEX_HEADER: \makeatletter
-#+LATEX_HEADER: \renewenvironment{quote}{%
-#+LATEX_HEADER:   \tcolorbox[
-#+LATEX_HEADER:     top=10pt,
-#+LATEX_HEADER:     bottom=10pt
-#+LATEX_HEADER:   ]
-#+LATEX_HEADER:   \parskip=0.5\baselineskip \advance\parskip by 0pt plus 2pt
-#+LATEX_HEADER:   \parindent=0pt
-#+LATEX_HEADER: }{%
-#+LATEX_HEADER:   \endtcolorbox
-#+LATEX_HEADER: }
 #+LATEX_HEADER: \makeatother
-#+LATEX_HEADER: \definecolor{light-gray}{gray}{0.95}
 #+LATEX_HEADER: \lstset{
 #+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
 #+LATEX_HEADER:   columns=fullflexible,
-#+LATEX_HEADER:   backgroundcolor=\color{light-gray},
+#+LATEX_HEADER:   backgroundcolor=\color{white},
 #+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
 #+LATEX_HEADER:   breakatwhitespace=false,
 #+LATEX_HEADER:   breaklines=true,
@@ -69,12 +55,14 @@
 #+LATEX_HEADER:   stepnumber=2,
 #+LATEX_HEADER:   tabsize=2,
 #+LATEX_HEADER: }
-#+LATEX: \color{light_grey}
+#+LATEX_HEADER: \DeclareUnicodeCharacter{202F}{ }
 #+LATEX: \frenchspacing
 #+LATEX: \raggedright
-#+TITLE: Pipeline: estimate heritability of disorder stratified by year of birth
+#+TITLE: Guide: estimate heritability of disorder stratified by year of birth
 #+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
 #+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
+
+#+LATEX: \clearpage
 
 #+BEGIN_SRC R :exports none :tangle no
 devtools::load_all(".")
@@ -83,14 +71,14 @@ source("./tests/utils.R")
 
 #+RESULTS:
 
-This is a guide for making the [[./estimate-heritability-of-disorder.org]["estimate heritability of disorder"]]-pipeline more robust
+This is a guide for making the method in [[./guide.org]["estimate heritability of disorder"]] more robust
 by adding year of birth stratification.
 
-All code shown in this guide have been written to [[./estimate-heritability-of-disorder-by-yob.R][this R file]], so that you don't have
+All code shown in this guide have been written to [[./guide-yob.R][this R file]], so that you don't have
 to copy all code snippets manually.
 
-We'll use all the same arguments and code as the original pipeline, but we will start changing
-the pipeline at the part where we produce the risk estimates.
+We'll use all the same arguments and code as the previous guide, but we will start changing
+the guide at the part where we produce the risk estimates.
 
 We start by importing all the needed libraries:
 
@@ -115,6 +103,9 @@ born_at_end   <- as.Date("1996-01-01")
 relationship_kind <- "FS"
 #+END_SRC
 
+#+RESULTS:
+: FS
+
 #+BEGIN_SRC R :eval no :exports code
 tte <- read_csv("./tte_SCZ_FS.csv") |> as.data.table()
 #+END_SRC
@@ -130,6 +121,8 @@ tte <- generate_diagnosed_relatives(tte, "diagnosed_relatives") |>
   relocate(relatives, .after = failure_time) |>
   as.data.table()
 #+END_SRC
+
+#+RESULTS:
 
 #+BEGIN_SRC R :exports both :results output
 tte <- tte |>
@@ -148,17 +141,17 @@ print(tte)
 #+RESULTS:
 #+begin_example
        person_id    born_at failure_status failure_time relatives diagnosed_relatives
-    1:        20 1987-07-21              0           36         2                   0
-    2:        26 1990-07-14              0           33         0                   0
-    3:        34 1990-11-28              0           33         1                   0
-    4:        61 1993-01-22              0           30         2                   0
-    5:        71 1986-09-01              0           37         1                   0
+    1:        12 1995-12-01              0           29         3                   0
+    2:        14 1981-11-29              0           43         1                   0
+    3:        16 1985-12-24              0           39         1                   1
+    4:        19 1993-02-14              0           31         1                   0
+    5:        20 1993-08-20              0           31         4                   0
    ---
-11333:     99962 1993-05-13              0           30         0                   0
-11334:     99968 1995-02-10              0           28         2                   0
-11335:     99970 1994-12-23              1           18         2                   2
-11336:     99977 1984-01-20              0           39         4                   0
-11337:     99993 1988-07-25              0           35         0                   0
+20249:     99990 1995-10-07              0           29         3                   0
+20250:     99992 1984-01-09              1           38         0                   0
+20251:     99997 1994-06-04              0           30         0                   0
+20252:     99999 1992-07-21              0           32         0                   0
+20253:    100000 1993-09-03              1            1         2                   2
 #+end_example
 
 * Analysis
@@ -242,29 +235,29 @@ print(tte)
 #+RESULTS:
 #+begin_example
        person_id    born_at failure_status failure_time relatives diagnosed_relatives
-    1:        20 1987-07-21              0           36         2                   0
-    2:        26 1990-07-14              0           33         0                   0
-    3:        34 1990-11-28              0           33         1                   0
-    4:        61 1993-01-22              0           30         2                   0
-    5:        71 1986-09-01              0           37         1                   0
+    1:        12 1995-12-01              0           29         3                   0
+    2:        14 1981-11-29              0           43         1                   0
+    3:        16 1985-12-24              0           39         1                   1
+    4:        19 1993-02-14              0           31         1                   0
+    5:        20 1993-08-20              0           31         4                   0
    ---
-13877:     99865 1995-03-19              0           28         4                   1
-13878:     99870 1988-01-16              0           35         4                   3
-13879:     99903 1984-04-11              0           39         4                   2
-13880:     99934 1982-09-09              1           41         1                   1
-13881:     99970 1994-12-23              1           18         2                   2
+24811:     99949 1994-04-13              1           21         7                   4
+24812:     99973 1984-08-29              0           40         5                   2
+24813:     99979 1995-07-21              0           29         3                   3
+24814:     99981 1981-04-03              1           22         2                   2
+24815:    100000 1993-09-03              1            1         2                   2
        born_at_year             cohort
-    1:         1987                all
-    2:         1990                all
-    3:         1990                all
+    1:         1995                all
+    2:         1981                all
+    3:         1985                all
     4:         1993                all
-    5:         1986                all
+    5:         1993                all
    ---
-13877:         1995 affected_relatives
-13878:         1988 affected_relatives
-13879:         1984 affected_relatives
-13880:         1982 affected_relatives
-13881:         1994 affected_relatives
+24811:         1994 affected_relatives
+24812:         1984 affected_relatives
+24813:         1995 affected_relatives
+24814:         1981 affected_relatives
+24815:         1993 affected_relatives
 #+end_example
 
 Now when we run the analysis, we supply *both* the ~affected_relatives~ column and the
@@ -289,18 +282,30 @@ print(estimates)
 
 #+RESULTS:
 #+begin_example
-     time   estimate     variance          l95        u95 cases born_at_year             cohort
-  1:    3 0.00000000 0.000000e+00  0.000000000 0.00000000     2         1981 affected_relatives
-  2:    7 0.01234568 7.573455e-05 -0.004711026 0.02940238     3         1981 affected_relatives
-  3:   10 0.01851852 1.128948e-04 -0.002306482 0.03934352     6         1981 affected_relatives
-  4:   14 0.03703704 2.215396e-04  0.007864526 0.06620955     7         1981 affected_relatives
-  5:   15 0.04320988 2.568124e-04  0.011800731 0.07461902    11         1981 affected_relatives
+     time    estimate     variance           l95         u95 cases born_at_year
+  1:    2 0.003333333 1.111111e-05 -0.0031998799 0.009866547     1         1981
+  2:    3 0.006666667 2.214802e-05 -0.0025572547 0.015890588     2         1981
+  3:    6 0.010000000 3.311074e-05 -0.0012780117 0.021278012     3         1981
+  4:    7 0.013333333 4.399926e-05  0.0003325125 0.026334154     4         1981
+  5:    9 0.016666667 5.481358e-05  0.0021558393 0.031177494     6         1981
  ---
-693:   23 0.05706522 7.321201e-05  0.040294979 0.07383546    40         1995                all
-694:   24 0.06114130 7.810260e-05  0.043819991 0.07846262    43         1995                all
-695:   25 0.06521739 8.294801e-05  0.047366863 0.08306792    47         1995                all
-696:   27 0.07065217 8.933827e-05  0.052126805 0.08917754    51         1995                all
-697:   28 0.07608696 9.564821e-05  0.056918528 0.09525539    67         1995                all
+888:   25 0.076978940 5.163896e-05  0.0628945891 0.091063290   110         1995
+889:   26 0.081336238 5.430445e-05  0.0668929592 0.095779517   115         1995
+890:   27 0.084967320 5.650462e-05  0.0702343581 0.099700282   120         1995
+891:   28 0.088598402 5.868563e-05  0.0735837945 0.103613010   123         1995
+892:   29 0.090777052 5.998505e-05  0.0755971275 0.105956976   152         1995
+                 cohort
+  1: affected_relatives
+  2: affected_relatives
+  3: affected_relatives
+  4: affected_relatives
+  5: affected_relatives
+ ---
+888:                all
+889:                all
+890:                all
+891:                all
+892:                all
 #+end_example
 
 ** Heritability
@@ -363,21 +368,21 @@ print(combined |> arrange(born_at_year))
 #+RESULTS:
 #+begin_example
     time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases
- 1:   42         1981        0.11456860            82         0.2283951            37
- 2:   41         1982        0.07856192            58         0.1491713            28
- 3:   40         1983        0.08622909            69         0.1775148            31
- 4:   39         1984        0.09628611            71         0.1754386            32
- 5:   38         1985        0.08269720            64         0.1377246            22
- 6:   37         1986        0.09308176            75         0.1761364            31
- 7:   36         1987        0.09567497            76         0.1609195            30
- 8:   35         1988        0.11506849            85         0.1868132            33
- 9:   34         1989        0.09043250            72         0.2138728            37
-10:   33         1990        0.09329829            76         0.1623377            25
-11:   32         1991        0.09338521            76         0.2236025            37
-12:   31         1992        0.07493188            71         0.1656805            35
-13:   30         1993        0.08502538            84         0.2000000            38
-14:   29         1994        0.07908847            71         0.1460674            33
-15:   28         1995        0.07608696            67         0.1377246            27
+ 1:   43         1981        0.10639881           141         0.2300000            70
+ 2:   42         1982        0.09763101           131         0.1829653            56
+ 3:   41         1983        0.09335325           125         0.1621622            48
+ 4:   40         1984        0.09816850           134         0.1488673            44
+ 5:   39         1985        0.09417040           122         0.1593220            43
+ 6:   38         1986        0.09747292           141         0.1672026            56
+ 7:   37         1987        0.09351988           126         0.1861314            50
+ 8:   36         1988        0.09940209           137         0.1931034            59
+ 9:   35         1989        0.10015773           136         0.1900000            64
+10:   34         1990        0.08030888           115         0.1803279            58
+11:   33         1991        0.08339483           127         0.1726619            55
+12:   32         1992        0.09037472           134         0.1958763            64
+13:   31         1993        0.08504176           136         0.1646341            61
+14:   30         1994        0.09463277           146         0.1681416            60
+15:   29         1995        0.09077705           152         0.1646341            62
 #+end_example
 
 Now we can simply run the heritability calculation by passing in the the estimate and
@@ -402,38 +407,38 @@ print(results)
 
 #+RESULTS:
 #+begin_example
-    time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases        h2
- 1:   42         1981        0.11456860            82         0.2283951            37 0.5728992
- 2:   41         1982        0.07856192            58         0.1491713            28 0.4228159
- 3:   40         1983        0.08622909            69         0.1775148            31 0.5098714
- 4:   39         1984        0.09628611            71         0.1754386            32 0.4388647
- 5:   38         1985        0.08269720            64         0.1377246            22 0.3358886
- 6:   37         1986        0.09308176            75         0.1761364            31 0.4614900
- 7:   36         1987        0.09567497            76         0.1609195            30 0.3719894
- 8:   35         1988        0.11506849            85         0.1868132            33 0.3838582
- 9:   34         1989        0.09043250            72         0.2138728            37 0.6438973
-10:   33         1990        0.09329829            76         0.1623377            25 0.3936846
-11:   32         1991        0.09338521            76         0.2236025            37 0.6672897
-12:   31         1992        0.07493188            71         0.1656805            35 0.5271642
-13:   30         1993        0.08502538            84         0.2000000            38 0.6170098
-14:   29         1994        0.07908847            71         0.1460674            33 0.4035510
-15:   28         1995        0.07608696            67         0.1377246            27 0.3807872
-           se        l95       u95
- 1: 0.1405539 0.29741346 0.8483849
- 2: 0.1338718 0.16042721 0.6852046
- 3: 0.1334634 0.24828314 0.7714597
- 4: 0.1363247 0.17166819 0.7060611
- 5: 0.1474090 0.04696688 0.6248103
- 6: 0.1358931 0.19513960 0.7278405
- 7: 0.1371848 0.10310717 0.6408716
- 8: 0.1427937 0.10398244 0.6637339
- 9: 0.1290935 0.39087401 0.8969206
-10: 0.1469175 0.10572633 0.6816428
-11: 0.1309452 0.41063715 0.9239423
-12: 0.1197242 0.29250485 0.7618236
-13: 0.1222951 0.37731142 0.8567081
-14: 0.1228196 0.16282468 0.6442773
-15: 0.1313003 0.12343861 0.6381358
+    time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases
+ 1:   43         1981        0.10639881           141         0.2300000            70
+ 2:   42         1982        0.09763101           131         0.1829653            56
+ 3:   41         1983        0.09335325           125         0.1621622            48
+ 4:   40         1984        0.09816850           134         0.1488673            44
+ 5:   39         1985        0.09417040           122         0.1593220            43
+ 6:   38         1986        0.09747292           141         0.1672026            56
+ 7:   37         1987        0.09351988           126         0.1861314            50
+ 8:   36         1988        0.09940209           137         0.1931034            59
+ 9:   35         1989        0.10015773           136         0.1900000            64
+10:   34         1990        0.08030888           115         0.1803279            58
+11:   33         1991        0.08339483           127         0.1726619            55
+12:   32         1992        0.09037472           134         0.1958763            64
+13:   31         1993        0.08504176           136         0.1646341            61
+14:   30         1994        0.09463277           146         0.1681416            60
+15:   29         1995        0.09077705           152         0.1646341            62
+           h2         se        l95       u95
+ 1: 0.6228291 0.10027808 0.42628407 0.8193742
+ 2: 0.4661971 0.10368062 0.26298304 0.6694111
+ 3: 0.3924781 0.10736769 0.18203745 0.6029188
+ 4: 0.2950882 0.11128449 0.07697062 0.5132058
+ 5: 0.3733100 0.11268029 0.15245663 0.5941634
+ 6: 0.3920222 0.10166302 0.19276270 0.5912817
+ 7: 0.5051446 0.10772429 0.29400497 0.7162842
+ 8: 0.5022918 0.10253288 0.30132735 0.7032563
+ 9: 0.4838149 0.09924184 0.28930091 0.6783289
+10: 0.5596683 0.09644018 0.37064554 0.7486911
+11: 0.5050839 0.09839437 0.31223092 0.6979368
+12: 0.5673837 0.09624308 0.37874728 0.7560201
+13: 0.4566355 0.09369268 0.27299785 0.6402732
+14: 0.4138707 0.09755592 0.22266110 0.6050803
+15: 0.4205854 0.09424478 0.23586560 0.6053051
 #+end_example
 
 Since the results are stratified by year of birth, we need to run a meta
@@ -446,10 +451,10 @@ print(meta)
 #+END_SRC
 
 #+RESULTS:
-:    fixed_meta   fixed_se fixed_l95 fixed_u95 rand_meta   rand_se  rand_l95  rand_u95
-: 1:  0.4815083 0.03441536 0.4140542 0.5489624 0.4791536 0.0443187 0.3922889 0.5660182
+:    fixed_meta   fixed_se fixed_l95 fixed_u95 rand_meta    rand_se rand_l95  rand_u95
+: 1:  0.4680483 0.02609397 0.4169041 0.5191924 0.4664169 0.03419329 0.399398 0.5334357
 
 There are actually two results one for the fixed effects model and one for the random effects model.
 
-The next logical step is to use the [[./estimate_genetic_correlation_between_two_disorders.org][estimate genetic correlation between two disorders]]-pipeline,
+The next logical step is to use the [[../genetic-correlation/guide.org][estimate genetic correlation between two disorders]]-pipeline,
 since that pipeline builds upon the results of this pipeline.

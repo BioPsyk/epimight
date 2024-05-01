@@ -16,7 +16,7 @@ earliest_onset_age <- 10
 born_at_start <- as.Date("1981-01-01")
 born_at_end   <- as.Date("1996-01-01")
 
-tte <- read_csv("./tte_SCZ.csv") |> as.data.table()
+tte <- read_csv("./tmp/data/tte_SCZ.csv") |> as.data.table()
 
 tte <- tte |>
   filter(

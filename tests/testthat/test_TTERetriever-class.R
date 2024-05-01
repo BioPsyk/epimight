@@ -459,6 +459,51 @@ describe("custom filters", {
 
     expect_gte(nrow(results), 78)
   })
+
+  it("produces query that removes age of onset outliers", {
+    query <- tte_retriever$generate_query(
+      samples = list(
+        diagnosis_filters = list(
+          incl = list(
+            icd_codes_regexp = "^78890"
+          )
+        ),
+        individual_filters = list(
+          custom = "
+          incl_fail.failure_status != 1
+          OR
+          (     incl_fail.failure_status = 1
+            AND incl_fail.failure_time >= 10
+            AND incl_fail.failure_time <= 100
+          )
+          "
+        )
+      ),
+      relatives = list(
+        relationship_filters = list(
+          kind = "PO"
+        ),
+        individual_filters = list(
+          custom = "
+          incl_fail.failure_status != 1
+          OR
+          (     incl_fail.failure_status = 1
+            AND incl_fail.failure_time >= 10
+            AND incl_fail.failure_time <= 100
+          )
+          "
+        )
+      ),
+      study_end_at = as.Date("2016-12-31")
+    )
+
+    tte_retriever$execute_query(output_path, query)
+    results <- read_csv(csv_path, show_col_types = FALSE) |>
+      arrange(person_id) |>
+      as.data.frame()
+
+    expect_gte(nrow(results), 78)
+  })
 })
 
 describe("output columns", {

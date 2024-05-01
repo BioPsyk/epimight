@@ -23,8 +23,5 @@ d2_tte <- generate_failure(d2_tte, 25, 10)
 d2_tte <- generate_diagnosed_relatives(d2_tte, "diagnosed_relatives") |>
   relocate(relatives, .after = failure_time)
 
-unlink("./tmp/data", recursive = TRUE)
-dir.create("./tmp/data")
-
-write_csv(d1_tte, "./tmp/data/tte_SCZ_FS.csv", append = FALSE)
-write_csv(d2_tte, "./tmp/data/tte_CAD_FS.csv", append = FALSE)
+write_csv(d1_tte, "./docs/data/tte_SCZ_FS.csv", append = FALSE)
+write_csv(d2_tte, "./docs/data/tte_CAD_FS.csv", append = FALSE)

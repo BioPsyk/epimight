@@ -13,7 +13,7 @@ mkdir "${tmp_dir}"
 
 echo ">> Running benchmarks"
 
-for f in ./quality-assurance/benchmarks/benchmark_*.R
+for f in ./tests/benchmarks/benchmark_*.R
 do
   fname=$(basename ${f})
   echo "-- Running benchmark ${fname}"

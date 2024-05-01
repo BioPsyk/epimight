@@ -1,0 +1,246 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+OPTIONS: num:3
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[english]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{white},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \DeclareUnicodeCharacter{202F}{ }
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: Cumulative incidence
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+
+Cumulative incidence is produced by the [[https://r6.r-lib.org/articles/Introduction.html][R6 class]] ~CumulativeIncidenceAnalysis~ included in this package.
+You can learn how to use this class, either by reading the reference documentation below or read
+[[./guide.org][this guide that shows you how it is used, step-by-step with code examples.]]
+
+* Functional reference
+
+To use the class, you need to create an instance first:
+
+#+BEGIN_SRC R
+analysis <- CumulativeIncidenceAnalysis$new()
+#+END_SRC
+
+Then you use that instance to run one of the 3 functions it exposes:
+
+- run :: The main function that produces the estimates from TTE data
+- get_group_values :: Helper function that retrieves all distinct values of a TTE data column
+- make_group_summary :: Helper function that summarizes stratified results for each group
+
+** Using function ~run~
+
+This function accepts 4 named arguments:
+
+- tte (required) :: A ~data.table~ that contains the TTE data.
+- group_columns (optional) :: A ~list~ that contains names of the columns to stratify the results on.
+- earliest_onset (optional, defaults to 1) :: Positive integer that represents earliest age of onset to allow. Result rows with a ~time~ value less than this value will be removed.
+- latest_onset (optional, defaults to 100) :: Positive integer that represents latest age of onset to allow. Result rows with a ~time~ value larger than this value will be removed.
+
+*** Non-stratified usage
+
+By only supplying the TTE data, without any other arguments, the results are not stratified.
+Here's an example where we read a single dataset that contains TTE data for schizophrenia,
+convert it to a ~data.table~ and then input into the run function:
+
+#+BEGIN_SRC R
+estimates <- analysis$run(
+  tte = read_csv("./tmp/data/tte_SCZ.csv") |> as.data.table()
+)
+#+END_SRC
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:run_args_output
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/cumulative-incidence-run-args-output.png :exports results
+@startuml
+!include <material/account>
+!include <material/account_search>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ../diagrams/ibp.puml
+
+file tte [
+<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**
+
+| **person_id** | **failure_status** | **failure_time** |
+| ...           | ...                | ...              |
+| 99962         |              0     | 30               |
+| 99968         |              0     | 28               |
+| 99970         |              1     | 18               |
+| 99977         |              0     | 39               |
+| 99993         |              2     | 35               |
+]
+
+file estimates [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**
+
+| **time** | **estimate** | **variance** | **l95**     | **u95**     | **cases ** |
+| ...      | ...          | ...          | ...         | ...         | ...        |
+| 39       | 0.105008967  | 9.281084e-06 | 0.099037962 | 0.110979972 | 1090       |
+| 40       | 0.106673138  | 9.799669e-06 | 0.100537584 | 0.112808692 | 1092       |
+| 41       | 0.107553263  | 1.016749e-05 | 0.101303624 | 0.113802902 | 1096       |
+| 42       | 0.110257647  | 1.193023e-05 | 0.103487901 | 0.117027394 | 1097       |
+]
+
+Rectangle(analysis, "run")
+
+Arrow(tte, analysis, "Argument: tte")
+Arrow(analysis, estimates, "Outputs")
+
+legend right
+  <img:https://biopsyk.dk/wp-content/uploads/2023/09/logo-biopsyk-opti.png{scale=0.5}>
+endlegend
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Arguments and output
+#+RESULTS: fig:run_args_output
+[[file:../diagrams/cumulative-incidence-run-args-output.png]]
+
+*** Stratified usage
+
+In order to stratify the results, we need to supply which column(s) contains the grouping
+values. Multiple columns can be used, if you want to create groups for each combination of
+values from the columns.
+
+Here's an example where we want to stratify the results on birthyear:
+We
+
+Here's an example where we read a single dataset that contains TTE data for schizophrenia,
+that contains an extra column called ~born_at_year~ which contains the year the sample was
+born. We then use the run function and also tell it to stratify the results on the ~born_at_year~
+column:
+
+#+BEGIN_SRC R
+estimates <- analysis$run(
+  tte           = read_csv("./tmp/data/tte_SCZ.csv") |> as.data.table(),
+  group_columns = list("born_at_year")
+)
+#+END_SRC
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:run_stratified_args_output
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/cumulative-incidence-run-stratified-args-output.png :exports results
+@startuml
+!include <material/account>
+!include <material/account_search>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include <material/format_list_bulleted>
+!include ../diagrams/ibp.puml
+
+file tte [
+<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**
+
+| **person_id** | **failure_status** | **failure_time** | **born_at_year** |
+| ...           | ...                | ...              | ...              |
+| 99962         |              0     | 30               | 1995             |
+| 99968         |              0     | 28               | 1988             |
+| 99970         |              1     | 18               | 1984             |
+| 99977         |              0     | 39               | 1982             |
+| 99993         |              2     | 35               | 1994             |
+]
+
+file group_columns [
+<color:#255ba7><$ma_format_list_bulleted{scale=0.35}></color>  **Group columns**
+
+---
+born_at_year
+]
+
+file estimates [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**
+
+| **time** | **estimate** | **variance** | **l95**     | **u95**     | **cases ** | **born_at_year** |
+| ...      | ...          | ...          | ...         | ...         | ...        | ...              |
+| 23       | 0.05706522   | 7.321201e-05 | 0.040294979 | 0.07383546  | 40         | 1995             |
+| 24       | 0.06114130   | 7.810260e-05 | 0.043819991 | 0.07846262  | 43         | 1995             |
+| 25       | 0.06521739   | 8.294801e-05 | 0.047366863 | 0.08306792  | 47         | 1995             |
+| 27       | 0.07065217   | 8.933827e-05 | 0.052126805 | 0.08917754  | 51         | 1995             |
+| 28       | 0.07608696   | 9.564821e-05 | 0.056918528 | 0.09525539  | 67         | 1995             |
+]
+
+Rectangle(analysis, "run")
+
+Arrow(tte, analysis, "Argument: tte")
+Arrow(group_columns, analysis, "Argument: group_columns")
+Arrow(analysis, estimates, "Outputs")
+
+legend right
+  <img:https://biopsyk.dk/wp-content/uploads/2023/09/logo-biopsyk-opti.png{scale=0.5}>
+endlegend
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Stratified arguments and output
+#+RESULTS: fig:run_stratified_args_output
+[[file:../diagrams/cumulative-incidence-run-stratified-args-output.png]]
+
+** Using function ~get_group_values~
+
+TBD
+
+** Using function ~make_group_summary~
+
+TBD

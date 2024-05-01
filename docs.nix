@@ -1,6 +1,14 @@
-{ wrappedR, src, version, stdenv, plantuml, emacs, emacsPackagesFor }:
+{ wrappedR, src, version, stdenv, plantuml, emacs, emacsPackagesFor, texlive }:
 
 let
+  wrappedTexlive = texlive.combine {
+    inherit (texlive)
+    scheme-tetex wrapfig ulem capt-of parskip titlesec
+    footmisc listings cm-super sectsty framed libertine tcolorbox environ
+    trimspaces background everypage datetime fmtcount titling tabulary
+    listingsutf8;
+  };
+
   emacsP = (emacsPackagesFor emacs).emacsWithPackages (epkgs: with epkgs; [
     org
     htmlize
@@ -67,7 +75,7 @@ stdenv.mkDerivation rec {
   phases = "installPhase";
 
   buildInputs = [
-    emacsP plantuml wrappedR
+    emacsP plantuml wrappedR wrappedTexlive
   ];
 
   PLANTUML_PATH = plantuml;
@@ -81,11 +89,15 @@ stdenv.mkDerivation rec {
 
     pushd ./docs/pipelines
 
+    export PLANTUML_LIMIT_SIZE=8192
+
     for f in ./*.org; do
       emacs "$f" --batch --kill -l ${buildScript} -f org-html-export-to-html
+      emacs "$f" --batch --kill -l ${buildScript} -f org-latex-export-to-pdf
       emacs "$f" --batch --kill -l ${buildScript} -f org-babel-tangle
 
       cp $(basename $f .org).html $out/docs/pipelines/
+      cp $(basename $f .org).pdf $out/docs/pipelines/
       cp $(basename $f .org).R $out/docs/pipelines/
     done
 
