@@ -2,14 +2,14 @@
 
 <div align="center">
 
-  ![Logotype](./docs/logotype.svg)
+  ![Logotype](./docs/logotype.png)
 
   <p align="center">
     <strong>Epimight is a powerful R epidemiology analysis toolbox</strong>
   </p>
 
   ![GitHub R package version](https://img.shields.io/github/r-package/v/BioPsyk/epimight)
-  [![Docker Image Version](https://img.shields.io/docker/v/biopsyk/ibp-pafgrs?sort=date&style=flat&logo=docker&link=%20)](https://hub.docker.com/r/biopsyk/epimight)
+  [![Docker Image Version](https://img.shields.io/docker/v/biopsyk/ibp-pafgrs?sort=date&logo=docker&link=%20)](https://hub.docker.com/r/biopsyk/epimight)
 
 </div>
 
