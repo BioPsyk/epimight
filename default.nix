@@ -1,7 +1,7 @@
 { rPackages, version, src }:
 
 with rPackages; buildRPackage rec {
-  name = "ibp-risk-estimations";
+  name = "epimight";
 
   inherit version;
   inherit src;

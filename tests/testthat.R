@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 
 library(testthat)
-library(IbpRiskEstimations)
+library(epimight)
 
-test_check("IbpRiskEstimations")
+test_check("epimight")

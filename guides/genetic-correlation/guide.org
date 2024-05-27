@@ -1,0 +1,974 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+OPTIONS: num:3
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[english]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{white},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \DeclareUnicodeCharacter{202F}{ }
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: Guide: estimate genetic correlation between two disorders
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+#+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
+
+#+LATEX: \clearpage
+
+#+BEGIN_SRC R :exports none :tangle no
+devtools::load_all(".")
+source("./tests/utils.R")
+#+END_SRC
+
+#+RESULTS:
+
+This is a guide for generating genetic correlation between two disorders using TTE data.
+
+All code shown in this guide have been written to [[./guide.R][this R file]], so that you don't have
+to copy all code snippets manually.
+
+This guide is similar to the [[../heritability/guide.org]["estimate heritability of disorder"]]-guide.
+We will extend the research question from that guide to be:
+"What is the genetic correlation between schizophrenia and coronary artery disease
+in Danish millenials and their full siblings (people born from 1981 to 1996)?"
+
+To avoid confusion the following naming convention will be used:
+
+- Disorders:
+  - ~d1~ = Schizophrenia
+  - ~d2~ = Coronary Artery Disease
+- Cohorts:
+  - ~c1~ = Target cohort
+  - ~c2~ = Individuals with at least 1 diagnosed relative of disorder 1
+  - ~c3~ = Individuals with at least 1 diagnosed relative of disorder 2
+- Results:
+  - ~re_d1_c1~ = Risk estimates of disorder 1, cohort 1
+  - ~re_d1_c2~ = Risk estimates of disorder 1, cohort 2
+  - ~re_d1_c3~ = Risk estimates of disorder 1, cohort 3
+  - ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
+  - ~re_d2_c3~ = Risk estimates of disorder 2, cohort 3
+  - ~h_d1~ = Heritability of disorder 1 (cohort 1 vs cohort 2)
+  - ~h_d2~ = Heritability of disorder 2 (cohort 1 vs cohort 3)
+  - ~gc_d1_d2~ = Genetic correlation (disorder 1 vs disorder 2)
+
+The diagram below shows how all data and results are derived, with a single
+origin, the survival data for cohort 1:
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:gc-dag
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/gc-dag.png :exports results
+@startuml
+!include <material/account>
+!include <material/account_search>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ../diagrams/ibp.puml
+
+skinparam ranksep 100
+
+File(c1, "<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**\nCohort 1") {
+  File(c2, "<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**\n Cohort 2")
+  File(c3, "<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**\n Cohort 3")
+}
+
+File(re_d1_c1, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative**\n**incidence**\nDisorder 1, Cohort 1")
+File(re_d1_c2, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative**\n**incidence**\nDisorder 1, Cohort 2")
+File(re_d1_c3, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative**\n**incidence**\nDisorder 1, Cohort 3")
+File(re_d2_c1, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative**\n**incidence**\nDisorder 2, Cohort 1")
+File(re_d2_c2, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative**\n**incidence**\nDisorder 2, Cohort 2")
+File(h2_d1, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**\nDisorder 1")
+File(h2_d2, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**\nDisorder 2")
+File(gc_d1_d2, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**")
+
+c1 -->> re_d1_c1
+c1 -->> re_d2_c1
+c2 -->> re_d1_c2
+c2 -->> re_d2_c2
+c3 -->> re_d1_c3
+
+re_d1_c1 -->> h2_d1
+re_d1_c2 -->> h2_d1
+
+re_d2_c1 -->> h2_d2
+re_d2_c2 -->> h2_d2
+
+re_d1_c1 -->> gc_d1_d2
+re_d1_c3 -->> gc_d1_d2
+re_d2_c1 -->> gc_d1_d2
+h2_d1 -->> gc_d1_d2
+h2_d2 -->> gc_d1_d2
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Data derivation
+#+RESULTS: fig:gc-dag
+[[file:../diagrams/gc-dag.png]]
+
+The answer to the research question above will be in result ~gc_d1_d2~.
+
+We start by importing all the needed libraries:
+
+#+BEGIN_SRC R :exports code :eval no
+library(data.table)
+library(dplyr)
+library(dtplyr)
+library(readr)
+library(epimight)
+#+END_SRC
+
+* Arguments
+
+We'll use all the same arguments as the heritability guide, and introduce 2 new variables
+for the age of onset of the two disorders:
+
+#+BEGIN_SRC R :exports code :results output
+study_period_start <- as.Date("1981-01-01")
+study_period_end   <- as.Date("2016-12-31")
+
+d1_earliest_onset_age <- 10
+d2_earliest_onset_age <- 1
+
+born_at_start <- as.Date("1981-01-01")
+born_at_end   <- as.Date("1996-01-01")
+
+relationship_kind <- "FS"
+#+END_SRC
+
+#+RESULTS:
+
+* Data processing
+
+Now that we have defined all arguments to use, it's time to read and process the
+TTE data that we are going to analyze. The TTE data needs to fulfill the same
+requirements as the [[../heritability/guide-yob.org][previous guide]], but in this case we will have one TTE dataset
+for disorder 1 and one TTE dataset for disorder 2.
+
+The example data in this guide is contained in two files called:
+
+- ~tte_SCZ_FS.csv~
+- ~tte_CAD_FS.csv~
+
+Like before, we simply read these files and convert them into a ~data.table~:
+
+#+BEGIN_SRC R :eval no :exports code
+d1_tte <- read_csv("./tte_SCZ_FS.csv") |> as.data.table()
+d2_tte <- read_csv("./tte_CAD_FS.csv") |> as.data.table()
+#+END_SRC
+
+#+BEGIN_SRC R :exports results :results output :tangle no
+set.seed(6)
+n_count <- 100000
+
+d1_tte <- generate_random_tte(n_count)
+d1_tte <- generate_failure(d1_tte, 20, 10)
+d1_tte <- generate_diagnosed_relatives(d1_tte, "diagnosed_relatives") |>
+  relocate(relatives, .after = failure_time)
+d1_tte <- data.table(d1_tte)
+
+d2_tte <- d1_tte
+d2_tte <- generate_failure(d2_tte, 25, 10)
+d2_tte <- generate_diagnosed_relatives(d2_tte, "diagnosed_relatives") |>
+  relocate(relatives, .after = failure_time)
+d2_tte <- data.table(d2_tte)
+
+d1_tte <- d1_tte |> select(-born_at_year, -dead_at_year)
+d2_tte <- d2_tte |> select(-born_at_year, -dead_at_year)
+#+END_SRC
+
+#+RESULTS:
+
+The example data contains the same 100000 randomly generated individuals as
+the previous guide, with the same probablities for everything, the only
+difference is that for disorder 2, the age of onset sampling is changed to:
+
+- Disorder 2 age of onset from normal distribution, mean = ~25~, sd = ~12~
+
+After the data has been read, we need to apply our millenials filter to it:
+
+#+BEGIN_SRC R :exports both :results output
+d1_tte <- d1_tte |>
+  filter(
+    born_at >= born_at_start,
+    born_at <= born_at_end
+  )
+
+d2_tte <- d2_tte |>
+  filter(
+    born_at >= born_at_start,
+    born_at <= born_at_end
+  )
+#+END_SRC
+
+#+RESULTS:
+
+Here's what the filtered data looks like, note that we have less than 100000 individuals now
+that we have filtered out non-millenials:
+
+#+BEGIN_SRC R :exports both :results output
+print("Disorder 1 survival data:")
+print(d1_tte)
+print("Disorder 2 survival data:")
+print(d2_tte)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[1] "Disorder 1 survival data:"
+       person_id    born_at failure_status failure_time relatives diagnosed_relatives
+    1:        12 1995-12-01              0           29         3                   0
+    2:        14 1981-11-29              0           43         1                   0
+    3:        16 1985-12-24              0           39         1                   1
+    4:        19 1993-02-14              0           31         1                   0
+    5:        20 1993-08-20              0           31         4                   0
+   ---
+20249:     99990 1995-10-07              0           29         3                   0
+20250:     99992 1984-01-09              1           38         0                   0
+20251:     99997 1994-06-04              0           30         0                   0
+20252:     99999 1992-07-21              0           32         0                   0
+20253:    100000 1993-09-03              1            1         2                   2
+[1] "Disorder 2 survival data:"
+       person_id    born_at failure_status failure_time relatives diagnosed_relatives
+    1:        12 1995-12-01              0           29         3                   0
+    2:        14 1981-11-29              0           43         1                   1
+    3:        16 1985-12-24              1           33         1                   1
+    4:        19 1993-02-14              0           31         1                   0
+    5:        20 1993-08-20              0           31         4                   4
+   ---
+20249:     99990 1995-10-07              0           29         3                   3
+20250:     99992 1984-01-09              0           40         0                   0
+20251:     99997 1994-06-04              0           30         0                   0
+20252:     99999 1992-07-21              1           32         0                   0
+20253:    100000 1993-09-03              0           31         2                   2
+#+end_example
+
+From the retrieved survival data, we can then create the 3 cohorts:
+
+- Cohort 1 :: Target cohort
+- Cohort 2 :: Individuals with at least 1 affected relative of disorder 1
+- Cohort 3 :: Individuals with at least 1 affected relative of disorder 2
+
+#+BEGIN_SRC R :exports both :results output
+c1_tte <- inner_join(d1_tte, d2_tte, by = join_by(person_id)) |>
+  rename(
+    relatives              = relatives.x,
+    d1_failure_status      = failure_status.x,
+    d1_failure_time        = failure_time.x,
+    d1_diagnosed_relatives = diagnosed_relatives.x,
+    d2_failure_status      = failure_status.y,
+    d2_failure_time        = failure_time.y,
+    d2_diagnosed_relatives = diagnosed_relatives.y
+  ) |>
+  select(person_id, relatives, starts_with("d1_"), starts_with("d2_"))
+
+c2_tte <- c1_tte |> filter(d1_diagnosed_relatives > 0)
+c3_tte <- c1_tte |> filter(d2_diagnosed_relatives > 0)
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :exports both :results output
+print("c1_tte:")
+print(c1_tte)
+print("c2_tte:")
+print(c2_tte)
+print("c3_tte:")
+print(c3_tte)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[1] "c1_tte:"
+       person_id relatives d1_failure_status d1_failure_time d1_diagnosed_relatives
+    1:        12         3                 0              29                      0
+    2:        14         1                 0              43                      0
+    3:        16         1                 0              39                      1
+    4:        19         1                 0              31                      0
+    5:        20         4                 0              31                      0
+   ---
+20249:     99990         3                 0              29                      0
+20250:     99992         0                 1              38                      0
+20251:     99997         0                 0              30                      0
+20252:     99999         0                 0              32                      0
+20253:    100000         2                 1               1                      2
+       d2_failure_status d2_failure_time d2_diagnosed_relatives
+    1:                 0              29                      0
+    2:                 0              43                      1
+    3:                 1              33                      1
+    4:                 0              31                      0
+    5:                 0              31                      4
+   ---
+20249:                 0              29                      3
+20250:                 0              40                      0
+20251:                 0              30                      0
+20252:                 1              32                      0
+20253:                 0              31                      2
+[1] "c2_tte:"
+      person_id relatives d1_failure_status d1_failure_time d1_diagnosed_relatives
+   1:        16         1                 0              39                      1
+   2:        74         3                 0              43                      1
+   3:        81         1                 0              31                      1
+   4:        83         4                 0              38                      4
+   5:       108         3                 0              36                      1
+  ---
+4558:     99949         7                 1              21                      4
+4559:     99973         5                 0              40                      2
+4560:     99979         3                 0              29                      3
+4561:     99981         2                 1              22                      2
+4562:    100000         2                 1               1                      2
+      d2_failure_status d2_failure_time d2_diagnosed_relatives
+   1:                 1              33                      1
+   2:                 0              43                      1
+   3:                 0              31                      0
+   4:                 0              38                      0
+   5:                 0              36                      0
+  ---
+4558:                 0              30                      0
+4559:                 0              40                      5
+4560:                 0              29                      0
+4561:                 0              43                      0
+4562:                 0              31                      2
+[1] "c3_tte:"
+      person_id relatives d1_failure_status d1_failure_time d1_diagnosed_relatives
+   1:        14         1                 0              43                      0
+   2:        16         1                 0              39                      1
+   3:        20         4                 0              31                      0
+   4:        44         2                 0              29                      0
+   5:        74         3                 0              43                      1
+  ---
+4714:     99870         3                 0              41                      3
+4715:     99887         4                 0              43                      0
+4716:     99973         5                 0              40                      2
+4717:     99990         3                 0              29                      0
+4718:    100000         2                 1               1                      2
+      d2_failure_status d2_failure_time d2_diagnosed_relatives
+   1:                 0              43                      1
+   2:                 1              33                      1
+   3:                 0              31                      4
+   4:                 0              29                      1
+   5:                 0              43                      1
+  ---
+4714:                 0              41                      3
+4715:                 0              43                      3
+4716:                 0              40                      5
+4717:                 0              29                      3
+4718:                 0              31                      2
+#+end_example
+
+** Risk estimates
+
+Like earlier guides, we will use the class ~CumulativeIncidenceAnalysis~
+to produce the estimates:
+
+#+BEGIN_SRC R :exports code :results output
+cif_analysis <- CumulativeIncidenceAnalysis$new()
+#+END_SRC
+
+#+RESULTS:
+
+With the analysis class and the survival data for the 3 cohorts, we can produce
+the 5 risk estimates:
+
+- re_d1_c1 :: Risk estimates of disorder 1, cohort 1
+- re_d1_c2 :: Risk estimates of disorder 1, cohort 2
+- re_d1_c3 :: Risk estimates of disorder 1, cohort 3
+- re_d2_c1 :: Risk estimates of disorder 2, cohort 1
+- re_d2_c3 :: Risk estimates of disorder 2, cohort 3
+
+Using some metaprogramming, we can create a function that
+accepts the disorder and cohort according to the naming convention,
+that when run will execute the risk estimate analysis using the correct
+inputs:
+
+#+BEGIN_SRC R :exports code :results output
+run_cif_prefixed <- function(disorder, cohort) {
+  onset <- get(paste0(disorder, "_earliest_onset_age"))
+  tte   <- get(paste0(cohort, "_tte")) |>
+    rename(
+      failure_status = !!as.name(paste0(disorder, "_failure_status")),
+      failure_time   = !!as.name(paste0(disorder, "_failure_time"))
+    )
+
+  cif_analysis$run(tte = tte, earliest_onset = onset)
+}
+
+re_d1_c1 <- run_cif_prefixed("d1", "c1")
+re_d1_c2 <- run_cif_prefixed("d1", "c2")
+re_d1_c3 <- run_cif_prefixed("d1", "c3")
+re_d2_c1 <- run_cif_prefixed("d2", "c1")
+re_d2_c3 <- run_cif_prefixed("d2", "c3")
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :exports both :results output
+print("re_d1_c1:")
+print(re_d1_c1)
+print("re_d1_c2:")
+print(re_d1_c2)
+print("re_d1_c3:")
+print(re_d1_c3)
+print("re_d2_c1:")
+print(re_d2_c1)
+print("re_d2_c3:")
+print(re_d2_c3)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[1] "re_d1_c1:"
+    time   estimate     variance        l95        u95 cases
+ 1:   10 0.01466449 7.134827e-07 0.01300895 0.01632003    47
+ 2:   11 0.01698514 8.244445e-07 0.01520551 0.01876476    86
+ 3:   12 0.01891078 9.161154e-07 0.01703482 0.02078674   140
+ 4:   13 0.02157705 1.042440e-06 0.01957593 0.02357817   208
+ 5:   14 0.02493458 1.200516e-06 0.02278708 0.02708207   281
+ 6:   15 0.02853898 1.368977e-06 0.02624576 0.03083220   341
+ 7:   16 0.03150151 1.506478e-06 0.02909587 0.03390714   420
+ 8:   17 0.03540216 1.686198e-06 0.03285708 0.03794725   491
+ 9:   18 0.03890782 1.846437e-06 0.03624455 0.04157109   575
+10:   19 0.04305535 2.034447e-06 0.04025977 0.04585093   652
+11:   20 0.04685726 2.205298e-06 0.04394666 0.04976785   737
+12:   21 0.05105416 2.392243e-06 0.04802271 0.05408562   829
+13:   22 0.05559670 2.592622e-06 0.05244084 0.05875256   915
+14:   23 0.05984299 2.778090e-06 0.05657620 0.06310978   991
+15:   24 0.06359552 2.940511e-06 0.06023459 0.06695645  1066
+16:   25 0.06729867 3.099431e-06 0.06384812 0.07074923  1139
+17:   26 0.07090308 3.252812e-06 0.06736817 0.07443798  1212
+18:   27 0.07450748 3.404910e-06 0.07089088 0.07812408  1284
+19:   28 0.07806251 3.553669e-06 0.07436775 0.08175727  1333
+20:   29 0.08048190 3.654193e-06 0.07673525 0.08422856  1421
+21:   30 0.08482787 3.833360e-06 0.08099047 0.08866528  1481
+22:   31 0.08800041 3.974007e-06 0.08409324 0.09190758  1540
+23:   32 0.09136699 4.136123e-06 0.08738092 0.09535306  1589
+24:   33 0.09438652 4.294146e-06 0.09032502 0.09844802  1631
+25:   34 0.09720942 4.456572e-06 0.09307182 0.10134702  1662
+26:   35 0.09950246 4.603159e-06 0.09529736 0.10370756  1690
+27:   36 0.10179547 4.767067e-06 0.09751616 0.10607478  1716
+28:   37 0.10416877 4.957995e-06 0.09980461 0.10853294  1722
+29:   38 0.10479254 5.015903e-06 0.10040296 0.10918212  1741
+30:   39 0.10709701 5.268933e-06 0.10259807 0.11159594  1745
+31:   40 0.10768063 5.347160e-06 0.10314842 0.11221284  1751
+32:   41 0.10877202 5.532410e-06 0.10416198 0.11338207  1754
+33:   43 0.10950027 5.700054e-06 0.10482089 0.11417964  1756
+    time   estimate     variance        l95        u95 cases
+[1] "re_d1_c2:"
+    time   estimate     variance        l95        u95 cases
+ 1:   10 0.02696186 5.752025e-06 0.02226120 0.03166251    19
+ 2:   11 0.03112670 6.612129e-06 0.02608684 0.03616656    37
+ 3:   12 0.03507234 7.419949e-06 0.02973348 0.04041120    57
+ 4:   13 0.03945638 8.309521e-06 0.03380654 0.04510622    92
+ 5:   14 0.04712845 9.845995e-06 0.04097841 0.05327849   123
+ 6:   15 0.05392372 1.118532e-05 0.04736872 0.06047871   154
+ 7:   16 0.06071898 1.250440e-05 0.05378824 0.06764972   186
+ 8:   17 0.06773345 1.384479e-05 0.06044070 0.07502620   218
+ 9:   18 0.07474792 1.516361e-05 0.06711572 0.08238011   253
+10:   19 0.08241999 1.658137e-05 0.07443897 0.09040101   282
+11:   20 0.08877685 1.773653e-05 0.08052251 0.09703119   318
+12:   21 0.09666813 1.914588e-05 0.08809211 0.10524415   359
+13:   22 0.10565541 2.071772e-05 0.09673430 0.11457653   398
+14:   23 0.11420430 2.218001e-05 0.10497372 0.12343488   438
+15:   24 0.12297238 2.364651e-05 0.11344153 0.13250323   468
+16:   25 0.12954844 2.472427e-05 0.11980282 0.13929407   502
+17:   26 0.13700132 2.592280e-05 0.12702227 0.14698036   535
+18:   27 0.14423498 2.706280e-05 0.13403888 0.15443109   571
+19:   28 0.15212626 2.828026e-05 0.14170333 0.16254919   585
+20:   29 0.15519509 2.874635e-05 0.14468662 0.16570356   616
+21:   30 0.16199212 2.976435e-05 0.15129920 0.17268504   641
+22:   31 0.16788031 3.072502e-05 0.15701620 0.17874442   657
+23:   32 0.17196684 3.146290e-05 0.16097305 0.18296064   682
+24:   33 0.17892511 3.285740e-05 0.16769032 0.19015989   700
+25:   34 0.18434673 3.404773e-05 0.17291026 0.19578320   712
+26:   35 0.18828550 3.500679e-05 0.17668907 0.19988193   728
+27:   36 0.19411469 3.661522e-05 0.18225484 0.20597453   735
+28:   37 0.19696666 3.751495e-05 0.18496198 0.20897133   739
+29:   38 0.19881165 3.819230e-05 0.18669909 0.21092421   746
+30:   39 0.20251596 3.979245e-05 0.19015226 0.21487965   748
+31:   40 0.20378888 4.047503e-05 0.19131959 0.21625816   750
+32:   41 0.20537653 4.157285e-05 0.19273927 0.21801380   752
+33:   43 0.20752999 4.366336e-05 0.19457889 0.22048109   754
+    time   estimate     variance        l95        u95 cases
+[1] "re_d1_c3:"
+    time   estimate     variance        l95        u95 cases
+ 1:   10 0.01653243 3.446922e-06 0.01289358 0.02017128     7
+ 2:   11 0.01801611 3.750595e-06 0.01422035 0.02181186    18
+ 3:   12 0.02034760 4.225910e-06 0.01631850 0.02437671    29
+ 4:   13 0.02267910 4.698921e-06 0.01843049 0.02692771    47
+ 5:   14 0.02649428 5.467967e-06 0.02191116 0.03107739    60
+ 6:   15 0.02924968 6.019551e-06 0.02444095 0.03405841    71
+ 7:   16 0.03158118 6.483762e-06 0.02659048 0.03657188    92
+ 8:   17 0.03603222 7.363584e-06 0.03071367 0.04135076   110
+ 9:   18 0.03984739 8.111031e-06 0.03426544 0.04542935   130
+10:   19 0.04408648 8.934291e-06 0.03822809 0.04994487   155
+11:   20 0.04938533 9.952653e-06 0.04320207 0.05556859   170
+12:   21 0.05256465 1.055796e-05 0.04619613 0.05893316   190
+13:   22 0.05680373 1.135836e-05 0.05019823 0.06340923   211
+14:   23 0.06125477 1.219059e-05 0.05441155 0.06809799   234
+15:   24 0.06612972 1.309243e-05 0.05903789 0.07322155   252
+16:   25 0.06994489 1.379120e-05 0.06266627 0.07722351   269
+17:   26 0.07354811 1.444548e-05 0.06609884 0.08099739   293
+18:   27 0.07863501 1.535980e-05 0.07095361 0.08631642   310
+19:   28 0.08223824 1.600080e-05 0.07439818 0.09007829   322
+20:   29 0.08478169 1.644996e-05 0.07683236 0.09273102   338
+21:   30 0.08817374 1.704488e-05 0.08008194 0.09626554   357
+22:   31 0.09249411 1.786173e-05 0.08421069 0.10077754   371
+23:   32 0.09593816 1.857068e-05 0.08749195 0.10438437   379
+24:   33 0.09806912 1.904969e-05 0.08951468 0.10662357   388
+25:   34 0.10069866 1.970506e-05 0.09199831 0.10939901   394
+26:   35 0.10263820 2.024599e-05 0.09381924 0.11145717   402
+27:   36 0.10550861 2.114370e-05 0.09649625 0.11452097   407
+28:   37 0.10749549 2.183801e-05 0.09833635 0.11665463   408
+29:   38 0.10794693 2.201972e-05 0.09874977 0.11714410   413
+30:   39 0.11055091 2.324432e-05 0.10110146 0.12000036   415
+31:   40 0.11180302 2.396226e-05 0.10220875 0.12139729   417
+32:   41 0.11338404 2.512574e-05 0.10355961 0.12320848   419
+33:   43 0.11552195 2.728728e-05 0.10528365 0.12576026   419
+    time   estimate     variance        l95        u95 cases
+[1] "re_d2_c1:"
+    time     estimate     variance          l95          u95 cases
+ 1:    1 0.0003950032 1.949670e-08 0.0001213323 0.0006686741     7
+ 2:    2 0.0007406310 3.654367e-08 0.0003659565 0.0011153056    11
+ 3:    3 0.0009381326 4.627951e-08 0.0005164920 0.0013597732    16
+ 4:    4 0.0011850096 5.844388e-08 0.0007111850 0.0016588342    24
+ 5:    5 0.0015800128 7.789435e-08 0.0010329955 0.0021270302    40
+ 6:    6 0.0023700193 1.167491e-07 0.0017003277 0.0030397108    56
+ 7:    7 0.0031600257 1.555422e-07 0.0023870387 0.0039330126    73
+ 8:    8 0.0039994075 1.966923e-07 0.0031301633 0.0048686516    83
+ 9:    9 0.0044931615 2.208658e-07 0.0035720498 0.0054142732   109
+10:   10 0.0057769219 2.836041e-07 0.0047331531 0.0068206908   145
+11:   11 0.0075544364 3.702038e-07 0.0063619085 0.0087469643   180
+12:   12 0.0092825754 4.540989e-07 0.0079618172 0.0106033336   211
+13:   13 0.0108132129 5.281597e-07 0.0093888170 0.0122376088   249
+14:   14 0.0126894781 6.186282e-07 0.0111479091 0.0142310471   293
+15:   15 0.0148619958 7.229470e-07 0.0131955111 0.0165284804   338
+16:   16 0.0170838888 8.291545e-07 0.0152991864 0.0188685912   396
+17:   17 0.0199476621 9.653250e-07 0.0180219788 0.0218733454   448
+18:   18 0.0225151829 1.086720e-06 0.0204720012 0.0245583647   500
+19:   19 0.0250827038 1.207465e-06 0.0229290032 0.0272364044   567
+20:   20 0.0283908557 1.362079e-06 0.0261034178 0.0306782936   628
+21:   21 0.0314027551 1.501908e-06 0.0290007729 0.0338047373   695
+22:   22 0.0347109070 1.654458e-06 0.0321898888 0.0372319253   761
+23:   23 0.0379696835 1.803675e-06 0.0353374331 0.0406019339   834
+24:   24 0.0415740878 1.967496e-06 0.0388248963 0.0443232793   925
+25:   25 0.0460672493 2.169914e-06 0.0431800990 0.0489543996  1010
+26:   26 0.0502641584 2.357186e-06 0.0472550002 0.0532733166  1100
+27:   27 0.0547079445 2.553578e-06 0.0515759382 0.0578399508  1168
+28:   28 0.0580654718 2.700669e-06 0.0548445233 0.0612864203  1244
+29:   29 0.0618180023 2.863748e-06 0.0585012312 0.0651347734  1361
+30:   30 0.0675958365 3.112169e-06 0.0641381970 0.0710534759  1471
+31:   31 0.0734094890 3.378842e-06 0.0698067564 0.0770122216  1569
+32:   32 0.0789971987 3.654908e-06 0.0752501758 0.0827442215  1654
+33:   33 0.0842326189 3.934129e-06 0.0803451013 0.0881201365  1726
+34:   34 0.0890641021 4.215251e-06 0.0850400852 0.0930881190  1790
+35:   35 0.0937793963 4.517361e-06 0.0896136725 0.0979451201  1838
+36:   36 0.0976844676 4.794871e-06 0.0933926963 0.1019762388  1875
+37:   37 0.1010455543 5.063431e-06 0.0966352297 0.1054558789  1908
+38:   38 0.1044585199 5.376737e-06 0.0999137961 0.1090032436  1934
+39:   39 0.1075864776 5.714291e-06 0.1029012655 0.1122716897  1949
+40:   40 0.1097547348 5.999268e-06 0.1049541158 0.1145553538  1967
+41:   41 0.1129857397 6.533778e-06 0.1079758255 0.1179956538  1976
+42:   42 0.1151401789 7.016697e-06 0.1099484207 0.1203319372  1987
+43:   43 0.1190450581 8.335526e-06 0.1133863852 0.1247037310  1987
+    time     estimate     variance          l95          u95 cases
+[1] "re_d2_c3:"
+    time     estimate     variance           l95         u95 cases
+ 1:    1 0.0006358627 1.347166e-07 -0.0000835179 0.001355243     3
+ 2:    2 0.0012717253 2.692618e-07  0.0002546912 0.002288759     5
+ 3:    3 0.0016956337 3.588634e-07  0.0005215132 0.002869754     7
+ 4:    4 0.0021195422 4.483888e-07  0.0008071142 0.003431970    12
+ 5:    5 0.0031793133 6.718690e-07  0.0015727775 0.004785849    19
+ 6:    6 0.0046629928 9.839413e-07  0.0027188297 0.006607156    25
+ 7:    7 0.0059347181 1.250689e-06  0.0037428079 0.008126628    34
+ 8:    8 0.0078423061 1.649525e-06  0.0053250491 0.010359563    38
+ 9:    9 0.0086901229 1.826290e-06  0.0060414215 0.011338824    50
+10:   10 0.0112335735 2.354758e-06  0.0082259658 0.014241181    73
+11:   11 0.0161085206 3.359987e-06  0.0125158541 0.019701187    86
+12:   12 0.0188639254 3.923704e-06  0.0149815619 0.022746289   102
+13:   13 0.0222551929 4.613090e-06  0.0180455616 0.026464824   126
+14:   14 0.0273420941 5.638027e-06  0.0226882517 0.031995937   151
+15:   15 0.0326409496 6.694004e-06  0.0275699790 0.037711920   170
+16:   16 0.0366680797 7.488586e-06  0.0313045832 0.042031576   205
+17:   17 0.0440864773 8.934290e-06  0.0382280896 0.049944865   230
+18:   18 0.0493853328 9.952651e-06  0.0432020730 0.055568592   254
+19:   19 0.0544722340 1.091908e-05  0.0479957230 0.060948745   284
+20:   20 0.0608308605 1.211169e-05  0.0540098234 0.067651898   308
+21:   21 0.0659177618 1.305343e-05  0.0588365033 0.072999020   336
+22:   22 0.0718524799 1.413827e-05  0.0644828411 0.079222119   363
+23:   23 0.0775752437 1.517022e-05  0.0699413868 0.085209101   394
+24:   24 0.0841458245 1.633793e-05  0.0762236101 0.092068039   436
+25:   25 0.0930479017 1.789079e-05  0.0847577430 0.101338060   470
+26:   26 0.1002543451 1.912326e-05  0.0916833932 0.108825297   516
+27:   27 0.1100042391 2.075567e-05  0.1010749575 0.118933521   552
+28:   28 0.1176345909 2.200511e-05  0.1084404783 0.126828704   580
+29:   29 0.1235693090 2.295982e-05  0.1141778659 0.132960752   626
+30:   30 0.1333215615 2.449672e-05  0.1236208834 0.143022240   675
+31:   31 0.1444328235 2.636057e-05  0.1343698690 0.154495778   712
+32:   32 0.1534799757 2.799544e-05  0.1431096649 0.163850287   750
+33:   33 0.1635261222 2.996013e-05  0.1527980925 0.174254152   790
+34:   34 0.1750956087 3.243828e-05  0.1639327104 0.186258507   818
+35:   35 0.1839997425 3.454384e-05  0.1724802484 0.195519237   837
+36:   36 0.1906338909 3.628300e-05  0.1788279743 0.202439808   860
+37:   37 0.1995621502 3.891616e-05  0.1873353422 0.211788958   875
+38:   38 0.2061956130 4.118463e-05  0.1936174940 0.218773732   887
+39:   39 0.2122672622 4.360752e-05  0.1993244464 0.225210078   893
+40:   40 0.2159037079 4.540129e-05  0.2026973774 0.229110038   901
+41:   41 0.2219202458 4.920160e-05  0.2081723028 0.235668189   903
+42:   42 0.2239479838 5.099865e-05  0.2099512261 0.237944742   910
+43:   43 0.2346566002 6.578866e-05  0.2187592908 0.250553910   910
+    time     estimate     variance           l95         u95 cases
+#+end_example
+
+** Heritability
+
+Like in earlier heritability guides, we will use the class ~HeritabilityAnalysis~
+to produce the heritability estimates:
+
+#+BEGIN_SRC R :exports code :results output
+h2_analysis <- HeritabilityAnalysis$new()
+#+END_SRC
+
+#+RESULTS:
+
+With the heritability analysis class and the 5 risk estimates,
+we can produce the two heritability estimates:
+
+- h_d1 :: Heritability of disorder 1 (cohort 1 vs cohort 2)
+  - Inputs :: ~re_d1_c1~ and ~re_d1_c2~
+- h_d2 :: Heritability of disorder 2 (cohort 1 vs cohort 3)
+  - Inputs :: ~re_d2_c1~ and ~re_d2_c3~
+
+Like earlier heritability guides, we need to combine the last risk estimates from the two
+cohorts into a single dataset that we then run the heritability analysis on. Again, in order to
+be lazy, we can create a function that processes the data and runs the heritability analysis
+for us:
+
+#+BEGIN_SRC R :exports code :results output
+run_h2 <- function(c1_estimates, c2_estimates) {
+  combined_estimates <- c1_estimates |>
+    inner_join(c2_estimates, by = join_by(time)) |>
+    rename(
+      cohort1_estimates = estimate.x,
+      cohort1_cases     = cases.x,
+      cohort2_estimates = estimate.y,
+      cohort2_cases     = cases.y
+    ) |>
+    select(time, cohort1_estimates, cohort1_cases, cohort2_estimates, cohort2_cases)
+
+  h2_analysis$run(
+    relationship_kind = relationship_kind,
+    estimates         = combined_estimates
+  )
+}
+
+h2_d1 <- run_h2(re_d1_c1, re_d1_c2)
+h2_d2 <- run_h2(re_d2_c1, re_d2_c3)
+#+END_SRC
+
+#+RESULTS:
+
+Now we have heritability calculated for the two disorders:
+
+#+BEGIN_SRC R :exports both :results output
+print("h2_d1:")
+print(h2_d1)
+print("h2_d2:")
+print(h2_d2)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+[1] "h2_d1:"
+    time cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases        h2
+ 1:   10        0.01466449            47        0.02696186            19 0.2059138
+ 2:   11        0.01698514            86        0.03112670            37 0.2140845
+ 3:   12        0.01891078           140        0.03507234            57 0.2262231
+ 4:   13        0.02157705           208        0.03945638            92 0.2303053
+ 5:   14        0.02493458           281        0.04712845           123 0.2564796
+ 6:   15        0.02853898           341        0.05392372           154 0.2689708
+ 7:   16        0.03150151           420        0.06071898           186 0.2886650
+ 8:   17        0.03540216           491        0.06773345           218 0.2981141
+ 9:   18        0.03890782           575        0.07474792           253 0.3117155
+10:   19        0.04305535           652        0.08241999           282 0.3230008
+11:   20        0.04685726           737        0.08877685           318 0.3288942
+12:   21        0.05105416           829        0.09666813           359 0.3411354
+13:   22        0.05559670           915        0.10565541           398 0.3568614
+14:   23        0.05984299           991        0.11420430           438 0.3720913
+15:   24        0.06359552          1066        0.12297238           468 0.3919736
+16:   25        0.06729867          1139        0.12954844           502 0.3999425
+17:   26        0.07090308          1212        0.13700132           535 0.4132857
+18:   27        0.07450748          1284        0.14423498           571 0.4253524
+19:   28        0.07806251          1333        0.15212626           585 0.4409386
+20:   29        0.08048190          1421        0.15519509           616 0.4401034
+21:   30        0.08482787          1481        0.16199212           641 0.4452235
+22:   31        0.08800041          1540        0.16788031           657 0.4535746
+23:   32        0.09136699          1589        0.17196684           682 0.4522256
+24:   33        0.09438652          1631        0.17892511           700 0.4666972
+25:   34        0.09720942          1662        0.18434673           712 0.4750876
+26:   35        0.09950246          1690        0.18828550           728 0.4797749
+27:   36        0.10179547          1716        0.19411469           735 0.4930858
+28:   37        0.10416877          1722        0.19696666           739 0.4924405
+29:   38        0.10479254          1741        0.19881165           746 0.4972184
+30:   39        0.10709701          1745        0.20251596           748 0.5008786
+31:   40        0.10768063          1751        0.20378888           750 0.5033070
+32:   41        0.10877202          1754        0.20537653           752 0.5043199
+33:   43        0.10950027          1756        0.20752999           754 0.5098562
+    time cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases        h2
+            se        l95       u95
+ 1: 0.08757134 0.03427399 0.3775536
+ 2: 0.06588095 0.08495785 0.3432112
+ 3: 0.05450431 0.11939470 0.3330516
+ 4: 0.04501206 0.14208167 0.3185289
+ 5: 0.04080451 0.17650278 0.3364565
+ 6: 0.03824027 0.19401987 0.3439217
+ 7: 0.03596301 0.21817745 0.3591525
+ 8: 0.03458069 0.23033592 0.3658922
+ 9: 0.03318785 0.24666733 0.3767637
+10: 0.03256509 0.25917321 0.3868284
+11: 0.03162649 0.26690628 0.3908821
+12: 0.03078803 0.28079087 0.4014799
+13: 0.03028328 0.29750621 0.4162167
+14: 0.02981632 0.31365131 0.4305313
+15: 0.02962119 0.33391604 0.4500311
+16: 0.02930064 0.34251324 0.4573718
+17: 0.02905775 0.35633248 0.4702389
+18: 0.02878383 0.36893611 0.4817687
+19: 0.02903797 0.38402421 0.4978531
+20: 0.02862842 0.38399168 0.4962151
+21: 0.02872413 0.38892417 0.5015228
+22: 0.02883371 0.39706050 0.5100886
+23: 0.02878017 0.39581649 0.5086347
+24: 0.02889373 0.41006549 0.5233289
+25: 0.02906925 0.41811188 0.5320633
+26: 0.02909134 0.42275591 0.5367940
+27: 0.02930879 0.43564061 0.5505311
+28: 0.02954421 0.43453389 0.5503472
+29: 0.02950707 0.43938457 0.5550523
+30: 0.02978823 0.44249371 0.5592636
+31: 0.02983490 0.44483059 0.5617834
+32: 0.02994467 0.44562838 0.5630115
+33: 0.03003107 0.45099528 0.5687171
+            se        l95       u95
+[1] "h2_d2:"
+    time cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases         h2
+ 1:    1      0.0003950032             7      0.0006358627             3 0.07529316
+ 2:    2      0.0007406310            11      0.0012717253             5 0.09472690
+ 3:    3      0.0009381326            16      0.0016956337             7 0.10831676
+ 4:    4      0.0011850096            24      0.0021195422            12 0.11069372
+ 5:    5      0.0015800128            40      0.0031793133            19 0.14167817
+ 6:    6      0.0023700193            56      0.0046629928            25 0.14800712
+ 7:    7      0.0031600257            73      0.0059347181            34 0.14557359
+ 8:    8      0.0039994075            83      0.0078423061            38 0.16438926
+ 9:    9      0.0044931615           109      0.0086901229            50 0.16505454
+10:   10      0.0057769219           145      0.0112335735            73 0.17655505
+11:   11      0.0075544364           180      0.0161085206            86 0.21715060
+12:   12      0.0092825754           211      0.0188639254           102 0.21341300
+13:   13      0.0108132129           249      0.0222551929           126 0.22686475
+14:   14      0.0126894781           293      0.0273420941           151 0.25407326
+15:   15      0.0148619958           338      0.0326409496           170 0.27369577
+16:   16      0.0170838888           396      0.0366680797           205 0.27657021
+17:   17      0.0199476621           448      0.0440864773           230 0.30326204
+18:   18      0.0225151829           500      0.0493853328           254 0.31255566
+19:   19      0.0250827038           567      0.0544722340           284 0.31997351
+20:   20      0.0283908557           628      0.0608308605           308 0.32812144
+21:   21      0.0314027551           695      0.0659177618           336 0.33045418
+22:   22      0.0347109070           761      0.0718524799           363 0.33623374
+23:   23      0.0379696835           834      0.0775752437           394 0.34141656
+24:   24      0.0415740878           925      0.0841458245           436 0.34912536
+25:   25      0.0460672493          1010      0.0930479017           470 0.36346970
+26:   26      0.0502641584          1100      0.1002543451           516 0.37001930
+27:   27      0.0547079445          1168      0.1100042391           552 0.38962792
+28:   28      0.0580654718          1244      0.1176345909           580 0.40551491
+29:   29      0.0618180023          1361      0.1235693090           626 0.40881234
+30:   30      0.0675958365          1471      0.1333215615           675 0.41779388
+31:   31      0.0734094890          1569      0.1444328235           712 0.43393907
+32:   32      0.0789971987          1654      0.1534799757           750 0.44143093
+33:   33      0.0842326189          1726      0.1635261222           790 0.45645071
+34:   34      0.0890641021          1790      0.1750956087           818 0.48113426
+35:   35      0.0937793963          1838      0.1839997425           837 0.49384473
+36:   36      0.0976844676          1875      0.1906338909           860 0.50108508
+37:   37      0.1010455543          1908      0.1995621502           875 0.52181911
+38:   38      0.1044585199          1934      0.2061956130           887 0.53191567
+39:   39      0.1075864776          1949      0.2122672622           893 0.54116970
+40:   40      0.1097547348          1967      0.2159037079           901 0.54512947
+41:   41      0.1129857397          1976      0.2219202458           903 0.55368293
+42:   42      0.1151401789          1987      0.2239479838           910 0.55093248
+43:   43      0.1190450581          1987      0.2346566002           910 0.57601452
+    time cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases         h2
+            se         l95       u95
+ 1: 0.10711042 -0.13464327 0.2852296
+ 2: 0.09225695 -0.08609672 0.2755505
+ 3: 0.08077187 -0.04999609 0.2666296
+ 4: 0.06533488 -0.01736264 0.2387501
+ 5: 0.05449027  0.03487725 0.2484791
+ 6: 0.05078430  0.04846989 0.2475443
+ 7: 0.04625242  0.05491884 0.2362283
+ 8: 0.04595094  0.07432542 0.2544531
+ 9: 0.04105558  0.08458559 0.2455235
+10: 0.03638415  0.10524213 0.2478680
+11: 0.03566309  0.14725095 0.2870503
+12: 0.03440708  0.14597513 0.2808509
+13: 0.03240868  0.16334375 0.2903858
+14: 0.03106179  0.19319214 0.3149544
+15: 0.03053978  0.21383780 0.3335537
+16: 0.02899754  0.21973503 0.3334054
+17: 0.02870801  0.24699434 0.3595297
+18: 0.02830834  0.25707132 0.3680400
+19: 0.02764102  0.26579711 0.3741499
+20: 0.02754791  0.27412754 0.3821153
+21: 0.02719732  0.27714742 0.3837609
+22: 0.02702001  0.28327452 0.3891930
+23: 0.02671937  0.28904660 0.3937865
+24: 0.02622844  0.29771762 0.4005331
+25: 0.02622087  0.31207679 0.4148626
+26: 0.02587429  0.31930570 0.4207329
+27: 0.02592053  0.33882368 0.4404322
+28: 0.02589979  0.35475132 0.4562785
+29: 0.02551851  0.35879606 0.4588286
+30: 0.02548880  0.36783583 0.4677519
+31: 0.02570571  0.38355588 0.4843223
+32: 0.02585241  0.39076020 0.4921017
+33: 0.02597444  0.40554081 0.5073606
+34: 0.02625657  0.42967138 0.5325971
+35: 0.02660408  0.44170073 0.5459887
+36: 0.02678044  0.44859542 0.5535747
+37: 0.02705482  0.46879167 0.5748465
+38: 0.02733165  0.47834564 0.5854857
+39: 0.02765707  0.48696184 0.5953776
+40: 0.02781133  0.49061926 0.5996397
+41: 0.02820046  0.49841002 0.6089558
+42: 0.02833972  0.49538663 0.6064783
+43: 0.02892020  0.51933092 0.6326981
+            se         l95       u95
+#+end_example
+
+** Genetic correlation
+
+Now that the risk and heritability estimates have been produced, the only thing left to do
+is to produce the genetic correlation:
+
+#+BEGIN_SRC R :exports both :results output
+# Join last cumulative incidence estimates into a single dataset
+re_combined <- inner_join(re_d1_c1, re_d1_c3, by = join_by(time)) |>
+  rename(
+    re_d1_c1_estimates = estimate.x,
+    re_d1_c1_cases     = cases.x,
+    re_d1_c3_estimates = estimate.y,
+    re_d1_c3_cases     = cases.y,
+  ) |>
+  select(time, starts_with("re_")) |>
+  inner_join(re_d2_c1, by = join_by(time)) |>
+  rename(
+    re_d2_c1_estimates = estimate,
+    re_d2_c1_cases     = cases
+  ) |>
+  select(time, starts_with("re_"))
+
+# Join both h2 estimates into a single estimate
+h2_combined <- inner_join(h2_d1, h2_d2, by = join_by(time)) |>
+  rename(
+    h2_d1 = h2.x,
+    h2_d2 = h2.y
+  ) |>
+  select(time, starts_with("h2_"))
+
+# Join cumulative incidence and heritability estimates into a single dataset
+combined <- inner_join(re_combined, h2_combined, by = join_by(time)) |>
+  arrange(desc(time)) |>
+  filter(row_number() == 1) |>
+  as.data.table()
+#+END_SRC
+
+#+RESULTS:
+
+Now the 3 risk estimates and 2 heritability estimates have been combined into a
+single dataset, ready to be passed into the genetic correlation analysis.
+This is what the dataset looks like:
+
+#+BEGIN_SRC R :exports both :results output
+print(combined)
+#+END_SRC
+
+#+RESULTS:
+:    time re_d1_c1_estimates re_d1_c1_cases re_d1_c3_estimates re_d1_c3_cases
+: 1:   43          0.1095003           1756           0.115522            419
+:    re_d2_c1_estimates re_d2_c1_cases     h2_d1     h2_d2
+: 1:          0.1190451           1987 0.5098562 0.5760145
+
+Now, we can simply pass in the relationship kind and the combined dataset
+into the genetic correlation analysis:
+
+#+BEGIN_SRC R :exports both :results output
+gc_analysis <- GeneticCorrelationAnalysis$new()
+
+gc_d1_d2 <- gc_analysis$run(
+  relationship_kind = relationship_kind,
+  estimates         = combined
+)
+
+print(gc_d1_d2 |> select(time, rhh, rhog, se, l95, u95))
+#+END_SRC
+
+#+RESULTS:
+:    time        rhh       rhog         se         l95       u95
+: 1:   43 0.03793432 0.06999898 0.03915127 -0.03880217 0.1146708
+
+All done!
+
+Note that we are only showing the output columns, the input columns are hidden, since there
+are so many of them. To make this method more robust, we can also introduce stratification
+by birth year (as in the heritability guide), see the
+[[./guide-yob.org]["estimate genetic correlation between two disorders stratified by year of birth"]]-guide
+on how to do that.

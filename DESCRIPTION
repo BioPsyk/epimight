@@ -1,6 +1,5 @@
-Package: IbpRiskEstimations
-Title: R package for estimating risk, heritability and genetic correlation
-Description: Estimates risk
+Package: epimight
+Title: A powerful R epidemiology analysis toolbox
 Version: 0.4.0
 Authors@R:
     person(given = "Joeri",
@@ -13,8 +12,8 @@ Authors@R:
            email = "richard.zetterberg@regionh.dk")
 License: GPL-3
 Encoding: UTF-8
-URL: https://github.com/BioPsyk/ibp-risk-estimations
-BugReports: https://github.com/BioPsyk/ibp-risk-estimations/issues
+URL: https://github.com/BioPsyk/epimight
+BugReports: https://github.com/BioPsyk/epimight/issues
 Suggests:
     knitr,
     rmarkdown,

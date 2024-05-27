@@ -1,8 +1,8 @@
-{ version, singularityImage, docs, stdenv, lib }:
+{ version, singularityImage, guides, stdenv, lib }:
 
 let
-  sifName    = "ibp-risk-estimations-${version}.sif";
-  entrypoint = builtins.toFile "ibp-risk-estimations" ''
+  sifName    = "epimight-${version}.sif";
+  entrypoint = builtins.toFile "epimight" ''
     #!/usr/bin/env bash
 
     set -euo pipefail
@@ -11,22 +11,22 @@ let
 
     sif="''${script_dir}/${sifName}"
 
-    exec singularity run --contain --cleanenv --home "$(pwd)" $sif "$@"
+    exec singularity exec --contain --cleanenv --home "$(pwd)" $sif "$@"
   '';
 in
 stdenv.mkDerivation rec {
   inherit version;
 
-  pname  = "ibp-risk-estimations-standalone";
+  pname  = "epimight-standalone";
   phases = "installPhase";
 
   installPhase = ''
     mkdir -p "$out"
 
     cp "${singularityImage}" "$out/${sifName}"
-    cp "${docs}/docs" "$out/docs" -R
-    cp "${entrypoint}" "$out/ibp-risk-estimations"
+    cp "${guides}/guides" "$out/guides" -R
+    cp "${entrypoint}" "$out/epimight"
 
-    chmod +x "$out/ibp-risk-estimations"
+    chmod +x "$out/epimight"
   '';
 }

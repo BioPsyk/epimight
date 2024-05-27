@@ -59,7 +59,7 @@ vec_analysis <- function() {
     select(time, born_at_year, cohort1_estimate, cohort1_cases, cohort2_estimate, cohort2_cases) |>
     group_by(born_at_year) |>
     arrange(desc(time)) |>
-    filter(row_number()==1)
+    filter(row_number() == 1)
 
   results1 <- h2_analysis$calculate_h2(
                             combined$cohort1_estimate,

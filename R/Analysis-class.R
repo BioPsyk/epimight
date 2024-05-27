@@ -8,10 +8,12 @@
 #' @import dtplyr
 #' @import tidyr
 #' @export
-Analysis <- R6::R6Class(
+Analysis <- R6::R6Class( #nolint
   "Analysis",
   private = list(),
   public = list(
+    #' @description
+    #' Creates an analysis instance. Doesn't do anything, since this is an abstract class.
     initialize = function() {
     },
     #' @description
@@ -21,14 +23,12 @@ Analysis <- R6::R6Class(
     #' @return Relationship coefficient
     relationship_coefficient_from_kind = function(kind) {
       return(
-        IbpRiskEstimations:::relationship_kinds[[kind]]
+        epimight:::relationship_kinds[[kind]]
       )
     },
     #' @description
     #' Runs a meta analysis on the value of the given column of the given analysis results.
     #'
-    #' @param analysis_results Data table with the analysis result to meta analyse.
-    #' @param meta_column Name of column to run the meta analysis on.
     #' @return Meta analysis result
     run_meta = function(...) {
       validator <- ArgumentsValidator$new(

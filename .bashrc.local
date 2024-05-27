@@ -5,7 +5,7 @@ project_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 export IBP_PROJECT_DIR="${project_dir}"
 
-session="ibp-registry-risk-estimation"
+session="epimight"
 
 # Setup new session
 #---------------------------------------------------------------------------------

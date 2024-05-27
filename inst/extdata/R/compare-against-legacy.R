@@ -109,7 +109,7 @@ calculate_new_gc <- function(relationship_kind, d1_key, d2_key, tte) {
     estimates |>
       group_by(born_at_year) |>
       arrange(desc(time)) |>
-      filter(row_number()==1) |>
+      filter(row_number() == 1) |>
       arrange(born_at_year) |>
       as.data.table()
   }

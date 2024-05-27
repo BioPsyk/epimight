@@ -27,13 +27,13 @@ describe("gen_pop_risk_validator", {
     ),
     gender = list(
       type = "string",
-      enum = IbpRiskEstimations:::genders
+      enum = epimight:::genders
     ),
     diagnosis_kind = list(
       type = "list",
       items = list(
         type = "string",
-        enum = IbpRiskEstimations:::diagnosis_kinds
+        enum = epimight:::diagnosis_kinds
       )
     ),
     earliest_onset = list(
@@ -199,7 +199,7 @@ describe("heritability validator", {
     relationship_kind = list(
       required = TRUE,
       type = "string",
-      enum = names(IbpRiskEstimations:::relationship_kinds)
+      enum = names(epimight:::relationship_kinds)
     ),
     cohort1 = list(
       required = TRUE,

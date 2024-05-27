@@ -10,7 +10,7 @@
 #' @import parallel
 #' @import tidyr
 #' @export
-CumulativeIncidenceAnalysis <- R6::R6Class(
+CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
   "CumulativeIncidenceAnalysis",
   private = list(
     args = NULL,
@@ -98,9 +98,9 @@ CumulativeIncidenceAnalysis <- R6::R6Class(
       if (is.null(cuminc_results)) return(NULL)
 
       results <- data.table(
-          time     = cuminc_results$time,
-          estimate = cuminc_results$est,
-          variance = cuminc_results$var
+        time     = cuminc_results$time,
+        estimate = cuminc_results$est,
+        variance = cuminc_results$var
       )[
         time >= earliest_onset & time <= latest_onset,
         head(.SD, 1),
@@ -261,7 +261,8 @@ CumulativeIncidenceAnalysis <- R6::R6Class(
         pivot_wider(
           names_from  = group,
           values_from = estimate
-        ) |> arrange(time)
+        ) |>
+        arrange(time)
 
       return(summary)
     }

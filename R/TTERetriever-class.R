@@ -1,8 +1,3 @@
-
-#person_id, gender, born_at, father_id, mother_id, status, status_changed, birthplace_id
-#diagnosed_at, diagnosis_kind, diagnosis_icd_edition, diagnosis_icd_id, failure_status, failure_at, failure_time
-
-
 #' @title Generates raw SQL queries by provided column filters.
 #' @description
 #' R6 class that generates raw SQL queries for different types of advanced data retrieval
@@ -14,7 +9,7 @@
 #' @import readr
 #' @import yaml
 #' @export
-TTERetriever <- R6::R6Class(
+TTERetriever <- R6::R6Class( #nolint
   "TTERetriever",
   private = list(
     sql_dir = NULL,
@@ -41,10 +36,10 @@ TTERetriever <- R6::R6Class(
     }
   ),
   public = list(
-    output_directory=NULL,
-    hostname=NULL,
-    username=NULL,
-    password=NULL,
+    output_directory = NULL,
+    hostname = NULL,
+    username = NULL,
+    password = NULL,
     validator = NULL,
     rules_post_validate = function(args, rules) {
       if (!is.null(args[["output_columns"]])) {
@@ -71,17 +66,17 @@ TTERetriever <- R6::R6Class(
         self$validator$check_type("output_columns", rules$output_columns, args$output_columns)
       }
 
-      verticals <- IbpRiskEstimations:::vertical_relationship_kinds
+      verticals <- epimight:::vertical_relationship_kinds
 
-      if (is.null(args[["relatives"]])) return (args)
-      if (is.null(args$relatives[["relationship_filters"]])) return (args)
+      if (is.null(args[["relatives"]])) return(args)
+      if (is.null(args$relatives[["relationship_filters"]])) return(args)
       if (!(args$relatives$relationship_filters$kind %in% verticals)) return(args)
 
       args$relatives$using_vertical_relationship <- TRUE
 
       return(args)
     },
-    initialize = function(output_directory, hostname, username=NULL, password=NULL) {
+    initialize = function(output_directory, hostname, username = NULL, password = NULL) {
       if (!dir.exists(output_directory)) {
         stop("Given output_directory does not exist, or is not accessible")
       }
@@ -91,7 +86,7 @@ TTERetriever <- R6::R6Class(
       self$username         <- username
       self$password         <- password
 
-      private$sql_dir <- system.file("extdata", "sql", package = "IbpRiskEstimations")
+      private$sql_dir <- system.file("extdata", "sql", package = "epimight")
 
       if (!dir.exists(private$sql_dir)) {
         stop("Internal package error, sql_dir (", private$sql_dir, ") does not exist!")
@@ -103,7 +98,7 @@ TTERetriever <- R6::R6Class(
         lstrip = TRUE
       )
 
-      rules          <- IbpRiskEstimations:::tte_retriever_rules
+      rules          <- epimight:::tte_retriever_rules
       self$validator <- rlang::exec(ArgumentsValidator$new, !!!rules)
 
       self$validator$add_post_validation(self$rules_post_validate)
@@ -135,7 +130,7 @@ TTERetriever <- R6::R6Class(
 
       output <- system2(
         "psql",
-        args=c(
+        args = c(
           "-h", self$hostname,
           "-P", "footer=off",
           "-A",
@@ -143,10 +138,10 @@ TTERetriever <- R6::R6Class(
           "-o", data_path,
           "ibp_registry"
         ),
-        env=private$make_env(),
-        input=query,
-        stdout=TRUE,
-        stderr=TRUE
+        env = private$make_env(),
+        input = query,
+        stdout = TRUE,
+        stderr = TRUE
       )
 
       if (length(output) == 0) {
@@ -155,7 +150,7 @@ TTERetriever <- R6::R6Class(
 
       query_lines <- strsplit(query, split = "\n")[[1]]
 
-      for (i in 1:length(query_lines)) {
+      for (i in seq_along(query_lines)) {
         query_lines[[i]] <- paste0(
           i,
           ": ",
@@ -203,7 +198,9 @@ TTERetriever <- R6::R6Class(
         stop("Given output_prefix (first argument) was not a string: ", class(output_prefix))
       } else if (!grepl("^[A-Za-z0-9_-]+$", output_prefix)) {
         stop(
-          "Given output_prefix (first argument) contained illegal characters (Only A-Z, a-z, 0-9, _ and - are allowed): '", class(output_prefix), "'"
+          "Given output_prefix (first argument) contained illegal characters",
+          "(Only A-Z, a-z, 0-9, _ and - are allowed): '",
+          class(output_prefix), "'"
         )
       }
 

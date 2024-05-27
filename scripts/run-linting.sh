@@ -6,6 +6,8 @@ project_dir=$(dirname "$script_dir")
 
 cd "${project_dir}"
 
-echo ">> Running linting"
+echo ">> Linting R"
+R -e "library(lintr); lintr::lint_dir(path = './R')"
 
-R -e "library(lintr); lintr::lint_dir()"
+echo ">> Linting guides"
+R -e "library(lintr); lintr::lint_dir(path = './guides')"

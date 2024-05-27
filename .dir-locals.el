@@ -4,7 +4,7 @@
                (defun ibp/tmux-pane-cmd (pane cmd)
                  "Runs the given shell command in a subshell inside a tmux pane."
                  (interactive)
-                 (let* ((resolved-pane (concat "ibp-registry-risk-estimation:" pane))
+                 (let* ((resolved-pane (concat "epimight:" pane))
                         (resolved-cmd (format "'%s'" cmd))
                         (cmd-parts (list "tmux"
                                          "send-keys"
@@ -50,10 +50,10 @@
                  (interactive)
                  (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/build-package.sh)"))
 
-               (defun ibp/build-container-image ()
-                 "Builds the container image"
+               (defun ibp/build-guides ()
+                 "Builds the guides"
                  (interactive)
-                 (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/build-container-image.sh)"))
+                 (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/build-guides.sh)"))
 
                (defun ibp/generate-internal-data ()
                  "Generates constants from database"
@@ -72,7 +72,7 @@
                (global-set-key (kbd "<f4>") 'ibp/run-system-tests)
                (global-set-key (kbd "<f5>") 'ibp/run-benchmarks)
                (global-set-key (kbd "<f6>") 'ibp/build-package)
-               (global-set-key (kbd "<f7>") 'ibp/build-container-image)
+               (global-set-key (kbd "<f7>") 'ibp/build-guides)
                (global-set-key (kbd "<f8>") 'ibp/generate-internal-data)
                (global-set-key (kbd "<f12>") 'ibp/kill-dev-env)
 

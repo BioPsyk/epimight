@@ -9,7 +9,7 @@
 #' @import parallel
 #' @import tidyr
 #' @export
-GeneticCorrelationAnalysis <- R6::R6Class(
+GeneticCorrelationAnalysis <- R6::R6Class( #nolint
   "GeneticCorrelationAnalysis",
   inherit = Analysis,
   private = list(),
@@ -80,7 +80,7 @@ GeneticCorrelationAnalysis <- R6::R6Class(
         relationship_kind = list(
           required = TRUE,
           type = "string",
-          enum = names(IbpRiskEstimations:::relationship_kinds)
+          enum = names(epimight:::relationship_kinds)
         ),
         estimates = list(
           required = TRUE,

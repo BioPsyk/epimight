@@ -1,0 +1,215 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+OPTIONS: num:3
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[english]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{white},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \DeclareUnicodeCharacter{202F}{ }
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: Genetic correlation
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+
+Genetic correlation is produced by the [[https://r6.r-lib.org/articles/Introduction.html][R6 class]] ~GeneticCorrelationAnalysis~ included in this package.
+You can learn how to use this class, either by reading the reference documentation below or read
+[[./guide.org][this guide that shows you how it is used, step-by-step with code examples.]]
+
+* Functional reference
+
+To use the class, you need to create an instance first:
+
+#+BEGIN_SRC R
+analysis <- GeneticCorrelationAnalysis$new()
+#+END_SRC
+
+Then you use that instance to run one of the 3 functions it exposes:
+
+- run :: Produces the genetic correlations from the cumulative incidences and heritabilities of two disorders
+- run_meta :: Meta analyses stratified heritability estimates, outputs fixed and random model results
+
+** Using function ~run~
+
+This function accepts 2 named arguments:
+
+- relationship_kind (required) :: The relationship kind between the sample and their relatives (full sibling, parent-offspring, etc.)
+- estimates (required) :: A ~data.table~ that contains the cumulative incidences and heritabilities of two disorders,
+  that must contain the following columns:
+
+  |----------------------+-----------------------------------------------------------------|
+  | Column name          | Description                                                     |
+  |----------------------+-----------------------------------------------------------------|
+  | *re_d1_c1_estimates* | Floating point number, disorder 1, cohort 1 risk estimate       |
+  | *re_d1_c1_cases*     | Natural number, disorder 1, cohort 1 cumulative amount of cases |
+  | *re_d1_c3_estimates* | Floating point number, disorder 1, cohort 3 risk estimate       |
+  | *re_d1_c3_cases*     | Natural number, disorder 1, cohort 3 cumulative amount of cases |
+  | *re_d2_c1_estimates* | Floating point number, disorder 2, cohort 1 risk estimate       |
+  | *re_d2_c1_cases*     | Natural number, disorder 2, cohort 1 cumulative amount of cases |
+  | *h2_d1*              | Floating point number, disorder 1 heritability estimate         |
+  | *h2_d2*              | Floating point number, disorder 2 heritability estimate         |
+  |----------------------+-----------------------------------------------------------------|
+
+  This ~data.table~ is allowed to contain any number of extra columns, such as when the reults are stratified and there are
+  columns that contains the different group values. An example of this is when the estimates are stratified by
+  birth year, then you would have a column that contains the birth years. Those extra columns are untouched and will be
+  kept in the results.
+
+Note: This function also accepts stratified cumulative incidence estimates, where there are one row per stratified group.
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:run_args_output
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/heritability-run-args-output.png :exports results
+@startuml
+!include <material/account>
+!include <material/account_search>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include <material/file_tree>
+!include ../diagrams/ibp.puml
+
+file relationship_kind [
+<color:#255ba7><$ma_file_tree{scale=0.35}></color>  **Relationship kind**
+
+---
+PO
+]
+
+file estimates [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence estimates**
+
+| **time** | **re_d1_c1_estimates** | **re_d1_c1_cases** | **re_d1_c3_estimate** | **re_d1_c3_cases** | **re_d2_c1_estimates** | **re_d2_c1_cases** | **h2_d1** | **h2_d2** |
+| 43       | 0.1095003              | 1756               | 0.115522              | 419                | 0.1190451              | 1987               | 0.5098562 | 0.5760145 |
+]
+
+file genetic_correlations [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlations**
+
+| **time** | **re_d1_c1_estimates** | **re_d1_c1_cases** | **re_d1_c3_estimate** | **re_d1_c3_cases** | **re_d2_c1_estimates** | **re_d2_c1_cases** | **h2_d1** | **h2_d2** | **rhh**    | **rhog**   | **se**     | **l95**     | **u95**   |
+| 43       | 0.1095003              | 1756               | 0.115522              | 419                | 0.1190451              | 1987               | 0.5098562 | 0.5760145 | 0.03793432 | 0.06999898 | 0.03915127 | -0.03880217 | 0.1146708 |
+]
+
+Rectangle(analysis, "run")
+
+Arrow(estimates, analysis, "Argument: estimates")
+Arrow_Right(relationship_kind, analysis, "Argument: relationship_kind")
+Arrow(analysis, genetic_correlations, "Outputs")
+
+legend right
+  <img:../ibp-logotype.jpg>
+endlegend
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: run arguments and output
+#+RESULTS: fig:run_args_output
+[[file:../diagrams/heritability-run-args-output.png]]
+
+** Using function ~run_meta~
+
+This function accepts 1 argument:
+
+- results (required) :: A ~data.table~ that contains the results output by the ~run~ function.
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:run_meta_args_output
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/heritability-run_meta-args-output.png :exports results
+@startuml
+!include <material/account>
+!include <material/account_search>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include <material/file_tree>
+!include ../diagrams/ibp.puml
+
+file genetic_correlations [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlations**
+
+| **time** | **group** | **re_d1_c1_estimates** | **re_d1_c1_cases** | **re_d1_c3_estimates** | **re_d1_c3_cases** | **re_d2_c1_estimates** | **re_d2_c1_cases** | **h2_d1**     | **h2_d2**     |
+| 43       | 1981      | 0.10639881             | 128                | 0.11960133             | 30                 | 0.09300595             | 125                | 0.6228291     | 0.5228708     |
+| 42       | 1982      | 0.09763101             | 112                | 0.10897436             | 30                 | 0.08542714             | 128                | 0.4661971     | 0.4011782     |
+| 41       | 1983      | 0.09335325             | 112                | 0.10031348             | 32                 | 0.09634055             | 136                | 0.3924781     | 0.4830165     |
+| 40       | 1984      | 0.09816850             | 120                | 0.09846154             | 27                 | 0.08644689             | 129                | 0.2950882     | 0.4401927     |
+| 39       | 1985      | 0.09417040             | 100                | 0.08641975             | 23                 | 0.09566517             | 139                | 0.3733100     | 0.5973026     |
+]
+
+file meta [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Meta results**
+
+| **fixed_meta** | **fixed_se**   | **fixee_l95** | **fixed_u95** | **rand_meta** | **rand_se**   | **rand_l95**  | **rand_u95** |
+| 0.01868003     | 0.03380838     | -0.04758439   | 0.08494446    | 0.01756866    | 0.0425034     | -0.065738     | 0.1008753    |
+]
+
+Rectangle(analysis, "run_meta")
+
+Arrow(genetic_correlations, analysis, "Argument: results")
+Arrow(analysis, meta, "Outputs")
+
+legend right
+  <img:../ibp-logotype.jpg>
+endlegend
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: run_meta arguments and output
+#+RESULTS: fig:run_meta_args_output
+[[file:../diagrams/heritability-run_meta-args-output.png]]

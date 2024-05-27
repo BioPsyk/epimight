@@ -4,7 +4,7 @@
 #' from that ruleset.
 #' @docType class
 #' @import R6
-ArgumentsValidator <- R6::R6Class(
+ArgumentsValidator <- R6::R6Class( #nolint
   "ArgumentsValidator",
   private = list(
     rules = NULL,
@@ -234,7 +234,12 @@ ArgumentsValidator <- R6::R6Class(
         "'"
       )
     },
-
+    #' @description
+    #' Checks that the given value is a Date.
+    #'
+    #' @param key Key of element in parent named list.
+    #' @param rule Ruleset that contains the enum list to check against.
+    #' @param value Date to validate
     check_date = function(key, rule, value) {
       if (inherits(value, "Date")) {
         return(value)
