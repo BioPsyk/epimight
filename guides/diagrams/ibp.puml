@@ -1,0 +1,102 @@
+skinparam defaultFontName Noto Sans
+skinparam defaultFontSize 13
+skinparam defaultFontStyle bold
+skinparam defaultFontColor #304158
+skinparam dpi 300
+skinparam padding 10
+skinparam nodesep 100
+skinparam ranksep 30
+skinparam wrapWidth 400
+skinparam maxMessageSize 150
+
+skinparam defaultTextAlignment left
+skinparam StereotypeAlignment left
+
+skinparam Arrow {
+    Color     #255ba7
+    FontSize  11
+    FontStyle normal
+    Thickness 1.5
+}
+
+skinparam rectangle {
+    BackgroundColor #ffffff
+    BorderColor     #7a869a
+    BorderThickness 2
+    RoundCorner     15
+    FontStyle       normal
+}
+
+skinparam storage {
+    BackgroundColor #ffffff
+    BorderColor     #7a869a
+    BorderThickness 0
+    FontStyle       normal
+}
+
+skinparam file {
+    BackgroundColor #ffffff
+    BorderColor     #7a869a
+    BorderThickness 2
+    RoundCorner     0
+    TextAlignment   left
+    FontStyle       normal
+}
+
+skinparam collections {
+    BackgroundColor #ffffff
+    BorderColor     #7a869a
+    BorderThickness 2
+    RoundCorner     0
+    FontStyle       normal
+}
+
+skinparam rectangle<<boundary1>> {
+    FontSize           15
+    StereotypeFontSize 0
+    BackgroundColor    #f4f5f7
+    BorderThickness    0
+    RoundCorner        20
+    FontStyle          normal
+}
+
+skinparam rectangle<<boundary2>> {
+    FontSize           15
+    StereotypeFontSize 0
+    BackgroundColor    #ebecf0
+    BorderThickness    0
+    RoundCorner        20
+    FontStyle          normal
+}
+
+skinparam rectangle<<boundary3>> {
+    FontSize           15
+    StereotypeFontSize 0
+    BackgroundColor    #ffffff
+    BorderColor        #b3bac5
+    BorderThickness    2
+    BorderStyle        dashed
+    FontStyle          normal
+}
+
+skinparam legend {
+    BackgroundColor #ffffff
+    BorderThickness 0
+}
+
+!define Rectangle(e_alias, e_label) rectangle "e_label" as e_alias
+!define Database(e_alias, e_label) database "e_label" as e_alias
+!define File(e_alias, e_label) file "e_label" as e_alias
+!define Collection(e_alias, e_label) collections "e_label" as e_alias
+
+!define Boundary1(e_alias, e_label) rectangle "==e_label" <<boundary1>> as e_alias
+!define Boundary2(e_alias, e_label) rectangle "==e_label" <<boundary2>> as e_alias
+!define Boundary3(e_alias, e_label) rectangle "==e_label" <<boundary3>> as e_alias
+
+!define Rel_(e_sourceAlias, e_targetAlias, e_label, e_direction="") e_sourceAlias e_direction e_targetAlias : "e_label"
+
+!define Arrow(e_From, e_To, e_label="") Rel_(e_From, e_To, e_label, "-->>")
+!define Arrow_Up(e_From, e_To, e_label="") Rel_(e_From, e_To, e_label, "-UP->>")
+!define Arrow_Down(e_From, e_To, e_label="") Rel_(e_From, e_To, e_label, "-DOWN->>")
+!define Arrow_Left(e_From, e_To, e_label="") Rel_(e_From, e_To, e_label, "-LEFT->>")
+!define Arrow_Right(e_From, e_To, e_label="") Rel_(e_From, e_To, e_label, "-RIGHT->>")

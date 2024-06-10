@@ -1,0 +1,614 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+OPTIONS: num:3
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[english]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{white},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \DeclareUnicodeCharacter{202F}{ }
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: Pipeline: retrieve TTE data
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+#+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
+
+#+LATEX: \clearpage
+
+#+BEGIN_SRC R :exports none :tangle no
+devtools::load_all(".")
+source("./tests/utils.R")
+#+END_SRC
+
+#+RESULTS:
+
+This is a guide for using the pre-assembled pipeline that retrieves TTE (time-to-event)
+data from the [[https://github.com/BioPsyk/ibp-registry][ibp-registry database]].
+
+All code shown in this guide have been written to [[./retrieve-tte.R][this R file]], so that you don't have
+to copy all code snippets manually.
+
+This pipeline uses the R class ~TTERetriever~ that accepts:
+
+- An output directory path
+- An output prefix
+- A set of arguments
+
+Using those inputs, it generates an SQL query that it
+executes in the [[https://github.com/BioPsyk/ibp-registry][ibp-registry database]] to produce the TTE data:
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:tte-concept-model
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/tte-concept-model.png :exports results
+@startuml
+!include ../diagrams/ibp.puml
+
+Technology_SystemSoftware(ss_database, "ibp-registry\ndatabase")
+
+Application_DataObject(ado_args, "Arguments")
+Application_DataObject(ado_output_prefix, "Output prefix")
+Application_DataObject(ado_output_path, "Output path")
+
+Application_Component(ac_tte_retriever, "TTERetriever")
+
+Application_DataObject_Group(adog_outdir, "Output directory") {
+  Application_DataObject(ado_args2, "Arguments\n(copy)")
+  Application_DataObject(ado_sql, "SQL query")
+  Application_DataObject(ado_tte, "TTE data")
+}
+
+Rel_Access_r_Up(ac_tte_retriever, ado_args)
+Rel_Access_r_Up(ac_tte_retriever, ado_output_prefix)
+Rel_Access_r_Up(ac_tte_retriever, ado_output_path)
+
+Rel_Access_rw_Right(ac_tte_retriever, ss_database)
+
+Rel_Access_w(ac_tte_retriever, ado_args2)
+Rel_Access_w(ac_tte_retriever, ado_tte)
+Rel_Access_w(ac_tte_retriever, ado_sql)
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Concept model
+#+RESULTS: fig:tte-concept-model
+[[file:../diagrams/tte-concept-model.png]]
+
+All output files are named using the provided output prefix and put inside the provided
+output directory. A copy of the provided arguments are also put in the output directory
+with the provided output prefix. By saving the arguments, the SQL query and the produced
+TTE data in the same place, you have the ability to:
+
+- Inspect exactly how the data was retrieved
+- Make incremental changes and rerun the retrieval if something is wrong
+- Compare different retrievals easily
+
+* Getting started
+
+We start by importing all the needed libraries:
+
+#+BEGIN_SRC R :exports code :eval no
+library(data.table)
+library(dplyr)
+library(dtplyr)
+library(epimight)
+#+END_SRC
+
+After that we choose an output directory and provide our login credentials
+of the database when creating an instance of the ~TTERetriever~ class:
+
+#+BEGIN_SRC R :exports code
+tte_retriever <- TTERetriever$new("./tmp", "localhost", "postgres", "devpass")
+#+END_SRC
+
+#+RESULTS:
+
+We use the directory ~"./tmp"~ which is the directory that test outputs and
+other temporary files are kept in this repository. Then we connect to a locally
+running database with test data in it, which can be reached using the hostname
+~localhost~. In that test database there is only one user, ~postgres~ that has
+the hardcoded password ~devpass~.
+
+After that you primarily use the function ~run~ of the ~TTERetriever~ instance.
+That function takes the TTE arguments to use and the output prefix to use.
+If we use the output prefix ~scz_millenials~ then the ~run~ function would
+produce the following 3 files when executed:
+
+- ~./tmp/scz_millenials.yaml~ (copy of arguments provided)
+- ~./tmp/scz_millenials.sql~ (SQL query that was run)
+- ~./tmp/scz_millenials.csv~ (TTE data that was produced)
+
+These "TTE arguments" are what controls all the details of which samples to retrieve
+and what diagnosis/extra information to include for each sample. You can think of
+these arguments as a big questionnaire you have to fill in when requesting TTE data.
+Most of the arguments are optional, there are only two arguments that are required:
+
+- What disorder should be retrieved?
+- What study end date should be used?
+
+You can retrieve TTE data for multiple disorders at once, but you have to use at least
+one disorder. When determining the failure status for each retrieved disorder, a
+study end date have to be picked, so that we know when a sample has survived
+the whole period that is being studied.
+
+* Examples
+
+** Bare minimum
+
+The first example is the bare minimum, only providing the arguments that are required.
+In this case, we are going to retrieve the whole population, add diagnosis information
+for schizophrenia and we are going to use the study period from first person registered
+to ~2016-12-31~. Here's what the TTE arguments would look like for those choices:
+
+#+BEGIN_SRC R :exports both :results output
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      )
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_genpop", tte_args)
+#+END_SRC
+
+#+RESULTS:
+
+Here you can see that for ~samples~, we want to apply the ~diagnosis_filters~ which
+contains a single disorder, that we have given the key ~scz~ to. That means that
+all columns with diagnosis information for schizophrenia will use the prefix ~scz_~:
+
+#+BEGIN_SRC R :exports both :results output
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+     person_id scz_failure_status scz_failure_at scz_failure_time
+  1:         1                  1     2001-07-17         12.62697
+  2:         2                  0     2016-12-31         34.06434
+  3:         4                  1     2014-04-19         64.05749
+  4:        10                  1     1995-08-14         26.16290
+  5:        14                  0     2016-12-31         86.55989
+ ---
+136:       309                  0     2016-12-31        104.41615
+137:       310                  1     2003-10-19         99.38125
+138:       312                  0     2003-11-03         72.71184
+139:       314                  0     1986-11-19         50.05339
+140:       320                  0     2016-12-31         49.04860
+#+end_example
+
+Suppose we wanted to retrieve TTE data for two disorders, schizophrenia and
+major depressive disorder. Now you'll see what you get the TTE information
+for both disorders using the prefix ~scz_~ and ~mdd_~:
+
+#+BEGIN_SRC R :exports both :results output
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      ),
+      mdd = list(
+        icd_codes_regexp = "^F3[23]"
+      )
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_mdd_genpop", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+     person_id mdd_failure_status mdd_failure_at mdd_failure_time scz_failure_status scz_failure_at
+  1:         1                  0     2001-12-20         13.05407                  1     2001-07-17
+  2:         2                  0     2016-12-31         34.06434                  0     2016-12-31
+  3:         4                  0     2016-12-31         66.75975                  1     2014-04-19
+  4:        10                  0     2016-12-31         47.54552                  1     1995-08-14
+  5:        14                  0     2016-12-31         86.55989                  0     2016-12-31
+ ---
+136:       309                  0     2016-12-31        104.41615                  0     2016-12-31
+137:       310                  0     2016-12-31        112.58316                  1     2003-10-19
+138:       312                  0     2003-11-03         72.71184                  0     2003-11-03
+139:       314                  0     1986-11-19         50.05339                  0     1986-11-19
+140:       320                  0     2016-12-31         49.04860                  0     2016-12-31
+     scz_failure_time
+  1:         12.62697
+  2:         34.06434
+  3:         64.05749
+  4:         26.16290
+  5:         86.55989
+ ---
+136:        104.41615
+137:         99.38125
+138:         72.71184
+139:         50.05339
+140:         49.04860
+#+end_example
+
+Right now, there is a limit on 10 disorders.
+
+** Filtering samples
+
+We have the ability to apply the following filters to the samples retrieved:
+
+- ~born_at_min~ :: Earliest birth date allowed
+- ~born_at_max~ :: Latest birth date allowed
+- ~gender~ :: Specific gender allowed
+- ~status~ :: Civil statuses allowed
+
+If we, for example, wanted to retrieve only millenials, we could add the two arguments ~born_at_min~ and ~born_at_max~.
+You specifiy these filters inside the ~individual_filters~ element inside the ~samples~ element:
+
+#+BEGIN_SRC R :exports both :results output
+tte_args <- list(
+  samples = list(
+    individual_filters = list(
+      born_at_min = "1981-01-01",
+      born_at_max = "1996-12-31"
+    ),
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      )
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_millenials", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+#+END_SRC
+
+As you can see we got much fewer rows than the previous run, since we discarded anyone born before ~1981-01-01~ and after ~1996-12-31~.
+
+Here's an example of applying all available filters:
+
+#+BEGIN_SRC R :exports both :results output
+tte_args <- list(
+  samples = list(
+    individual_filters = list(
+      born_at_min = "1981-01-01",
+      born_at_max = "1996-12-31",
+      gender = "female",
+      status = list(
+        "danish-resident",
+        "danish-resident-special-address",
+        "emigrated",
+        "dead"
+      )
+    ),
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      )
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_millenials", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+#+END_SRC
+
+#+RESULTS:
+:    person_id scz_failure_status scz_failure_at scz_failure_time
+: 1:        61                  0     2016-12-31        33.259411
+: 2:        94                  1     1997-10-30        13.360712
+: 3:       109                  1     1988-10-25         2.179329
+: 4:       215                  1     2013-07-04        22.598220
+: 5:       224                  1     1997-02-14         9.325120
+: 6:       244                  1     1987-04-30         2.754278
+
+** Filtering diagnoses
+
+Besides filtering samples, we can also add extra filters to which diagnoses to include when
+determining the failure information of each disorder. Besides the regular expression of the
+ICD code, you can also choose which kind of diagnosis to use and which register origin to use.
+
+These are the different kinds of diagnoses:
+
+#+NAME: diagnosis_kinds
+#+BEGIN_SRC R :exports results :results output raw
+for (kind in epimight:::diagnosis_kinds) {
+  cat(sprintf("- ~%s~\n", kind))
+}
+#+END_SRC
+
+#+RESULTS: diagnosis_kinds
+- ~main~
+- ~auxiliary~
+- ~basic~
+- ~referral~
+- ~temporary~
+- ~complication~
+- ~associated~
+
+The diagnosis data comes from two registers. You can choose to only use diagnosis information
+from one of them using their unique key:
+
+- ~pcrr~ :: Psychiatric Central Research Register
+- ~npr~ :: National Patient Register
+
+If you want to use the diagnosis kinds or register origin filters, you simply add them to
+each disorder in ~diagnosis_filters~:
+
+#+BEGIN_SRC R :exports both :results output
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295",
+        diagnosis_kinds = list("main", "auxiliary"),
+        record_origin = "pcrr"
+      )
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_genpop", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+     person_id scz_failure_status scz_failure_at scz_failure_time
+  1:         1                  1     2001-07-17         12.62697
+  2:         2                  0     2016-12-31         34.06434
+  3:         4                  1     2014-04-19         64.05749
+  4:        10                  1     1995-08-14         26.16290
+  5:        14                  0     2016-12-31         86.55989
+ ---
+136:       309                  0     2016-12-31        104.41615
+137:       310                  1     2003-10-19         99.38125
+138:       312                  0     2003-11-03         72.71184
+139:       314                  0     1986-11-19         50.05339
+140:       320                  0     2016-12-31         49.04860
+#+end_example
+
+Since you can retrieve diagnosis information for multiple disorders, it allows you to compare
+diagnoses from the National Patient Register to the Psychiatric Central Research Register.
+For example, if you wanted to compare schizophrenia diagnoses from the two registers, you
+could simply add two disorders with different filters:
+
+#+BEGIN_SRC R :exports both :results output
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      pcrr_scz = list(
+        icd_codes_regexp = "^F20|^295",
+        record_origin = "pcrr"
+      ),
+      npr_scz = list(
+        icd_codes_regexp = "^F20|^295",
+        record_origin = "npr"
+      )
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_two_registers", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+     person_id npr_scz_failure_status npr_scz_failure_at npr_scz_failure_time pcrr_scz_failure_status
+  1:         1                      0         2001-12-20             13.05407                       1
+  2:         2                      0         2016-12-31             34.06434                       0
+  3:         4                      0         2016-12-31             66.75975                       1
+  4:        10                      0         2016-12-31             47.54552                       1
+  5:        14                      0         2016-12-31             86.55989                       0
+ ---
+136:       309                      0         2016-12-31            104.41615                       0
+137:       310                      0         2016-12-31            112.58316                       1
+138:       312                      0         2003-11-03             72.71184                       0
+139:       314                      0         1986-11-19             50.05339                       0
+140:       320                      0         2016-12-31             49.04860                       0
+     pcrr_scz_failure_at pcrr_scz_failure_time
+  1:          2001-07-17              12.62697
+  2:          2016-12-31              34.06434
+  3:          2014-04-19              64.05749
+  4:          1995-08-14              26.16290
+  5:          2016-12-31              86.55989
+ ---
+136:          2016-12-31             104.41615
+137:          2003-10-19              99.38125
+138:          2003-11-03              72.71184
+139:          1986-11-19              50.05339
+140:          2016-12-31              49.04860
+#+end_example
+
+You could even compare diagnoses based on their kind:
+
+#+BEGIN_SRC R :exports both :results output
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      main_scz = list(
+        icd_codes_regexp = "^F20|^295",
+        diagnosis_kinds = list("main")
+      ),
+      auxi_scz = list(
+        icd_codes_regexp = "^F20|^295",
+        diagnosis_kinds = list("auxiliary")
+      )
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_two_kinds", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+     person_id auxi_scz_failure_status auxi_scz_failure_at auxi_scz_failure_time
+  1:         1                       1          2001-07-17              12.62697
+  2:         2                       0          2016-12-31              34.06434
+  3:         4                       1          2014-04-19              64.05749
+  4:        10                       1          1995-08-14              26.16290
+  5:        14                       0          2016-12-31              86.55989
+ ---
+136:       309                       0          2016-12-31             104.41615
+137:       310                       1          2003-10-19              99.38125
+138:       312                       0          2003-11-03              72.71184
+139:       314                       0          1986-11-19              50.05339
+140:       320                       0          2016-12-31              49.04860
+     main_scz_failure_status main_scz_failure_at main_scz_failure_time
+  1:                       1          2001-07-17              12.62697
+  2:                       0          2016-12-31              34.06434
+  3:                       1          2014-04-19              64.05749
+  4:                       1          1995-08-14              26.16290
+  5:                       0          2016-12-31              86.55989
+ ---
+136:                       0          2016-12-31             104.41615
+137:                       1          2003-10-19              99.38125
+138:                       0          2003-11-03              72.71184
+139:                       0          1986-11-19              50.05339
+140:                       0          2016-12-31              49.04860
+#+end_example
+
+** Adding relatives information
+
+In order to perform heritability and genetic correlation analyses, you need to know the
+failure status of relatives for the disorders you are studying. The ~TTERetriever~ allows
+you to retrieve this information for one kind of relationship for each run. This means
+that you can retrieve diagnosis information for schizophrenia for each sample and then
+also count how many full siblings each sample had and how many of those full siblings
+was also affected by schizophrenia.
+
+To add the relatives information, you supply the top element ~relatives~ with the
+required sub-element ~relationship_filters~ that contain which kind of relationship
+to use (in our case "parent offspring"):
+
+#+BEGIN_SRC R :exports both :results output
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      )
+    )
+  ),
+  relatives = list(
+    relationship_filters = list(
+      kind = "PO"
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_FS", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+     person_id scz_failure_status scz_failure_at scz_failure_time relatives scz_affected_relatives
+  1:         1                  1     2001-07-17         12.62697         0                      0
+  2:         2                  0     2016-12-31         34.06434         0                      0
+  3:         4                  1     2014-04-19         64.05749         0                      0
+  4:        10                  1     1995-08-14         26.16290         0                      0
+  5:        14                  0     2016-12-31         86.55989         0                      0
+ ---
+136:       309                  0     2016-12-31        104.41615         0                      0
+137:       310                  1     2003-10-19         99.38125         0                      0
+138:       312                  0     2003-11-03         72.71184         0                      0
+139:       314                  0     1986-11-19         50.05339         0                      0
+140:       320                  0     2016-12-31         49.04860         0                      0
+#+end_example
+
+Now we have the regular failure information for each sample, but we also have two extra
+columns which counts how many relatives each sample had and how many of those were also affected.

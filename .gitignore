@@ -1,0 +1,8 @@
+/result
+/tmp
+/docs
+/man
+*.html
+*.pdf
+*.tex
+*.log
