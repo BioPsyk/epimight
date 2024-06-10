@@ -13,6 +13,10 @@
   let
     pkgs    = nixpkgs.legacyPackages."${system}";
     version = pkgs.lib.removeSuffix "\n" (builtins.readFile ./VERSION);
+    src     = pkgs.callPackage ./src.nix {
+      inherit (pkgs);
+      inherit version;
+    };
 
     wrappedTexlive = with pkgs; texlive.combine {
       inherit (texlive)
@@ -29,7 +33,7 @@
       ess
     ]);
 
-    wrappedR = with pkgs; rWrapper.override {
+    devWrappedR = with pkgs; rWrapper.override {
       packages = with rPackages; [
         # Development
         devtools testthat lintr knitr rmarkdown pkgdown box microbenchmark progress
@@ -39,48 +43,56 @@
         jinjar yaml rjson
       ];
     };
+
+    rPackage = pkgs.callPackage ./default.nix {
+      inherit (pkgs);
+      inherit src;
+      inherit version;
+    };
+
+    releaseWrappedR = with pkgs; rWrapper.override {
+      packages = with rPackages; [
+        rPackage
+      ];
+    };
   in
   {
     devShell = import ./shell.nix {
       inherit pkgs;
       inherit wrappedEmacs;
       inherit wrappedTexlive;
-      inherit wrappedR;
+
+      wrappedR = devWrappedR;
     };
     packages = rec {
-      src = pkgs.callPackage ./src.nix {
-        inherit (pkgs);
-        inherit version;
-      };
-      default = pkgs.callPackage ./default.nix {
-        inherit (pkgs);
-        inherit src;
-        inherit version;
-      };
-      guides = pkgs.callPackage ./guides.nix {
+      default = rPackage;
+      guides  = pkgs.callPackage ./guides.nix {
         inherit (pkgs);
         inherit src;
         inherit version;
         inherit wrappedEmacs;
         inherit wrappedTexlive;
-        inherit wrappedR;
+
+        wrappedR = devWrappedR;
       };
       singularityImage = pkgs.singularity-tools.buildImage {
-        name      = "epimigh t";
-        contents  = [ pkgs.coreutils wrappedR ];
+        name      = "epimight-${version}";
+        contents  = [ pkgs.coreutils releaseWrappedR ];
         diskSize  = 10 * 1024;
         memSize   = 2048;
-        runScript = "${wrappedR}/bin/Rscript $@";
+        runScript = "${releaseWrappedR}/bin/Rscript $@";
         runAsRoot = with pkgs; ''
           #!${stdenv.shell}
           ${dockerTools.shadowSetup}
         '';
       };
-      standalone = pkgs.callPackage ./standalone.nix {
-        inherit (pkgs);
-        inherit singularityImage;
-        inherit guides;
-        inherit version;
+      dockerImage = pkgs.dockerTools.buildLayeredImage {
+        name     = "epimight";
+        tag      = version;
+        contents = [ pkgs.coreutils releaseWrappedR ];
+        config   = {
+          Entrypoint = [ "${releaseWrappedR}/bin/Rscript" ];
+        };
       };
     };
   });
