@@ -203,18 +203,19 @@ TTERetriever <- R6::R6Class( #nolint
           class(output_prefix), "'"
         )
       }
-
+      
       output_path <- file.path(self$output_directory, output_prefix)
-      data_path   <- self$execute_query(output_path, query)
+      query_path  <- paste0(output_path, ".sql")      
       args_path   <- paste0(output_path, ".yaml")
-      query_path  <- paste0(output_path, ".sql")
-
       query_lines <- strsplit(query, split = "\n")[[1]]
       query_file  <- file(query_path)
+      
       writeLines(query_lines, query_file)
       close(query_file)
 
       self$write_args(args, args_path)
+
+      data_path <- self$execute_query(output_path, query)      
 
       return(list(
         data  = data_path,

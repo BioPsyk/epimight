@@ -1,3 +1,10 @@
+# IbpRegistryRiskEstimations 0.4.1
+
+## Changed
+
+- `TTERetriever-class`
+  - Writes arguments and query file before executing the query in the database
+
 # IbpRegistryRiskEstimations 0.4.0
 
 ## Added
