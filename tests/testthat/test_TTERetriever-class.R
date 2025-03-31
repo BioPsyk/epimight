@@ -603,3 +603,52 @@ describe("patient kind", {
     expect_equal(length(names(results)), 6)
   })
 })
+
+describe("ICD editions", {
+  it("only retrieves medical records with ICD-8 diagnoses", {
+    query <- tte_retriever$generate_query(
+      samples = list(
+        diagnosis_filters = list(
+          incl = list(
+            icd_codes_regexp = "^.*",
+            icd_editions = list("icd8")
+          )
+        )
+      ),
+      study_end_at = as.Date("2016-12-31"),
+      extra_columns = list("incl_diagnosis_icd_id", "incl_diagnosis_icd_edition", "incl_failure_status", "incl_diagnosed_at", "incl_record_patient_kind")
+    )
+
+    tte_retriever$execute_query(output_path, query)
+    results <- read_csv(csv_path, show_col_types = FALSE) |>
+      as.data.table()
+
+    icd8_diagnoses <- results |> filter(incl_diagnosis_icd_edition == "icd8")
+    expect_equal(nrow(icd8_diagnoses), 123)
+  })
+
+  it("only retrieves medical records with ICD-7 diagnoses", {
+    query <- tte_retriever$generate_query(
+      samples = list(
+        diagnosis_filters = list(
+          incl = list(
+            icd_codes_regexp = "^.*",
+            icd_editions = list("icd7"),
+            record_origin = "cr"
+          )
+        )
+      ),
+      study_end_at = as.Date("2016-12-31"),
+      extra_columns = list("incl_diagnosis_icd_id", "incl_diagnosis_icd_edition", "incl_failure_status", "incl_diagnosed_at", "incl_record_patient_kind")
+    )
+
+    tte_retriever$execute_query(output_path, query)
+    results <- read_csv(csv_path, show_col_types = FALSE) |>
+      as.data.table()
+
+    # There are 2 icd7 diagnoses in the dummy data of ibp-registry.
+    # One of the persons has a "annulled-cpr-number" as status, and should therefor be removed automatically.
+    icd7_diagnoses <- results |> filter(incl_diagnosis_icd_edition == "icd7")
+    expect_equal(nrow(icd7_diagnoses), 1)
+  })
+})
