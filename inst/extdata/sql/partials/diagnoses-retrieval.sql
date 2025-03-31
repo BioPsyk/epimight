@@ -19,6 +19,9 @@
         SELECT *
           FROM icd.codes
          WHERE id ~ {{ quote_sql(filter.icd_codes_regexp) }}
+         {% if existsIn(filter, "icd_editions") %}
+           AND edition IN ({{ quote_sql(filter.icd_editions) }})
+         {% endif %}
       ), matched_diagnoses AS (
         SELECT peo.id                                           AS person_id
              , {{ quote_sql(key) }}                             AS diagnosis_group

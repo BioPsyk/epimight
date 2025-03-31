@@ -137,6 +137,14 @@ def mk_diagnosis_filters(diagnosis_kinds, patient_kinds):
           For details, see the PostgreSQL documentation:
           https://www.postgresql.org/docs/13/functions-matching.html#FUNCTIONS-POSIX-REGEXP"""
         },
+        "icd_editions": {
+          "type": "list",
+          "description": "Which ICD editions the diagnosis needs to be included.",
+          "items": {
+            "type": "string",
+            "enum": ["icd7", "icd8", "icd9", "icd10"]
+          }
+        },
         "diagnosis_kinds": {
           "type": "list",
           "description": "Which kinds of diagnoses to investigate.",
@@ -150,9 +158,10 @@ def mk_diagnosis_filters(diagnosis_kinds, patient_kinds):
           "description":
           """Which register the medical records originates from.
 
-          - "pcrr": Psychiatric Central Research Register
-          - npr  = National Patient Register""",
-          "enum": ["pcrr", "npr"]
+          - "pcrr" = Psychiatric Central Research Register
+          - "npr"  = National Patient Register
+          - "cr"   = Cancer Register""",
+          "enum": ["pcrr", "npr", "cr"]
         },
         "patient_kinds": {
           "type": "list",

@@ -1,3 +1,11 @@
+# IbpRegistryRiskEstimations 0.5.0
+
+## Changed
+
+- `TTERetriever-class`
+  - Adds `icd_edition` as argument to `diagnosis_filters`
+  - Adds `cr` valid medical record register origin
+
 # IbpRegistryRiskEstimations 0.4.1
 
 ## Changed
