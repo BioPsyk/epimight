@@ -61,7 +61,8 @@
                           )
                     {% endif %}
                INNER JOIN matched_icd_codes AS icd
-                       ON dia.icd_id = icd.id
+                       ON dia.icd_id      = icd.id
+                      AND dia.icd_edition = icd.edition
          ORDER BY (peo.id, rec.started_at)
       ) SELECT DISTINCT ON (person_id) *
           FROM matched_diagnoses)

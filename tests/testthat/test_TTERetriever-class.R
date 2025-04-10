@@ -649,6 +649,6 @@ describe("ICD editions", {
     # There are 2 icd7 diagnoses in the dummy data of ibp-registry.
     # One of the persons has a "annulled-cpr-number" as status, and should therefor be removed automatically.
     icd7_diagnoses <- results |> filter(incl_diagnosis_icd_edition == "icd7")
-    expect_equal(nrow(icd7_diagnoses), 1)
+    expect_equal(nrow(icd7_diagnoses), 0)
   })
 })
