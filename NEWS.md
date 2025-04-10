@@ -1,3 +1,10 @@
+# IbpRegistryRiskEstimations 0.6.0
+
+## Fixed
+
+- `TTERetriever-class`
+  - When joining diagnoses with ICD-codes only `id` is used, when `id` AND `edition` should be used
+
 # IbpRegistryRiskEstimations 0.5.0
 
 ## Changed
