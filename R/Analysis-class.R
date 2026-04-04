@@ -27,6 +27,31 @@ Analysis <- R6::R6Class( #nolint
       )
     },
     #' @description
+    #' Downsample relative counts to independent Bernoulli indicators.
+    #'
+    #' For each individual, draws a 0/1 indicator with probability
+    #' p = diagnosed_relatives / n_relatives.  This avoids cohort dilution
+    #' at high prevalence, where nearly everyone has at least one affected
+    #' relative and the genetic enrichment of c2/c3 vanishes.
+    #'
+    #' @param diagnosed_relatives Integer vector of diagnosed relative counts.
+    #' @param n_relatives Integer vector of total relative counts (same length).
+    #' @param seed Optional integer seed for reproducibility.  If NULL, uses
+    #'   the current RNG state.
+    #' @return Integer vector of 0/1 Bernoulli draws.
+    downsample_relatives = function(diagnosed_relatives, n_relatives, seed = NULL) {
+      stopifnot(
+        length(diagnosed_relatives) == length(n_relatives),
+        is.numeric(diagnosed_relatives),
+        is.numeric(n_relatives)
+      )
+
+      if (!is.null(seed)) set.seed(seed)
+
+      p <- ifelse(n_relatives > 0, pmin(diagnosed_relatives / n_relatives, 1.0), 0.0)
+      as.integer(rbinom(length(p), size = 1L, prob = p))
+    },
+    #' @description
     #' Runs a meta analysis on the value of the given column of the given analysis results.
     #'
     #' @return Meta analysis result
