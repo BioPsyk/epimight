@@ -42,6 +42,7 @@ Collate:
     'CumulativeIncidenceAnalysis-class.R'
     'GeneticCorrelationAnalysis-class.R'
     'HeritabilityAnalysis-class.R'
+    'MultipleImputationAnalysis-class.R'
     'TTERetriever-class.R'
 Depends:
     R (>= 2.10)

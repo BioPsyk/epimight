@@ -113,6 +113,57 @@ Analysis <- R6::R6Class( #nolint
         as.data.table()
 
       return(meta_results)
+    },
+    #' @description
+    #' Combine K point estimates and standard errors using Rubin's multiple
+    #' imputation rules.
+    #'
+    #' Each row of \code{estimates} represents one imputation (resample).
+    #' The combined estimate is the mean of the K point estimates; the total
+    #' variance is the sum of the within-imputation variance (mean of SE^2)
+    #' and the between-imputation variance (variance of the estimates),
+    #' with the finite-K correction factor (1 + 1/K).
+    #'
+    #' @param estimates A \code{data.table} with K rows (one per resample).
+    #' @param estimate_column Name of the column containing point estimates
+    #'   (default \code{"fixed_meta"}).
+    #' @param se_column Name of the column containing standard errors
+    #'   (default \code{"fixed_se"}).
+    #' @return A single-row \code{data.table} with columns: \code{fixed_meta},
+    #'   \code{fixed_se}, \code{fixed_l95}, \code{fixed_u95}, \code{within_var},
+    #'   \code{between_var}, \code{total_var}, \code{b_over_t}, \code{k_resamples}.
+    combine_rubin = function(estimates, estimate_column = "fixed_meta",
+                             se_column = "fixed_se") {
+      stopifnot(
+        is.data.table(estimates),
+        nrow(estimates) >= 2L,
+        estimate_column %in% colnames(estimates),
+        se_column %in% colnames(estimates),
+        is.numeric(estimates[[estimate_column]]),
+        is.numeric(estimates[[se_column]])
+      )
+
+      K <- nrow(estimates)
+      theta <- estimates[[estimate_column]]
+      se <- estimates[[se_column]]
+
+      theta_bar <- mean(theta)
+      W <- mean(se^2)
+      B <- var(theta)
+      T_var <- W + (1 + 1 / K) * B
+      combined_se <- sqrt(T_var)
+
+      data.table(
+        fixed_meta  = theta_bar,
+        fixed_se    = combined_se,
+        fixed_l95   = theta_bar - 1.96 * combined_se,
+        fixed_u95   = theta_bar + 1.96 * combined_se,
+        within_var  = W,
+        between_var = B,
+        total_var   = T_var,
+        b_over_t    = B / T_var,
+        k_resamples = K
+      )
     }
   )
 )
