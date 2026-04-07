@@ -25,6 +25,8 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
     cif_analysis = NULL,
     h2_analysis = NULL,
     gc_analysis = NULL,
+    re_d1_c1 = NULL,
+    re_d2_c1 = NULL,
 
     #' Run CIF stratified by born_at_year for one disorder in one cohort.
     run_cif_stratified = function(disorder, tte_df, earliest_onset) {
@@ -74,6 +76,8 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
     },
 
     #' Run one complete analysis pipeline for resample k.
+    #' Uses pre-computed c1 CIFs (private$re_d1_c1, private$re_d2_c1)
+    #' to avoid redundant computation — these are identical across resamples.
     run_single_resample = function(k) {
       seed_d1 <- private$seed + k - 1L
       seed_d2 <- private$seed + private$K + k - 1L
@@ -97,15 +101,14 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
         return(NULL)
       }
 
-      # CIF for 5 sets
-      re_d1_c1 <- private$run_cif_stratified("d1", tte, private$d1_earliest_onset)
-      re_d1_c2 <- private$run_cif_stratified("d1", c2,  private$d1_earliest_onset)
-      re_d1_c3 <- private$run_cif_stratified("d1", c3,  private$d1_earliest_onset)
-      re_d2_c1 <- private$run_cif_stratified("d2", tte, private$d2_earliest_onset)
-      re_d2_c3 <- private$run_cif_stratified("d2", c3,  private$d2_earliest_onset)
+      # CIF: c1 is pre-computed, only c2/c3 vary per resample
+      re_d1_c1 <- private$re_d1_c1
+      re_d2_c1 <- private$re_d2_c1
+      re_d1_c2 <- private$run_cif_stratified("d1", c2, private$d1_earliest_onset)
+      re_d1_c3 <- private$run_cif_stratified("d1", c3, private$d1_earliest_onset)
+      re_d2_c3 <- private$run_cif_stratified("d2", c3, private$d2_earliest_onset)
 
-      if (is.null(re_d1_c1) || is.null(re_d1_c2) || is.null(re_d1_c3) ||
-          is.null(re_d2_c1) || is.null(re_d2_c3)) {
+      if (is.null(re_d1_c2) || is.null(re_d1_c3) || is.null(re_d2_c3)) {
         return(NULL)
       }
 
@@ -295,6 +298,16 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
     #'   \code{data.table}) and \code{resample_meta} (K-row \code{data.table}).
     run = function(rubin_level = "meta") {
       stopifnot(rubin_level %in% c("meta", "per_year"))
+
+      # Pre-compute CIF on the full c1 cohort (invariant across resamples)
+      private$re_d1_c1 <- private$run_cif_stratified("d1", private$c1_tte,
+                                                      private$d1_earliest_onset)
+      private$re_d2_c1 <- private$run_cif_stratified("d2", private$c1_tte,
+                                                      private$d2_earliest_onset)
+
+      if (is.null(private$re_d1_c1) || is.null(private$re_d2_c1)) {
+        stop("CIF on base cohort (c1) returned NULL — no events in data")
+      }
 
       results <- vector("list", private$K)
 
