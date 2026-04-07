@@ -28,7 +28,7 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
     re_d1_c1 = NULL,
     re_d2_c1 = NULL,
 
-    #' Run CIF stratified by born_at_year for one disorder in one cohort.
+    # Run CIF stratified by born_at_year for one disorder in one cohort.
     run_cif_stratified = function(disorder, tte_df, earliest_onset) {
       status_col <- paste0(disorder, "_failure_status")
       time_col   <- paste0(disorder, "_failure_time")
@@ -47,7 +47,7 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
       )
     },
 
-    #' Run heritability from paired CIF estimates.
+    # Run heritability from paired CIF estimates.
     run_h2_stratified = function(c1_estimates, c2_estimates) {
       combined_estimates <- c1_estimates |>
         inner_join(c2_estimates, by = join_by(time, born_at_year)) |>
@@ -65,7 +65,7 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
       )
     },
 
-    #' Filter to maximum follow-up time per birth year.
+    # Filter to maximum follow-up time per birth year.
     get_tmax_per_year = function(dt) {
       dt |>
         group_by(born_at_year) |>
@@ -75,9 +75,9 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
         as.data.table()
     },
 
-    #' Run one complete analysis pipeline for resample k.
-    #' Uses pre-computed c1 CIFs (private$re_d1_c1, private$re_d2_c1)
-    #' to avoid redundant computation — these are identical across resamples.
+    # Run one complete analysis pipeline for resample k.
+    # Uses pre-computed c1 CIFs (private$re_d1_c1, private$re_d2_c1)
+    # to avoid redundant computation — these are identical across resamples.
     run_single_resample = function(k) {
       seed_d1 <- private$seed + k - 1L
       seed_d2 <- private$seed + private$K + k - 1L
@@ -193,9 +193,7 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
       )
     },
 
-    #' Combine K per-year estimates via Rubin, then meta-analyze.
-    #' @param analysis_obj The analysis object to call run_meta on
-    #'   (h2_analysis for heritability, gc_analysis for genetic correlation).
+    # Combine K per-year estimates via Rubin, then meta-analyze.
     rubin_then_meta = function(tmax_list, estimate_col, se_col, meta_col,
                                analysis_obj) {
       all_years <- rbindlist(tmax_list, idcol = "resample")
