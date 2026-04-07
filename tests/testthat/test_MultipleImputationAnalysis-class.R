@@ -90,6 +90,40 @@ describe("MultipleImputationAnalysis", {
                  r2$h2_d1$rubin_meta$fixed_meta)
   })
 
+  it("rubin_level='per_year' returns valid structure", {
+    tte <- make_synthetic_c1_tte(5000)
+    mi <- MultipleImputationAnalysis$new(tte, "FS", K = 2L, seed = 42L)
+    results <- mi$run(rubin_level = "per_year")
+
+    for (nm in c("h2_d1", "h2_d2", "gc")) {
+      expect_equal(nrow(results[[nm]]$rubin_meta), 1)
+      expect_equal(nrow(results[[nm]]$resample_meta), 2)
+      expect_true(is.finite(results[[nm]]$rubin_meta$fixed_meta))
+      expect_true(is.finite(results[[nm]]$rubin_meta$fixed_se))
+      expect_true("b_over_t" %in% colnames(results[[nm]]$rubin_meta))
+    }
+  })
+
+  it("rubin_level='per_year' and 'meta' produce different SEs", {
+    tte <- make_synthetic_c1_tte(5000)
+    mi <- MultipleImputationAnalysis$new(tte, "FS", K = 3L, seed = 42L)
+    r_meta <- mi$run(rubin_level = "meta")
+    r_year <- mi$run(rubin_level = "per_year")
+
+    # Point estimates should be similar but not identical
+    # SEs may differ due to different weighting
+    expect_false(isTRUE(all.equal(
+      r_meta$h2_d1$rubin_meta$fixed_se,
+      r_year$h2_d1$rubin_meta$fixed_se
+    )))
+  })
+
+  it("Invalid rubin_level raises error", {
+    tte <- make_synthetic_c1_tte(5000)
+    mi <- MultipleImputationAnalysis$new(tte, "FS", K = 2L, seed = 42L)
+    expect_error(mi$run(rubin_level = "invalid"))
+  })
+
   it("Different seeds produce different results", {
     tte <- make_synthetic_c1_tte(5000)
     mi1 <- MultipleImputationAnalysis$new(tte, "FS", K = 2L, seed = 1L)

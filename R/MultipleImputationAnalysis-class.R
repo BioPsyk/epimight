@@ -177,11 +177,58 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
 
       gc_meta <- private$gc_analysis$run_meta(gc_tmax)
 
+      # Select GC tmax columns needed for per-year Rubin combination
+      gc_tmax_out <- gc_tmax[, .(born_at_year, time, rhh, rhog, se, l95, u95)]
+
       list(
         h2_d1_meta = h2_d1_meta,
         h2_d2_meta = h2_d2_meta,
-        gc_meta    = gc_meta
+        gc_meta    = gc_meta,
+        h2_d1_tmax = h2_d1_tmax,
+        h2_d2_tmax = h2_d2_tmax,
+        gc_tmax    = gc_tmax_out
       )
+    },
+
+    #' Combine K per-year estimates via Rubin, then meta-analyze.
+    #' @param analysis_obj The analysis object to call run_meta on
+    #'   (h2_analysis for heritability, gc_analysis for genetic correlation).
+    rubin_then_meta = function(tmax_list, estimate_col, se_col, meta_col,
+                               analysis_obj) {
+      all_years <- rbindlist(tmax_list, idcol = "resample")
+      years <- sort(unique(all_years$born_at_year))
+
+      per_year_rubin <- rbindlist(lapply(years, function(yr) {
+        yr_data <- all_years[born_at_year == yr]
+        if (nrow(yr_data) < 2L) return(NULL)
+        rubin <- self$combine_rubin(yr_data,
+                                    estimate_column = estimate_col,
+                                    se_column = se_col)
+        rubin[, born_at_year := yr]
+        rubin
+      }))
+
+      if (nrow(per_year_rubin) == 0L) {
+        stop("No birth years had >= 2 successful resamples for Rubin combination")
+      }
+
+      # Rename for run_meta compatibility: meta_col → h2/rhh, fixed_se → se
+      meta_input <- per_year_rubin[, .(born_at_year)]
+      meta_input[[meta_col]] <- per_year_rubin$fixed_meta
+      meta_input[["se"]] <- per_year_rubin$fixed_se
+
+      meta_result <- analysis_obj$run_meta(meta_input)
+
+      # Add Rubin diagnostics (averaged across birth years)
+      meta_result[, `:=`(
+        within_var  = mean(per_year_rubin$within_var),
+        between_var = mean(per_year_rubin$between_var),
+        total_var   = mean(per_year_rubin$total_var),
+        b_over_t    = mean(per_year_rubin$b_over_t),
+        k_resamples = per_year_rubin$k_resamples[1]
+      )]
+
+      meta_result
     }
   ),
 
@@ -233,13 +280,22 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
     #' Run the multiple imputation analysis.
     #'
     #' Executes the full CIF/h2/GC pipeline K times with independent Bernoulli
-    #' downsample draws, then combines the meta-analyzed estimates via Rubin's
-    #' rules.  When K = 1, returns the single resample's meta directly.
+    #' downsample draws, then combines estimates via Rubin's rules.
+    #' When K = 1, returns the single resample's meta directly.
     #'
+    #' @param rubin_level Controls the ordering of Rubin combination and
+    #'   birth-year meta-analysis.  \code{"meta"} (default) runs Meta then
+    #'   Rubin: each resample produces a scalar meta-analyzed estimate, K
+    #'   scalars are combined via Rubin.  \code{"per_year"} runs Rubin then
+    #'   Meta: K per-year estimates are combined via Rubin at each birth year,
+    #'   then meta-analyzed.  The latter gives meta weights that reflect total
+    #'   (sampling + imputation) variance.
     #' @return A named list with elements \code{h2_d1}, \code{h2_d2}, and
     #'   \code{gc}.  Each element is a list with \code{rubin_meta} (1-row
     #'   \code{data.table}) and \code{resample_meta} (K-row \code{data.table}).
-    run = function() {
+    run = function(rubin_level = "meta") {
+      stopifnot(rubin_level %in% c("meta", "per_year"))
+
       results <- vector("list", private$K)
 
       for (k in seq_len(private$K)) {
@@ -259,6 +315,7 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
                 " resamples failed and were dropped (K_eff = ", K_eff, ")")
       }
 
+      # Per-resample meta (always collected for diagnostics)
       h2_d1_resamples <- rbindlist(lapply(results, `[[`, "h2_d1_meta"))
       h2_d2_resamples <- rbindlist(lapply(results, `[[`, "h2_d2_meta"))
       gc_resamples    <- rbindlist(lapply(results, `[[`, "gc_meta"))
@@ -274,10 +331,23 @@ MultipleImputationAnalysis <- R6::R6Class( #nolint
         h2_d1_rubin <- add_na_diagnostics(copy(h2_d1_resamples))
         h2_d2_rubin <- add_na_diagnostics(copy(h2_d2_resamples))
         gc_rubin    <- add_na_diagnostics(copy(gc_resamples))
-      } else {
+      } else if (rubin_level == "meta") {
+        # Meta → Rubin: combine K scalar meta estimates
         h2_d1_rubin <- self$combine_rubin(h2_d1_resamples)
         h2_d2_rubin <- self$combine_rubin(h2_d2_resamples)
         gc_rubin    <- self$combine_rubin(gc_resamples)
+      } else {
+        # Rubin → Meta: combine per-year, then meta-analyze
+        h2_d1_tmax_list <- lapply(results, `[[`, "h2_d1_tmax")
+        h2_d2_tmax_list <- lapply(results, `[[`, "h2_d2_tmax")
+        gc_tmax_list    <- lapply(results, `[[`, "gc_tmax")
+
+        h2_d1_rubin <- private$rubin_then_meta(h2_d1_tmax_list, "h2", "se", "h2",
+                                               private$h2_analysis)
+        h2_d2_rubin <- private$rubin_then_meta(h2_d2_tmax_list, "h2", "se", "h2",
+                                               private$h2_analysis)
+        gc_rubin    <- private$rubin_then_meta(gc_tmax_list, "rhh", "se", "rhh",
+                                               private$gc_analysis)
       }
 
       list(
