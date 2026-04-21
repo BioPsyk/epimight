@@ -3,7 +3,6 @@ library(data.table, quietly = TRUE, warn.conflicts = FALSE)
 library(parallel, quietly = TRUE, warn.conflicts = FALSE)
 
 source("../utils.R")
-source("../legacy.R")
 
 #=================================================================================
 # Preparation
@@ -17,33 +16,11 @@ username         <- "postgres"
 password         <- "devpass"
 csv_path         <- paste0(output_path, ".csv")
 tte_retriever    <- TTERetriever$new("../../tmp", hostname, username, password)
-qg               <- QueryGenerator$new()
 
 #=================================================================================
 # Tests
 #=================================================================================
 
-
-compare_queries <- function(old_query, new_query) {
-  qg$execute_query(old_query, csv_path, hostname, username, password)
-  old_results <- read_csv(csv_path, show_col_types = FALSE) |>
-    arrange(person_id) |>
-    select(person_id, failure_status, failure_time) |>
-    as.data.frame()
-
-  tte_retriever$execute_query(output_path, new_query)
-  new_results <- read_csv(csv_path, show_col_types = FALSE) |>
-    arrange(person_id) |>
-    select(person_id, fract_failure_status, fract_failure_time) |>
-    rename(
-      failure_status = fract_failure_status,
-      failure_time   = fract_failure_time
-    ) |>
-    mutate(failure_time = round(failure_time)) |>
-    as.data.frame()
-
-  expect_dataframe_equal(old_results, new_results)
-}
 
 describe("run", {
   valid_args <- list(
@@ -126,232 +103,6 @@ describe("run_from_file", {
     tte_retriever$write_args(args, args_path)
 
     paths <- tte_retriever$run_from_file(output_prefix, args_path)
-  })
-})
-
-describe("single disorder", {
-  it("produces a valid query with only the requirements", {
-    old_args <- list(
-      icd_codes_regexp = "^80",
-      study_end_at = "2016-12-31"
-    )
-    new_args <- list(
-      samples = list(
-        diagnosis_filters = list(
-          fract = list(
-            icd_codes_regexp = "^80"
-          )
-        )
-      ),
-      study_end_at = as.Date("2016-12-31")
-    )
-
-    compare_queries(
-      rlang::exec(qg$survival_by_icd_codes, !!!old_args),
-      rlang::exec(tte_retriever$generate_query, !!!new_args)
-    )
-  })
-
-  it("produces a valid query with all sample_filters", {
-    old_args <- list(
-      icd_codes_regexp = "^80",
-      birth_date_min = "1800-01-01",
-      birth_date_max = "2010-01-01",
-      gender = "female",
-      status = list(
-        "danish-resident",
-        "danish-resident-special-address",
-        "greenlandic-resident",
-        "greenlandic-resident-special-address",
-        "annulled-cpr-number",
-        "emigrated",
-        "dead"
-      ),
-      study_end_at = "2016-04-01"
-    )
-
-    new_args <- list(
-      samples = list(
-        diagnosis_filters = list(
-          fract = list(
-            icd_codes_regexp = old_args$icd_codes_regexp
-          )
-        ),
-        individual_filters = list(
-          born_at_min = as.Date(old_args$birth_date_min),
-          born_at_max = as.Date(old_args$birth_date_max),
-          gender = old_args$gender,
-          status = old_args$status
-        )
-      ),
-      study_end_at = as.Date(old_args$study_end_at)
-    )
-
-    compare_queries(
-      rlang::exec(qg$survival_by_icd_codes, !!!old_args),
-      rlang::exec(tte_retriever$generate_query, !!!new_args)
-    )
-  })
-
-  it("produces a valid query with all diagnosis_filters", {
-    old_args <- list(
-      icd_codes_regexp = "^80",
-      diagnosis_kind = list(
-        "main",
-        "auxiliary"
-      ),
-      record_origin = "pcrr",
-      study_end_at = "2016-04-01"
-    )
-
-    new_args <- list(
-      samples = list(
-        diagnosis_filters = list(
-          fract = list(
-            icd_codes_regexp = old_args$icd_codes_regexp,
-            diagnosis_kinds = old_args$diagnosis_kind,
-            record_origin = old_args$record_origin
-          )
-        )
-      ),
-      study_end_at = as.Date(old_args$study_end_at)
-    )
-
-    compare_queries(
-      rlang::exec(qg$survival_by_icd_codes, !!!old_args),
-      rlang::exec(tte_retriever$generate_query, !!!new_args)
-    )
-  })
-
-  it("produces a valid query with all filters", {
-    old_args <- list(
-      icd_codes_regexp = "^80",
-      diagnosis_kind = list(
-        "main",
-        "auxiliary"
-      ),
-      birth_date_min = "1800-01-01",
-      birth_date_max = "2010-01-01",
-      gender = "female",
-      status = list(
-        "danish-resident",
-        "danish-resident-special-address",
-        "greenlandic-resident",
-        "greenlandic-resident-special-address",
-        "annulled-cpr-number",
-        "emigrated",
-        "dead"
-      ),
-      study_end_at = "2016-04-01"
-    )
-
-    new_args <- list(
-      samples = list(
-        diagnosis_filters = list(
-          fract = list(
-          icd_codes_regexp = old_args$icd_codes_regexp,
-          diagnosis_kinds = old_args$diagnosis_kind
-          )
-        ),
-        individual_filters = list(
-          born_at_min = as.Date(old_args$birth_date_min),
-          born_at_max = as.Date(old_args$birth_date_max),
-          gender = old_args$gender,
-          status = old_args$status
-        )
-      ),
-      study_end_at = as.Date(old_args$study_end_at)
-    )
-
-    compare_queries(
-      rlang::exec(qg$survival_by_icd_codes, !!!old_args),
-      rlang::exec(tte_retriever$generate_query, !!!new_args)
-    )
-  })
-})
-
-describe("single disorder with relatives", {
-  it("produces a valid query with only the requirements", {
-    old_args <- list(
-      icd_codes_regexp = ".*",
-      study_end_at = "2016-12-31",
-      relationship_kind = "PO"
-    )
-
-    new_args <- list(
-      samples = list(
-        diagnosis_filters = list(
-          fract = list(
-            icd_codes_regexp = old_args$icd_codes_regexp
-          )
-        )
-      ),
-      relatives = list(
-        relationship_filters = list(
-          kind = old_args$relationship_kind,
-          component = "pedigree1"
-        )
-      ),
-      study_end_at = as.Date(old_args$study_end_at)
-    )
-
-    compare_queries(
-      rlang::exec(qg$family_survival_by_icd_codes, !!!old_args),
-      rlang::exec(tte_retriever$generate_query, !!!new_args)
-    )
-  })
-
-  it("produces a valid query with all filters", {
-    old_args <- list(
-      icd_codes_regexp = "^80",
-      diagnosis_kind = list(
-        "main",
-        "auxiliary"
-      ),
-      birth_date_min = "1800-01-01",
-      birth_date_max = "2010-01-01",
-      gender = "female",
-      status = list(
-        "danish-resident",
-        "danish-resident-special-address",
-        "greenlandic-resident",
-        "greenlandic-resident-special-address",
-        "annulled-cpr-number",
-        "emigrated",
-        "dead"
-      ),
-      study_end_at = "2016-04-01",
-      relationship_kind = "PO"
-    )
-
-    new_args <- list(
-      samples = list(
-        diagnosis_filters = list(
-          fract = list(
-            icd_codes_regexp = old_args$icd_codes_regexp,
-            diagnosis_kinds = old_args$diagnosis_kind
-          )
-        ),
-        individual_filters = list(
-          born_at_min = as.Date(old_args$birth_date_min),
-          born_at_max = as.Date(old_args$birth_date_max),
-          gender = old_args$gender,
-          status = old_args$status
-        )
-      ),
-      relatives = list(
-        relationship_filters = list(
-          kind = old_args$relationship_kind,
-          component = "pedigree1"
-        )
-      ),
-      study_end_at = as.Date(old_args$study_end_at)
-    )
-
-    compare_queries(
-      rlang::exec(qg$family_survival_by_icd_codes, !!!old_args),
-      rlang::exec(tte_retriever$generate_query, !!!new_args)
-    )
   })
 })
 
@@ -633,8 +384,8 @@ describe("ICD editions", {
         diagnosis_filters = list(
           incl = list(
             icd_codes_regexp = "^.*",
-            icd_editions = list("icd7"),
-            record_origin = "cr"
+            icd_editions     = list("icd7"),
+            record_origin    = "cr"
           )
         )
       ),
@@ -649,6 +400,6 @@ describe("ICD editions", {
     # There are 2 icd7 diagnoses in the dummy data of ibp-registry.
     # One of the persons has a "annulled-cpr-number" as status, and should therefor be removed automatically.
     icd7_diagnoses <- results |> filter(incl_diagnosis_icd_edition == "icd7")
-    expect_equal(nrow(icd7_diagnoses), 0)
+    expect_equal(nrow(icd7_diagnoses), 1)
   })
 })

@@ -185,7 +185,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         full_key <- sprintf("%s[[%s]]", key, col_key)
 
         if (isTRUE(col_rule$required) && !(col_key %in% colnames(value))) {
-          stop("Data.table column '", full_key, "' did not exist")
+          stop("Data.table column '", full_key, "' did not exist: ", paste(colnames(value), collapse = ", "))
         } else if (!isTRUE(col_rule$required) && !(col_key %in% colnames(value))) {
           next
         }
@@ -204,11 +204,11 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param rule Ruleset that contains the minimum and maximum values.
     #' @param value Numeric value to check.
     check_range = function(key, rule, value) {
-      if (!is.null(rule$minimum) && value < rule$minimum) {
+      if (!is.null(rule$minimum) && any(value < rule$minimum)) {
         stop("Argument '", key, "' was smaller than minimum value: ", rule$minimum)
       }
 
-      if (!is.null(rule$maximum) && value > rule$maximum) {
+      if (!is.null(rule$maximum) && any(value > rule$maximum)) {
         stop("Argument '", key, "' was larger than maximum value: ", rule$maximum)
       }
 
@@ -220,17 +220,14 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of element in parent named list.
     #' @param rule Ruleset that contains the enum list to check against.
     #' @param value String/numeric to validate
-    check_enum = function(key, enum, value) {
-      if (is.null(enum)) return(value)
-
-      for (comp in enum) {
-        if (comp == value) return(value)
-      }
+    check_enum = function(key, rule, value) {
+      if (!("enum" %in% names(rule)) || is.null(rule$enum)) return(value)
+      if (all(value %in% rule$enum)) return(value)
 
       stop(
         "Argument '", key, "' value '",
         value, "', was not one of allowed values: '",
-        paste(enum, collapse = ", "),
+        paste(rule$enum, collapse = ", "),
         "'"
       )
     },
@@ -249,9 +246,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Argument '", key, "' was not a Date (see `as.Date` for details) or date formatted string")
       }
 
-      return(
-        as.Date(value)
-      )
+      return(as.Date(value))
     },
     #' @description
     #' Checks that the given value is the type that the given ruleset specifies.
@@ -292,12 +287,12 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Argument '", key, "' was not an integer")
       } else if (type == "numeric" && !is.numeric(value)) {
         stop("Argument '", key, "' was not a numeric")
+      } else if (type == "logical" && !is.logical(value)) {
+        stop("Argument '", key, "' was not a logical")
       }
 
-      if (!is.null(value)) {
-        value <- self$check_range(key, rule, value)
-        value <- self$check_enum(key, rule$enum, value)
-      }
+      value <- self$check_range(key, rule, value)
+      value <- self$check_enum(key, rule, value)
 
       return(value)
     },
@@ -308,14 +303,36 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of argument to validate.
     #' @returns Arguments after validation of key was done.
     handle_rule = function(args, key) {
-      rule  <- private$rules[[key]]
-      value <- args[[key]]
+      rule <- private$rules[[key]]
 
       if (is.null(rule)) {
         stop("Rule for key '", key, "' is NULL")
       } else if (!self$is_named_list(rule)) {
         stop("Rule for key '", key, "' is not a named list: (", class(rule), ") -> ", rule)
       }
+
+      if (!("type" %in% names(rule))) {
+        stop("Rule for key '", key, "' has no type")
+      }
+
+      known_types <- list(
+        "any",
+        "data.table",
+        "date",
+        "generic_named_list",
+        "integer",
+        "list",
+        "logical",
+        "named_list",
+        "numeric",
+        "string"
+      )
+
+      if (!(rule$type %in% known_types)) {
+        stop("Rule for key '", key, "' has unknown type: ", rule$type)
+      }
+
+      value <- args[[key]]
 
       if (is.null(value)) {
         if (isTRUE(rule$required)) {

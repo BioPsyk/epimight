@@ -67,6 +67,77 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
       return(results)
     },
+    run_weighted_single = function(tte, earliest_onset, latest_onset) {
+      failure_time_max <- max(tte$failure_time)
+
+      weights <- tte |>
+        mutate(
+          weight_event_1 = ifelse(failure_status == 1, weight, 0.0),
+          weight_event_n = ifelse(failure_status != 0, weight, 0.0),
+        ) |>
+        group_by(failure_time) |>
+        summarise(
+          weight_all     = sum(weight),
+          weight_event_1 = sum(weight_event_1),
+          weight_event_n = sum(weight_event_n)
+        ) |>
+        ungroup() |>
+        # Make sure we have a row for `failure_time` from 0 up to `failure_time_max`
+        right_join(
+          data.table(
+            failure_time = seq(0, failure_time_max)
+          ),
+          by = join_by(failure_time)
+        ) |>
+        # The failure times that were filled in will have NA's in missing columns,
+        # so we make sure to replace them with 0.0
+        mutate(
+          across(everything(), ~ replace_na(.x, 0.0))
+        ) |>
+        # Risk needs to be accumulated starting from the largest failure_time value
+        arrange(desc(failure_time)) |>
+        mutate(
+          at_risk = cumsum(weight_all)
+        ) |>
+        arrange(failure_time)
+
+      estimates <- weights |>
+        filter(weight_event_n > 0.0) |>
+        mutate(
+          surv = ifelse(
+            at_risk > 0.0,
+            cumprod(1.0 - weight_event_n / at_risk),
+            surv
+          ),
+          cif_acc = ifelse(
+            at_risk > 0.0,
+            cumsum(
+              replace_na(lag(surv), 1.0) * weight_event_1 / at_risk
+            ),
+            cif_acc
+          ),
+          cif = replace_na(lag(cif_acc), 0.0),
+        ) |>
+        filter(
+          failure_time   >= earliest_onset,
+          failure_time   <= latest_onset,
+          weight_event_1 > 0.0
+        ) |>
+        mutate(
+          cases = cumsum(weight_event_1)
+        ) |>
+        rename(time = failure_time) |>
+        select(time, cif, cases) |>
+        mutate(
+          var = 0.0,
+          se  = 0.0,
+          l95 = 0.0,
+          u95 = 0.0
+        ) |>
+        as.data.table()
+
+      return(estimates)
+    },
     #' @description
     #' Runs CIF on the given TTE data as a single group.
     #'
@@ -87,6 +158,12 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
       if (nrow(events_amount) == 0) return(NULL)
 
+      if ("weight" %in% colnames(tte)) {
+        return(
+          private$run_weighted_single(tte, earliest_onset, latest_onset)
+        )
+      }
+
       # We want to use the results from group 1 and for the status 1 (affected),
       # therefor we use the name `1 1` when selecting the data from the cuminc results:
       cuminc_results <- cuminc(
@@ -98,9 +175,9 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       if (is.null(cuminc_results)) return(NULL)
 
       results <- data.table(
-        time     = cuminc_results$time,
-        estimate = cuminc_results$est,
-        variance = cuminc_results$var
+        time = cuminc_results$time,
+        cif  = cuminc_results$est,
+        var  = cuminc_results$var
       )[
         time >= earliest_onset & time <= latest_onset,
         head(.SD, 1),
@@ -108,9 +185,12 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       ][
         ,
         .(
-          time, variance, estimate,
-          l95 = estimate - qnorm(0.975) * sqrt(variance),
-          u95 = estimate + qnorm(0.975) * sqrt(variance)
+          time,
+          cif,
+          se  = sqrt(var),
+          l95 = cif - qnorm(0.975) * sqrt(var),
+          u95 = cif + qnorm(0.975) * sqrt(var),
+          var
         )
       ]
 
@@ -126,7 +206,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       ][
         ,
         .(
-          time, estimate, variance, l95, u95,
+          time, cif, se, l95, u95, var,
           cases = cumsum(
             ifelse(is.na(cases_amount), 0, cases_amount)
           )
@@ -156,28 +236,31 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
             failure_time = list(
               type     = "integer",
               required = TRUE
+            ),
+            weight = list(
+              type = "numeric"
             )
           )
         ),
-        group_columns = list(
+        stratify_columns = list(
           type  = "list",
-          items = list(type = "character")
+          items = list(type = "string")
         ),
         earliest_onset = list(
           type    = "integer",
           default = 1,
-          minimum = 1
+          minimum = 0
         ),
         latest_onset = list(
           type    = "integer",
           default = 100,
-          minimum = 1
+          minimum = 0
         )
       )
 
       args <- validator$run(...)
 
-      if (!exists("group_columns", where = args)) {
+      if (!exists("stratify_columns", where = args) || length(args$stratify_columns) == 0) {
         return(
           private$run_single(
             tte            = args$tte,
@@ -187,16 +270,16 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         )
       }
 
-      group_symbols <- rlang::syms(args$group_columns)
+      stratify_symbols <- rlang::syms(args$stratify_columns)
       permutations  <- args$tte |>
-        select(!!!group_symbols) |>
-        distinct(!!!group_symbols) |>
-        arrange(!!!group_symbols) |>
+        select(!!!stratify_symbols) |>
+        distinct(!!!stratify_symbols) |>
+        arrange(!!!stratify_symbols) |>
         as.data.frame()
 
       runner <- function(idx) {
         filter_expr <- private$build_filter_expression(
-          args$group_columns,
+          args$stratify_columns,
           permutations[idx, ]
         )
 
@@ -213,7 +296,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         if (is.null(group_results)) return(NULL)
 
         mutate_expr <- private$build_mutate_expression(
-          args$group_columns, permutations[idx, ]
+          args$stratify_columns, permutations[idx, ]
         )
 
         group_results <- rlang::eval_tidy(mutate_expr) |> collect()
@@ -226,45 +309,6 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       results       <- rbindlist(group_results)
 
       return(results)
-    },
-    #' @description
-    #' Retrieves all distinct group values of the provided column of the provided TTE data.
-    #'
-    #' @param tte TTE data to use.
-    #' @param group_column Column to retrieve values from.
-    #' @returns List of values.
-    get_group_values = function(tte, group_column) {
-      groups <- tte |>
-        rename(group = !!as.name(group_column)) |>
-        arrange(group) |>
-        distinct(group) |>
-        mutate(group = as.character(group)) |>
-        pull(group)
-
-      return(groups)
-    },
-    #' @description
-    #' Summarizes the estimates for each group.
-    #'
-    #' @param tte TTE data to use.
-    #' @param cif_results Results that the "run" function produced.
-    #' @param group_column Column to group the summary on.
-    #' @returns Data.table with summary.
-    make_group_summary = function(tte, cif_results, group_column) {
-      summary <- data.table(
-        group = c("all", self$get_group_values(tte, group_column))
-      ) |>
-        left_join(
-          cif_results |> select(!!as.name(group_column), time, estimate),
-          by = c("group" = group_column)
-        ) |>
-        pivot_wider(
-          names_from  = group,
-          values_from = estimate
-        ) |>
-        arrange(time)
-
-      return(summary)
     }
   )
 )

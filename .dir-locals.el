@@ -38,7 +38,7 @@
                (defun ibp/run-benchmarks ()
                  "Runs benchmarks"
                  (interactive)
-                 (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/run-benchmarks.sh)"))
+                 (ibp/tmux-pane-cmd "0.1" "(clear; time ./scripts/run-benchmarks.sh)"))
 
                (defun ibp/run-linting ()
                  "Runs linting"
@@ -60,6 +60,11 @@
                  (interactive)
                  (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/generate-internal-data.py)"))
 
+               (defun ibp/generate-test-data ()
+                 "Generates test data"
+                 (interactive)
+                 (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/generate-test-data.R 6 100000 ./tests/data/pipeline-tte.csv)"))
+
                (defun ibp/kill-dev-env ()
                  "Kills all processes and tmux"
                  (interactive)
@@ -74,6 +79,7 @@
                (global-set-key (kbd "<f6>") 'ibp/build-package)
                (global-set-key (kbd "<f7>") 'ibp/build-guides)
                (global-set-key (kbd "<f8>") 'ibp/generate-internal-data)
+               (global-set-key (kbd "<f9>") 'ibp/generate-test-data)
                (global-set-key (kbd "<f12>") 'ibp/kill-dev-env)
 
                )))))

@@ -14,7 +14,7 @@ stdenv.mkDerivation rec {
   PLANTUML_PATH = plantuml;
 
   installPhase = ''
-    mkdir -p $out/guides/{cumulative-incidence,genetic-correlation,heritability}
+    mkdir -p $out/guides/{cumulative-incidence,genetic-correlation,heritability,pipeline}
 
     cp $src/* ./ -R
     chmod +w ./guides/ -R

@@ -4,7 +4,7 @@ library(devtools)
 
 devtools::load_all(".")
 
-args <- commandArgs(trailingOnly=TRUE)
+args <- commandArgs(trailingOnly = TRUE)
 
 constants_path <- args[1]
 constants      <- rjson::fromJSON(file = constants_path)

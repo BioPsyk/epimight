@@ -15,6 +15,7 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
   private = list(),
   public = list(
     initialize = function() {
+      super$initialize()
     },
     #' @description
     #' Calulates heritability (h2) along with standard error and confidence intervals.
@@ -32,23 +33,23 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
       }
 
       # lifetime prevalence unaffected/general population represeting the upper tail z value
-      t1   <- qnorm(k1, lower.tail = FALSE)
-      y    <- dnorm(t1)
-      i    <- y / k1
+      t1 <- qnorm(k1, lower.tail = FALSE)
+      y  <- dnorm(t1)
+      i  <- y / k1
+
       # lifetime prevalence in the relatives of the affected ones represeting the upper tail z value
-      tr   <- qnorm(kr, lower.tail = FALSE)
-      yr   <- dnorm(tr)
+      tr  <- qnorm(kr, lower.tail = FALSE)
+      yr  <- dnorm(tr)
+      num <- t1 - tr * sqrt(1 - (1 - t1 / i) * (t1 ^ 2 - tr ^ 2))
+      den <- rc * (i + (i - t1) * tr ^ 2)
+      h2  <- num / den
 
-      num  <- t1 - tr * sqrt(1 - (1 - t1 / i) * (t1 ^ 2 - tr ^ 2))
-      den  <- rc * (i + (i - t1) * tr ^ 2)
-      h2   <- num / den
       # se estimation
-      wg   <- (((k1 ^ 2) / (y ^ 2)) * (1 - k1)) / a1
-      vvg  <- (1 / i - rc * h2 * (i - t1)) ^ 2 # there is a + in Wray and a - in Falconer
-      wr   <- kr ^ 2 / yr ^ 2 * (1 - kr) / ar
-      vvr  <- (1 / i) ^ 2
-
-      se   <- 1 / rc * sqrt(vvg * wg + vvr * wr)
+      wg  <- (((k1 ^ 2) / (y ^ 2)) * (1 - k1)) / a1
+      vvg <- (1 / i - rc * h2 * (i - t1)) ^ 2 # there is a + in Wray and a - in Falconer
+      wr  <- kr ^ 2 / yr ^ 2 * (1 - kr) / ar
+      vvr <- (1 / i) ^ 2
+      se  <- 1 / rc * sqrt(vvg * wg + vvr * wr)
       l95 <- h2 - 1.96 * se
       u95 <- h2 + 1.96 * se
 
@@ -77,10 +78,24 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
           required = TRUE,
           type = "data.table",
           columns = list(
-            cohort1_estimates = list(type = "numeric"),
-            cohort1_cases     = list(type = "integer"),
-            cohort2_estimates = list(type = "numeric"),
-            cohort2_cases     = list(type = "integer")
+            c1_cif = list(
+              required = TRUE,
+              type     = "numeric"
+            ),
+            c1_cif_cases = list(
+              required = TRUE,
+              type     = "numeric",
+              minimum  = 0
+            ),
+            c2_cif = list(
+              required = TRUE,
+              type     = "numeric"
+            ),
+            c2_cif_cases = list(
+              required = TRUE,
+              type     = "numeric",
+              minimum  = 0
+            )
           )
         )
       )
@@ -92,14 +107,17 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
       suppressWarnings({
         results <- self$calculate_h2(
           estimates$id,
-          estimates$cohort1_estimate,
-          estimates$cohort2_estimate,
-          estimates$cohort1_cases,
-          estimates$cohort2_cases,
+          estimates$c1_cif,
+          estimates$c2_cif,
+          estimates$c1_cif_cases,
+          estimates$c2_cif_cases,
           args$relationship_kind
         ) |>
           filter_all(
             all_vars(!is.infinite(.) & !is.na(.))
+          ) |>
+          filter(
+            h2 > 0
           )
       })
 
@@ -109,16 +127,8 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
 
       return(results)
     },
-    #' @description
-    #' Runs meta analysis on the given stratified heritabilities.
-    #'
-    #' @param results Data.table with heritabilities.
-    #' @returns Data.table meta analysis results for random and fixed model.
-    run_meta = function(results) {
-      super$run_meta(
-        results     = results,
-        meta_column = "h2"
-      )
+    run_meta = function(...) {
+      super$run_meta(...)
     }
   )
 )

@@ -4,14 +4,19 @@ set -euo pipefail
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 project_dir=$(dirname "$script_dir")
 tmp_dir="${project_dir}/tmp/benchmarks"
+cache_dir="${tmp_dir}/cache"
 plot_script="${script_dir}/plot-benchmark-sumstats.R"
 
 cd "${project_dir}"
 
 rm -rf "${tmp_dir}"
 mkdir "${tmp_dir}"
+mkdir "${cache_dir}"
 
 echo ">> Running benchmarks"
+
+samples=1000000
+iterations=3
 
 for f in ./tests/benchmarks/benchmark_*.R
 do
@@ -19,15 +24,9 @@ do
   echo "-- Running benchmark ${fname}"
   cd $(dirname ${f})
 
-  output_path="${tmp_dir}/${fname}.csv"
-  echo "expr,min,lq,mean,median,uq,max,neval,n" > "${output_path}"
-  samples=(1000 10000)
-  for s in ${samples[@]}
-  do
-    Rscript "${fname}" "${s}" 1 "${output_path}"
-  done
+  output_path="${tmp_dir}/${fname}.png"
 
-  Rscript "${plot_script}" "${output_path}" "${fname}"
+  Rscript "${fname}" ${samples} ${iterations} "${cache_dir}" "${output_path}"
 
   cd "${project_dir}"
 done

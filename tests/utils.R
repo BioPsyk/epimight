@@ -1,12 +1,10 @@
-current_year <- as.numeric(
-  format(Sys.Date(), "%Y")
-)
+library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 
 #=================================================================================
 # Generators
 #=================================================================================
 
-generate_diagnosed_relatives_prob <- function(failure_status, relatives) {
+generate_relatives_diagnosed_prob <- function(failure_status, relatives) {
   if (failure_status == 1) {
     unaffected_prob <- 0.45
   } else {
@@ -24,7 +22,7 @@ generate_diagnosed_relatives_prob <- function(failure_status, relatives) {
   return(prob)
 }
 
-generate_diagnosed_relatives <- function(tte, column_name) {
+generate_relatives_diagnosed <- function(tte, column_name) {
   survival_data <- tte |>
     rowwise() |>
     mutate(
@@ -32,24 +30,32 @@ generate_diagnosed_relatives <- function(tte, column_name) {
         0:relatives,
         1,
         replace = TRUE,
-        prob = generate_diagnosed_relatives_prob(failure_status, relatives)
+        prob = generate_relatives_diagnosed_prob(failure_status, relatives)
       )
     )
 
   return(survival_data)
 }
 
-generate_failure <- function(tte, mean, sd) {
+generate_failure <- function(tte, mean, sd, end_of_study) {
+  if (missing(end_of_study)) {
+    end_of_study <- Sys.Date()
+  }
+
+  end_of_study_year <- as.numeric(
+    format(end_of_study, "%Y")
+  )
+
   survival_data <- tte |>
     rowwise() |>
     mutate(
       max_age = ifelse(
-        dead_at_year > current_year,
-        current_year - born_at_year,
+        dead_at_year > end_of_study_year,
+        end_of_study_year - born_at_year,
         dead_at_year - born_at_year
       ),
       failure_status = ifelse(
-        dead_at_year > current_year,
+        dead_at_year > end_of_study_year,
         sample(
           seq(0, 1),
           1,
@@ -79,15 +85,24 @@ generate_failure <- function(tte, mean, sd) {
   return(survival_data)
 }
 
-generate_random_tte <- function(n_count) {
+generate_random_tte <- function(n_count, period_start, period_end) {
+  if (missing(period_start)) {
+    period_start <- as.Date("1950-01-01")
+  }
+
+  if (missing(period_end)) {
+    period_end <- Sys.Date()
+  }
+
   birth_dates <- seq(
-    as.Date("1950-01-01"),
-    Sys.Date(),
+    period_start,
+    period_end,
     by = "day"
   )
 
   survival_data <- data.frame(
     person_id      = 1:n_count,
+    gender         = sample(c("m", "f"), n_count, replace = TRUE),
     born_at        = sample(birth_dates, n_count, replace = TRUE),
     death_age      = round(
       rnorm(n_count, mean = 68.9, sd = 8.2)
@@ -107,6 +122,54 @@ generate_random_tte <- function(n_count) {
     distinct(person_id, .keep_all = TRUE)
 
   return(survival_data)
+}
+
+generate_pipeline_tte <- function(n_count) {
+  d1_fs_tte <- generate_random_tte(n_count)
+  d1_fs_tte <- generate_failure(d1_fs_tte, 20, 10)
+  d1_fs_tte <- generate_relatives_diagnosed(d1_fs_tte, "relatives_diagnosed") |>
+    relocate(failure_time, .after = person_id) |>
+    relocate(failure_status, .after = failure_time) |>
+    relocate(relatives, .after = failure_status) |>
+    relocate(relatives_diagnosed, .after = relatives) |>
+    mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "FS") |>
+    as.data.table()
+
+  d2_fs_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
+  d2_fs_tte <- generate_failure(d2_fs_tte, 19, 11)
+  d2_fs_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
+    relocate(failure_time, .after = person_id) |>
+    relocate(failure_status, .after = failure_time) |>
+    relocate(relatives, .after = failure_status) |>
+    relocate(relatives_diagnosed, .after = relatives) |>
+    mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "FS") |>
+    as.data.table()
+
+  d1_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
+  d1_po_tte <- generate_failure(d2_fs_tte, 20, 10)
+  d1_po_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
+    relocate(failure_time, .after = person_id) |>
+    relocate(failure_status, .after = failure_time) |>
+    relocate(relatives, .after = failure_status) |>
+    relocate(relatives_diagnosed, .after = relatives) |>
+    mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
+    as.data.table()
+
+  d2_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
+  d2_po_tte <- generate_failure(d2_fs_tte, 19, 11)
+  d2_po_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
+    relocate(failure_time, .after = person_id) |>
+    relocate(failure_status, .after = failure_time) |>
+    relocate(relatives, .after = failure_status) |>
+    relocate(relatives_diagnosed, .after = relatives) |>
+    mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
+    as.data.table()
+
+  tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-born_at, -dead_at_year) |>
+    arrange(person_id, disorder, relationship_kind) |>
+    select(person_id, born_at_year, disorder, failure_status, failure_time, relationship_kind, relatives, relatives_diagnosed)
+
+  return(tte)
 }
 
 #=================================================================================
@@ -189,6 +252,12 @@ expect_dataframe_equal <- function(a, b, ignore_cols = NULL) {
   succeed()
 }
 
+expect_dataframe_not_equal <- function(a, b, ignore_cols = NULL) {
+  expect_failure(
+    expect_dataframe_equal(a, b, ignore_cols)
+  )
+}
+
 #=================================================================================
 # Helpers
 #=================================================================================
@@ -206,14 +275,73 @@ capitalize <- function(cols) {
         collapse = ""
       )
     )
-
   }
 
   return(results)
 }
 
-plot_benchmark_sumstats <- function(input_path, output_path) {
-  sumstats <- read_csv(input_path)
+run_benchmark <- function(samples, iterations, benchmarks) {
+  results <- data.table(
+    name      = c(),
+    iteration = c(),
+    samples   = c(),
+    time      = c(),
+    unit      = c()
+  )
 
-  ggplot(sumstats, aes(x = n, y = mean, color = expr)) + geom_line()
+  message(">> Benchmarking started")
+
+  for (i in seq(1, iterations)) {
+    message(sprintf("-- Running iteration %s", i))
+    for (b in names(benchmarks)) {
+      message(sprintf("-- Running benchmark %s", b))
+      func       <- benchmarks[[b]]
+      start_time <- Sys.time()
+      func()
+      stop_time  <- Sys.time()
+
+      results <- rbind(
+        results,
+        list(
+          name      = b,
+          iteration = i,
+          samples   = samples,
+          time      = as.numeric(stop_time - start_time),
+          unit      = "s"
+        )
+      )
+    }
+  }
+
+  return(results)
+}
+
+plot_benchmark_results <- function(title, samples, iterations, results, output_path) {
+  ggplot(results, aes(x = name, y = time, color = name)) +
+    geom_boxplot() +
+    labs(
+      title    = title,
+      subtitle = sprintf("%s TTE rows, %s measurements per function", samples, iterations),
+      x        = NULL,
+      y        = "Runtime (seconds)",
+      color    = "Function"
+    ) +
+    theme(axis.text.x = element_blank())
+
+  ggsave(output_path)
+}
+
+plot_cif_results <- function(title, subtitle, results, group_column, output_path) {
+  ggplot(results, aes(x = time, y = cif, color = !!as.symbol(group_column))) +
+    geom_line() +
+    geom_ribbon(aes(ymin = l95, ymax = u95, fill = !!as.symbol(group_column)), alpha = 0.15, color = NA) +
+    scale_y_continuous(labels = scales::percent) +
+    labs(
+      title    = title,
+      subtitle = subtitle,
+      x        = "Years",
+      y        = "Cumulative Incidence"
+    )
+
+  ggsave(output_path)
 }

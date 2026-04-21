@@ -1,3 +1,30 @@
+# IbpRegistryRiskEstimations 1.0.0
+
+## Changed
+
+- `CumulativeIncidenceAnalysis-class`
+  - `run` function argument `group_columns` renamed to `stratify_columns`
+  - `run` function argument `earliest_onset` minimum value allowed changed `0` (was `1` before)
+- `HeritabilityAnalysis-class`
+  - `run` function argument `estimates$cohort1_estimate` renamed to `estimates$c1_cif`
+  - `run` function argument `estimates$cohort1_cases` renamed to `estimates$c1_cif_cases`
+  - `run` function argument `estimates$cohort2_estimate` renamed to `estimates$c2_cif`
+  - `run` function argument `estimates$cohort2_cases` renamed to `estimates$c2_cif_cases`
+- `GeneticCorrelationAnalysis-class`
+  - `run` function argument `estimates$re_d1_c1_estimates` renamed to `estimates$d1_c1_cif`
+  - `run` function argument `estimates$re_d1_c3_estimates` renamed to `estimates$d1_c3_cif`
+  - `run` function argument `estimates$re_d2_c1_estimates` renamed to `estimates$d2_c1_cif`
+  - `run` function argument `estimates$re_d1_c1_cases` renamed to `estimates$d1_c1_cif_cases`
+  - `run` function argument `estimates$re_d1_c3_cases` renamed to `estimates$d1_c3_cif_cases`
+  - `run` function argument `estimates$re_d2_c1_cases` renamed to `estimates$d2_c1_cif_cases`
+  - `run` function argument `estimates$h2_d1` renamed to `estimates$d1_h2`
+  - `run` function argument `estimates$h2_d2` renamed to `estimates$d2_h2`
+  - `run` function argument `estimates` now require that all columns are specified
+
+## Added
+
+- `Pipeline-class` that takes care of data processing and running all analyses
+
 # IbpRegistryRiskEstimations 0.6.0
 
 ## Fixed
