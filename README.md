@@ -5,7 +5,7 @@
   ![Logotype](./guides/logotype.png)
 
   <p align="center">
-    <strong>Epimight is a powerful R epidemiology analysis toolbox</strong>
+    <strong>Epimight is a powerful R epidemiology analysis pipeline</strong>
   </p>
 
   [![Docker Image Version](https://img.shields.io/docker/v/biopsyk/epimight?sort=semver&logo=docker)](https://hub.docker.com/r/biopsyk/epimight)
