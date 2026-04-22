@@ -58,7 +58,7 @@
 #+LATEX_HEADER: \DeclareUnicodeCharacter{202F}{ }
 #+LATEX: \frenchspacing
 #+LATEX: \raggedright
-#+TITLE: Guide: estimate genetic correlation between two disorders stratified by year of birth
+#+TITLE: Guide: running the pipeline
 #+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
 #+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
 

@@ -14,7 +14,7 @@
 
 ## Features
 
-- 🔋 **Batteris included**: An easy to use pipeline that takes care of cumulative incidence, heritability, genetic correlation, stratification and meta analysis (fixed and random model).
+- 🔋 **Batteris included**: An easy to use pipeline that takes care of bias adjustments, cumulative incidence, heritability, genetic correlation, stratification and meta analysis (fixed and random model).
 - 📚 **Well documented**: Step-by-step guides, data format specifications and example code makes sure you can get started quickly.
 - 🧩 **Modular**: The pipeline consists of modular parts that can be replaced with your own implementations or even used independently.
 - 💪 **Robust**: A rigorous test suite makes sure the package works as expected and careful input arguments validation makes sure the package is used correctly.
@@ -32,7 +32,11 @@
 You should see genetic correlations of two disorders that has been stratified by birth year and
 meta-analyzed using a fixed and random model.
 
-Now you have everything needed to run the example code provided in these step-by-step guides (reading them in order is recommended):
+Next step is to adapt `run-epimight.R` to run on real data, this guide explains how that is done, step-by-step:
+
+- [Guide: running the pipeline](./guides/pipeline/guide-yob.org)
+
+If you want to use each individual analysis by itself or implement your own pipeline, these guides explains how each analysis works, step-by-step (reading them in order is recommended):
 
 - [Guide: estimate cumulative incidence of disorder](./guides/cumulative-incidence/guide.org)
 - [Guide: estimate heritability of disorder](./guides/heritability/guide.org)
@@ -40,7 +44,7 @@ Now you have everything needed to run the example code provided in these step-by
 - [Guide: estimate genetic correlation between two disorders](./guides/genetic-correlation/guide.org)
 - [Guide: estimate genetic correlation between two disorders stratified by year of birth](./guides/genetic-correlation/guide-yob.org)
 
-You can also view the reference documentation for each of the analysis components here:
+You can also view the reference documentation for each analysis here:
 
 - [Reference: Cumulative incidence](./guides/cumulative-incidence/index.org)
 - [Reference: Heritability](./guides/heritability/index.org)
