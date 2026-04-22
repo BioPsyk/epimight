@@ -1,6 +1,6 @@
 Package: epimight
-Title: A powerful R epidemiology analysis toolbox
-Version: 0.4.0
+Title: A powerful R epidemiology analysis pipeline
+Version: 1.0.0
 Authors@R:
     person(given = "Joeri",
            family = "Meijsen",
@@ -43,6 +43,7 @@ Collate:
     'GeneticCorrelationAnalysis-class.R'
     'HeritabilityAnalysis-class.R'
     'TTERetriever-class.R'
+    'Pipeline-class.R'
 Depends:
     R (>= 2.10)
 Config/testthat/edition: 3
