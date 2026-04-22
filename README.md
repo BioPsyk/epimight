@@ -23,11 +23,11 @@
 
 1. Create a directory to work in
 2. Enter the newly created directory and run all commands inside this directory in the following steps
-3. Download [this R script](./guides/genetic-correlation/guide-yob.R), name it `generate-genetic-correlation.R`
+3. Download [this R script](./guides/pipeline/guide.R), name it `run-epimight.R`
 4. Download [this TTE test data for disorder 1](./guides/data/tte_SCZ_FS.csv), name it `tte_SCZ_FS.csv`
 5. Download [this TTE test data for disorder 2](./guides/data/tte_CAD_FS.csv), name it `tte_CAD_FS.csv`
 6. Run `singularity shell docker://biopsyk/epimight:latest`
-7. Inside the singularity shell, run `Rscript generate-genetic-correlation.R`
+7. Inside the singularity shell, run `Rscript run-epimight.R`
 
 You should see genetic correlations of two disorders that has been stratified by birth year and
 meta-analyzed using a fixed and random model.
