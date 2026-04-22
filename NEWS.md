@@ -1,3 +1,9 @@
+# IbpRegistryRiskEstimations 1.0.0
+
+## Added
+
+- `Pipeline-class` that takes care of running all parts as a complete pipeline
+
 # IbpRegistryRiskEstimations 0.6.0
 
 ## Fixed
