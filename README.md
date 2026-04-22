@@ -14,9 +14,9 @@
 
 ## Features
 
-- 🔋 **Batteris included**: Implements cumulative incidence, heritability and genetic correlation, along with flexible stratification support and meta analysis (fixed and random model)
+- 🔋 **Batteris included**: An easy to use pipeline that takes care of cumulative incidence, heritability, genetic correlation, stratification and meta analysis (fixed and random model).
 - 📚 **Well documented**: Step-by-step guides, data format specifications and example code makes sure you can get started quickly.
-- 🧩 **Modular**: Well defined boundaries and separation of concerns makes sure you are free to pick which parts you deem relevant and that you can integrate them into your project effortlessly.
+- 🧩 **Modular**: The pipeline consists of modular parts that can be replaced with your own implementations or even used independently.
 - 💪 **Robust**: A rigorous test suite makes sure the package works as expected and careful input arguments validation makes sure the package is used correctly.
 
 ## Quick Start 🚀
