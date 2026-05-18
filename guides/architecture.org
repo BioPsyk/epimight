@@ -73,9 +73,9 @@
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
-#+NAME: fig:package-scope
+#+NAME: fig:pipeline-component-diagram
 #+ATTR_HTML: :style max-width: 100%;
-#+BEGIN_SRC plantuml :file ./diagrams/package-scope.png :exports results
+#+BEGIN_SRC plantuml :file ./diagrams/pipeline-component-diagram.png :exports results
 @startuml
 !include <material/account>
 !include <material/account_search>
@@ -141,44 +141,6 @@ meta ..> results
 #+END_SRC
 
 #+ATTR_LATEX: :placement [H]
-#+CAPTION: Package scope
-#+RESULTS: fig:package-scope
-[[file:./diagrams/package-scope.png]]
-file:./diagrams/package-scope.png
-
-
-#+LATEX: \begin{center}
-#+NAME: pipeline-component-diagram
-#+BEGIN_SRC plantuml :file ./diagrams/pipeline-component-diagram.png :exports results
-@startuml
-skinparam dpi 300
-skinparam shadowing false
-skinparam padding 5
-skinparam nodesep 80
-skinparam ranksep 80
-skinparam defaultTextAlignment left
-skinparam noteTextAlignment left
-
-file "Time to event" as tte
-
-component "epimight" as epimight {
-  process "Data\nprocessing" as data_processing
-  process "Cumulative\nincidence" as cif1
-  process "Heritability" as h2
-  process "Genetic\ncorrelation" as gc
-  process "Meta\nanalysis" as meta
-}
-
-tte .RIGHT.> data_processing
-data_processing -RIGHT-> cif1
-cif1 -RIGHT-> h2
-h2 -RIGHT-> gc
-gc -RIGHT-> meta
-
-@enduml
-#+END_SRC
-
-#+ATTR_LATEX: :placement [H] :width \textwidth
-#+RESULTS: pipeline-component-diagram
+#+CAPTION: Component diagram
+#+RESULTS: fig:pipeline-component-diagram
 [[file:./diagrams/pipeline-component-diagram.png]]
-#+LATEX: \end{center}
