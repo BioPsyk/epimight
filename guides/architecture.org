@@ -71,6 +71,68 @@
 #+TITLE: Architecture
 #+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
 
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:package-scope
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ./diagrams/package-scope.png :exports results
+@startuml
+!include <material/account>
+!include <material/account_search>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ./diagrams/ibp.puml
+
+file tte [
+<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**
+
+| **person_id** | **failure_status** | **failure_time** |
+| ...           | ...                | ...              |
+| 99962         |              0     | 30               |
+| 99968         |              0     | 28               |
+| 99970         |              1     | 18               |
+| 99977         |              0     | 39               |
+| 99993         |              2     | 35               |
+]
+
+Boundary1(scope, "Epimight") {
+  Process(data_processing, "**Data processing**")
+  File(tte_data, "<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**")
+  Rectangle(analysis, "**Analysis**")
+  File(estimates, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**")
+  File(heritability, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**")
+  File(genetic_correlation, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**")
+}
+
+Rectangle(plotting, "**Plotting**")
+Collection(plots, "<color:#255ba7><$ma_chart_line{scale=0.35}></color>  **Plots**")
+
+Arrow_Down(registry_data, data_processing)
+Arrow_Right(data_processing, tte_data)
+Arrow_Down(tte_data, analysis)
+Arrow_Down(analysis, estimates)
+Arrow_Down(analysis, heritability)
+Arrow_Down(analysis, genetic_correlation)
+
+estimates .RIGHT.>> heritability
+heritability .RIGHT.>> genetic_correlation
+
+Arrow_Down(estimates, plotting)
+Arrow_Down(heritability, plotting)
+Arrow_Down(genetic_correlation, plotting)
+Arrow_Down(plotting, plots)
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Package scope
+#+RESULTS: fig:package-scope
+[[file:./diagrams/package-scope.png]]
+file:./diagrams/package-scope.png
+
+
 #+LATEX: \begin{center}
 #+NAME: pipeline-component-diagram
 #+BEGIN_SRC plantuml :file ./diagrams/pipeline-component-diagram.png :exports results
@@ -83,13 +145,21 @@ skinparam ranksep 80
 skinparam defaultTextAlignment left
 skinparam noteTextAlignment left
 
+file "Time to event" as tte
+
 component "epimight" as epimight {
-  process "Data processing" as data_processing
-  process "Cumulative incidence" as cif1
+  process "Data\nprocessing" as data_processing
+  process "Cumulative\nincidence" as cif1
   process "Heritability" as h2
-  process "Genetic correlation" as gc
-  process "Meta analysis" as meta
+  process "Genetic\ncorrelation" as gc
+  process "Meta\nanalysis" as meta
 }
+
+tte .RIGHT.> data_processing
+data_processing -RIGHT-> cif1
+cif1 -RIGHT-> h2
+h2 -RIGHT-> gc
+gc -RIGHT-> meta
 
 @enduml
 #+END_SRC

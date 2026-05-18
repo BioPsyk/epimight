@@ -12,44 +12,54 @@ skinparam maxMessageSize 150
 skinparam defaultTextAlignment left
 skinparam StereotypeAlignment left
 
-skinparam Arrow {
-    Color     #255ba7
-    FontSize  11
-    FontStyle normal
-    Thickness 1.5
-}
+<style>
+  process {
+      BackgroundColor #ffffff
+      BorderColor     #7a869a
+      BorderThickness 10
+      RoundCorner     0
+      FontStyle       normal
+  }
 
-skinparam rectangle {
-    BackgroundColor #ffffff
-    BorderColor     #7a869a
-    BorderThickness 2
-    RoundCorner     15
-    FontStyle       normal
-}
+  Arrow {
+      Color     #255ba7
+      FontSize  11
+      FontStyle normal
+      Thickness 1.5
+  }
 
-skinparam storage {
-    BackgroundColor #ffffff
-    BorderColor     #7a869a
-    BorderThickness 0
-    FontStyle       normal
-}
+  rectangle {
+      BackgroundColor #ffffff
+      BorderColor     #7a869a
+      BorderThickness 2
+      RoundCorner     15
+      FontStyle       normal
+  }
 
-skinparam file {
-    BackgroundColor #ffffff
-    BorderColor     #7a869a
-    BorderThickness 2
-    RoundCorner     0
-    TextAlignment   left
-    FontStyle       normal
-}
+  storage {
+      BackgroundColor #ffffff
+      BorderColor     #7a869a
+      BorderThickness 0
+      FontStyle       normal
+  }
 
-skinparam collections {
-    BackgroundColor #ffffff
-    BorderColor     #7a869a
-    BorderThickness 2
-    RoundCorner     0
-    FontStyle       normal
-}
+  file {
+      BackgroundColor #ffffff
+      BorderColor     #7a869a
+      BorderThickness 2
+      RoundCorner     0
+      TextAlignment   left
+      FontStyle       normal
+  }
+
+  collections {
+      BackgroundColor #ffffff
+      BorderColor     #7a869a
+      BorderThickness 2
+      RoundCorner     0
+      FontStyle       normal
+  }
+</style>
 
 skinparam rectangle<<boundary1>> {
     FontSize           15
@@ -88,6 +98,7 @@ skinparam legend {
 !define Database(e_alias, e_label) database "e_label" as e_alias
 !define File(e_alias, e_label) file "e_label" as e_alias
 !define Collection(e_alias, e_label) collections "e_label" as e_alias
+!define Process(e_alias, e_label) process "e_label" as e_alias
 
 !define Boundary1(e_alias, e_label) rectangle "==e_label" <<boundary1>> as e_alias
 !define Boundary2(e_alias, e_label) rectangle "==e_label" <<boundary2>> as e_alias
