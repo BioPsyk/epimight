@@ -73,6 +73,52 @@
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
+#+NAME: fig:pipeline-domain-model
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ./diagrams/pipeline-domain-model.png :exports results
+@startuml
+!include <material/account>
+!include <material/account_search>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ./diagrams/ibp.puml
+
+Boundary1(input, "Experiment input") {
+  actor "Sample" as sample
+  actor "Relatives" as relatives
+  collections "**Disorder 1**\nDiagnoses" as d1
+  collections "**Disorder 2**\nDiagnoses" as d2
+}
+
+sample -UP-> relatives
+sample -UP-> d2
+sample -UP-> d1
+relatives -LEFT-> d1
+relatives -RIGHT-> d2
+
+Boundary1(epimight, "Epimight pipeline")
+
+Boundary1(output, "Experiment output") {
+  rectangle "Fixed model" as fixed_model
+  rectangle "Random model" as random_model
+}
+
+sample ..> epimight
+
+epimight ..> fixed_model
+epimight ..> random_model
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Pipeline domain model
+#+RESULTS: fig:pipeline-domain-model
+[[file:./diagrams/pipeline-domain-model.png]]
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
 #+NAME: fig:pipeline-component-diagram
 #+ATTR_HTML: :style max-width: 100%;
 #+BEGIN_SRC plantuml :file ./diagrams/pipeline-component-diagram.png :exports results
@@ -85,9 +131,16 @@
 !include <material/matrix>
 !include ./diagrams/ibp.puml
 
-file "Experiment input" as exp_input {
-
-}
+' rectangle "Experiment input" as exp_input {
+'   actor "Sample" as samples
+'   actor "Relatives" as relatives
+'   file "**Disorder 1**\nDiagnoses" as d1
+'   file "**Disorder 2**\nDiagnoses" as d2
+'
+'   samples -UP-> relatives
+'   samples -UP-> d2
+'   samples -UP-> d1
+' }
 
 file d1_tte [
 <color:#255ba7><$ma_account{scale=0.35}></color>  **Disorder 1**
@@ -110,7 +163,7 @@ file d2_tte [
 ]
 
 file results [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Experiment results**
 
 | **fixed_meta** | **fixed_se**   | **fixee_l95** | **fixed_u95** | **rand_meta** | **rand_se**   | **rand_l95**  | **rand_u95** |
 | 0.01868003     | 0.03380838     | -0.04758439   | 0.08494446    | 0.01756866    | 0.0425034     | -0.065738     | 0.1008753    |
@@ -128,6 +181,7 @@ Boundary1(scope, "Epimight") {
 
 d1_tte ..> preproc
 d2_tte ..> preproc
+'samples ..> preproc
 
 Arrow_Down(preproc, cif)
 Arrow_Right(cif, h2)
@@ -139,6 +193,6 @@ meta ..> results
 #+END_SRC
 
 #+ATTR_LATEX: :placement [H]
-#+CAPTION: Component diagram
+#+CAPTION: Pipeline component diagram
 #+RESULTS: fig:pipeline-component-diagram
 [[file:./diagrams/pipeline-component-diagram.png]]
