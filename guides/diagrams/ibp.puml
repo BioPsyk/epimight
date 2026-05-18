@@ -9,8 +9,7 @@ skinparam ranksep 30
 skinparam wrapWidth 400
 skinparam maxMessageSize 150
 
-skinparam defaultTextAlignment left
-skinparam StereotypeAlignment left
+hide stereotype
 
 <style>
   process {

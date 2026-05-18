@@ -90,11 +90,19 @@ file d1_tte [
 
 | **person_id** | **failure_status** | **failure_time** | **relatives** | **diagnosed_relatives** |
 | ...           | ...                | ...              | ...           | ...                     |
-| 99962         |              0     | 30               | 2             | 0                       |
-| 99968         |              0     | 28               | 1             | 0                       |
-| 99970         |              1     | 18               | 3             | 2                       |
-| 99977         |              0     | 39               | 4             | 0                       |
-| 99993         |              2     | 35               | 2             | 1                       |
+| 99962         | 0                  | 30               | 2             | 0                       |
+| 99968         | 0                  | 28               | 1             | 0                       |
+| 99970         | 1                  | 18               | 3             | 2                       |
+]
+
+file d2_tte [
+<color:#255ba7><$ma_account{scale=0.35}></color>  **Disorder 2**
+
+| **person_id** | **failure_status** | **failure_time** | **relatives** | **diagnosed_relatives** |
+| ...           | ...                | ...              | ...           | ...                     |
+| 99962         | 2                  | 30               | 2             | 1                       |
+| 99968         | 1                  | 28               | 1             | 1                       |
+| 99970         | 0                  | 18               | 3             | 0                       |
 ]
 
 file results [
@@ -115,6 +123,7 @@ Boundary1(scope, "Epimight") {
 }
 
 d1_tte ..> preproc
+d2_tte ..> preproc
 
 Arrow_Down(preproc, cif)
 Arrow_Right(cif, h2)
