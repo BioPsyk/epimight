@@ -131,21 +131,6 @@ Arrow_Right(h2, gc)
 Arrow_Down(gc, meta)
 
 meta ..> results
-
-' Arrow_Down(tte, data_processing)
-' Arrow_Right(data_processing, tte_data)
-' Arrow_Down(tte_data, analysis)
-' Arrow_Down(analysis, estimates)
-' Arrow_Down(analysis, heritability)
-' Arrow_Down(analysis, genetic_correlation)
-'
-' estimates .RIGHT.>> heritability
-' heritability .RIGHT.>> genetic_correlation
-'
-' Arrow_Down(estimates, plotting)
-' Arrow_Down(heritability, plotting)
-' Arrow_Down(genetic_correlation, plotting)
-' Arrow_Down(plotting, plots)
 @enduml
 #+END_SRC
 
