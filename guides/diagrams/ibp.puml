@@ -14,84 +14,85 @@ skinparam StereotypeAlignment left
 
 <style>
   process {
-      BackgroundColor #ffffff
-      BorderColor     #7a869a
-      BorderThickness 10
-      RoundCorner     0
-      FontStyle       normal
-  }
-
-  Arrow {
-      Color     #255ba7
-      FontSize  11
-      FontStyle normal
-      Thickness 1.5
+    BackgroundColor #ffffff
+    LineColor       #7a869a
+    LineThickness   2
+    RoundCorner     0
+    FontStyle       normal
   }
 
   rectangle {
-      BackgroundColor #ffffff
-      BorderColor     #7a869a
-      BorderThickness 2
-      RoundCorner     15
-      FontStyle       normal
+    BackgroundColor #ffffff
+    LineColor       #7a869a
+    LineThickness   2
+    RoundCorner     15
+    FontStyle       normal
   }
 
   storage {
-      BackgroundColor #ffffff
-      BorderColor     #7a869a
-      BorderThickness 0
-      FontStyle       normal
+    BackgroundColor #ffffff
+    LineColor     #7a869a
+    LineThickness 0
+    FontStyle       normal
   }
 
   file {
-      BackgroundColor #ffffff
-      BorderColor     #7a869a
-      BorderThickness 2
-      RoundCorner     0
-      TextAlignment   left
-      FontStyle       normal
+    BackgroundColor #ffffff
+    LineColor       #7a869a
+    LineThickness   2
+    RoundCorner     0
+    TextAlignment   left
+    FontStyle       normal
   }
 
   collections {
-      BackgroundColor #ffffff
-      BorderColor     #7a869a
-      BorderThickness 2
-      RoundCorner     0
-      FontStyle       normal
+    BackgroundColor #ffffff
+    LineColor       #7a869a
+    LineThickness   2
+    RoundCorner     0
+    FontStyle       normal
   }
+
+  legend {
+    BackgroundColor #ffffff
+    LineThickness 0
+  }
+
 </style>
 
 skinparam rectangle<<boundary1>> {
-    FontSize           15
-    StereotypeFontSize 0
-    BackgroundColor    #f4f5f7
-    BorderThickness    0
-    RoundCorner        20
-    FontStyle          normal
+  FontSize           15
+  StereotypeFontSize 0
+  BackgroundColor    #f4f5f7
+  LineThickness      0
+  RoundCorner        20
+  FontStyle          normal
 }
 
 skinparam rectangle<<boundary2>> {
-    FontSize           15
-    StereotypeFontSize 0
-    BackgroundColor    #ebecf0
-    BorderThickness    0
-    RoundCorner        20
-    FontStyle          normal
+  FontSize           15
+  StereotypeFontSize 0
+  BackgroundColor    #ebecf0
+  LineThickness      0
+  RoundCorner        20
+  FontStyle          normal
+}
+
+skinparam Arrow {
+  Color     #181818
+  FontSize  11
+  FontStyle normal
+  Thickness 1.5
 }
 
 skinparam rectangle<<boundary3>> {
-    FontSize           15
-    StereotypeFontSize 0
-    BackgroundColor    #ffffff
-    BorderColor        #b3bac5
-    BorderThickness    2
-    BorderStyle        dashed
-    FontStyle          normal
-}
-
-skinparam legend {
-    BackgroundColor #ffffff
-    BorderThickness 0
+  FontSize           15
+  StereotypeFontSize 0
+  BackgroundColor    #ffffff
+  LineColor          #b3bac5
+  LineThickness      2
+  LineStyle          dashed
+  FontStyle          normal
 }
 
 !define Rectangle(e_alias, e_label) rectangle "e_label" as e_alias

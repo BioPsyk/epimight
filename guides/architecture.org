@@ -98,7 +98,7 @@ file tte [
 ]
 
 Boundary1(scope, "Epimight") {
-  Process(data_processing, "**Data processing**")
+  Process(data_processing, "**Pre-processing**")
   File(tte_data, "<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**")
   Rectangle(analysis, "**Analysis**")
   File(estimates, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**")
@@ -109,7 +109,7 @@ Boundary1(scope, "Epimight") {
 Rectangle(plotting, "**Plotting**")
 Collection(plots, "<color:#255ba7><$ma_chart_line{scale=0.35}></color>  **Plots**")
 
-Arrow_Down(registry_data, data_processing)
+Arrow_Down(tte, data_processing)
 Arrow_Right(data_processing, tte_data)
 Arrow_Down(tte_data, analysis)
 Arrow_Down(analysis, estimates)
