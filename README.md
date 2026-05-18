@@ -21,22 +21,9 @@
 
 ## How it works
 
-The role of the `epimight` pipeline is to determine the genetic correlation between disorders by
-running "experiments". To run an experiment, you supply the pipeline with time-to-event data,
-which 2 disorders to use and what kind of relatives you want to compare. The pipeline will then
-take care of:
-
-- Preparing the time-to-event data
-- Generating the stratified cumulative incidencies
-- Generating the stratified heritabilities
-- Generating the stratified genetic correlations
-- Meta-analysing the stratified genetic correlations
+The role of the `epimight` pipeline is to determine the genetic correlation between 2 disorders.
 
 ![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)
-
-### Experiment inputs
-
-
 
 ## Quick Start 🚀
 
