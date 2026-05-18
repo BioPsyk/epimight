@@ -21,13 +21,14 @@
 
 ## How it works
 
+Each time the pipeline is run, it's carrying out an experiment that determines the genetic correlation of
+2 disorders for a specific kind of relatives in the sample population.
+
 ![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)
 
-Each time the pipeline is run, it's carrying out an experiment that determines:
+### Experiment inputs
 
-- The genetic correlation between 2 disorders
-- For a specific kind of relatives (parent/offspring, siblings, cousins, etc.)
-- In a sample population
+
 
 ## Quick Start 🚀
 
