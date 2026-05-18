@@ -5,7 +5,7 @@
   ![Logotype](./guides/logotype.png)
 
   <p align="center">
-    <strong>Epimight is a powerful R epidemiology analysis pipeline</strong>
+    <strong>Epimight is a powerful epidemiology analysis pipeline written in R</strong>
   </p>
 
   [![Docker Image Version](https://img.shields.io/docker/v/biopsyk/epimight?sort=semver&logo=docker)](https://hub.docker.com/r/biopsyk/epimight)
@@ -16,8 +16,14 @@
 
 - 🔋 **Batteris included**: An easy to use pipeline that takes care of bias adjustments, cumulative incidence, heritability, genetic correlation, stratification and meta analysis (fixed and random model).
 - 📚 **Well documented**: Step-by-step guides, data format specifications and example code makes sure you can get started quickly.
-- 🧩 **Modular**: The pipeline consists of modular parts that can be replaced with your own implementations or even used independently.
+- 🧩 **Modular**: The pipeline consists of components that can be swapped out or used independently.
 - 💪 **Robust**: A rigorous test suite makes sure the package works as expected and careful input arguments validation makes sure the package is used correctly.
+
+## How it works
+
+You define
+
+![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)]
 
 ## Quick Start 🚀
 
