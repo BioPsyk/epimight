@@ -23,7 +23,11 @@
 
 ![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)
 
-Each time the pipeline is run, it's carrying out an experiment that determines the genetic correlation between 2 disorders
+Each time the pipeline is run, it's carrying out an experiment that determines:
+
+- The genetic correlation between 2 disorders
+- For a specific kind of relatives (parent/offspring, siblings, cousins, etc.)
+- In a sample population
 
 ## Quick Start 🚀
 
