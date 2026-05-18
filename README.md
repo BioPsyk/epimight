@@ -24,7 +24,7 @@
 Each time the pipeline is run, it's carrying out an experiment that:
 
 - Determines the genetic correlation between 2 disorders
-- Using a specific kind of relationship (parent/offspring, siblings, cousins, etc.)
+- For a specific kind of relationship (parent/offspring, siblings, cousins, etc.)
 - In a sample population
 
 It does that by analysing time-to-event data that contain each sample individual with the following information:
