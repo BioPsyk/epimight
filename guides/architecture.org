@@ -97,32 +97,46 @@ file tte [
 | 99993         |              2     | 35               |
 ]
 
+file results [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Meta results**
+
+| **fixed_meta** | **fixed_se**   | **fixee_l95** | **fixed_u95** | **rand_meta** | **rand_se**   | **rand_l95**  | **rand_u95** |
+| 0.01868003     | 0.03380838     | -0.04758439   | 0.08494446    | 0.01756866    | 0.0425034     | -0.065738     | 0.1008753    |
+]
+
 Boundary1(scope, "Epimight") {
-  Process(data_processing, "**Pre-processing**")
-  File(tte_data, "<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**")
-  Rectangle(analysis, "**Analysis**")
-  File(estimates, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**")
-  File(heritability, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**")
-  File(genetic_correlation, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**")
+  Process(preproc, "**Pre-processing**")
+  Process(cif, "**Cumulative incidence**")
+  Process(h2, "**Heritability**")
+  Process(gc, "**Genetic correlation**")
+  Process(meta, "**Meta analysis**")
+
+  ' File(genetic_correlation, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**")
 }
 
-Rectangle(plotting, "**Plotting**")
-Collection(plots, "<color:#255ba7><$ma_chart_line{scale=0.35}></color>  **Plots**")
+tte ..> preproc
 
-Arrow_Down(tte, data_processing)
-Arrow_Right(data_processing, tte_data)
-Arrow_Down(tte_data, analysis)
-Arrow_Down(analysis, estimates)
-Arrow_Down(analysis, heritability)
-Arrow_Down(analysis, genetic_correlation)
+Arrow_Down(preproc, cif)
+Arrow_Right(cif, h2)
+Arrow_Right(h2, gc)
+Arrow_Down(gc, meta)
 
-estimates .RIGHT.>> heritability
-heritability .RIGHT.>> genetic_correlation
+meta ..> results
 
-Arrow_Down(estimates, plotting)
-Arrow_Down(heritability, plotting)
-Arrow_Down(genetic_correlation, plotting)
-Arrow_Down(plotting, plots)
+' Arrow_Down(tte, data_processing)
+' Arrow_Right(data_processing, tte_data)
+' Arrow_Down(tte_data, analysis)
+' Arrow_Down(analysis, estimates)
+' Arrow_Down(analysis, heritability)
+' Arrow_Down(analysis, genetic_correlation)
+'
+' estimates .RIGHT.>> heritability
+' heritability .RIGHT.>> genetic_correlation
+'
+' Arrow_Down(estimates, plotting)
+' Arrow_Down(heritability, plotting)
+' Arrow_Down(genetic_correlation, plotting)
+' Arrow_Down(plotting, plots)
 @enduml
 #+END_SRC
 
