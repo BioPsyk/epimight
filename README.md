@@ -24,6 +24,10 @@
 Each time the pipeline is run, it's carrying out an experiment that determines the genetic correlation of
 2 disorders for a specific kind of relatives in the sample population.
 
+To run experiments, you must first create your time-to-event table
+
+
+
 ![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)
 
 ### Experiment inputs
