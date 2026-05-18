@@ -85,16 +85,16 @@
 !include <material/matrix>
 !include ./diagrams/ibp.puml
 
-file tte [
-<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**
+file d1_tte [
+<color:#255ba7><$ma_account{scale=0.35}></color>  **Disorder 1**
 
-| **person_id** | **failure_status** | **failure_time** |
-| ...           | ...                | ...              |
-| 99962         |              0     | 30               |
-| 99968         |              0     | 28               |
-| 99970         |              1     | 18               |
-| 99977         |              0     | 39               |
-| 99993         |              2     | 35               |
+| **person_id** | **failure_status** | **failure_time** | **relatives** | **diagnosed_relatives** |
+| ...           | ...                | ...              | ...           | ...                     |
+| 99962         |              0     | 30               | 2             | 0                       |
+| 99968         |              0     | 28               | 1             | 0                       |
+| 99970         |              1     | 18               | 3             | 2                       |
+| 99977         |              0     | 39               | 4             | 0                       |
+| 99993         |              2     | 35               | 2             | 1                       |
 ]
 
 file results [
@@ -114,7 +114,7 @@ Boundary1(scope, "Epimight") {
   ' File(genetic_correlation, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**")
 }
 
-tte ..> preproc
+d1_tte ..> preproc
 
 Arrow_Down(preproc, cif)
 Arrow_Right(cif, h2)
