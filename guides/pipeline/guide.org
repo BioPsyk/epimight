@@ -71,19 +71,13 @@ source("./tests/utils.R")
 
 #+RESULTS:
 
-This is a guide for using the pre-assembled pipeline that estimates genetic
+This is a guide that explains how you run the epimight pipeline to estimates genetic
 correlation between two disorders stratified by birth year, using TTE (time-to-event) data.
 
 All code shown in this guide have been written to [[./guide-yob.R][this R file]], so that you don't have
 to copy all code snippets manually.
 
-This pipeline is an extension of the [[./guide.org]["estimate genetic correlation between two disorders"]].
-We will extend the research question from that pipeline to be:
-"What is the genetic correlation between schizophrenia and coronary artery disease
-in Danish millenials and their full siblings (people born from 1981 to 1996)
-stratified by birth year?"
-
-The same naming convention will be used as the previous pipeline:
+In order to make it easier
 
 - Disorders:
   - ~d1~ = Schizophrenia
@@ -101,12 +95,6 @@ The same naming convention will be used as the previous pipeline:
   - ~h2_d1~ = Heritability of disorder 1 (cohort 1 vs cohort 2)
   - ~h2_d2~ = Heritability of disorder 2 (cohort 1 vs cohort 3)
   - ~gc_d1_d2~ = Genetic correlation (disorder 1 vs disorder 2)
-
-The data derivation diagram is exactly the same as the previous pipeline:
-
-[[file:../diagrams/gc-dag.png]]
-
-The answer to the research question above will be in result ~gc_d1_d2~.
 
 We start by importing all the needed libraries:
 
