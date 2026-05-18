@@ -86,7 +86,7 @@
 !include ./diagrams/ibp.puml
 
 file tte [
-<color:#255ba7><$ma_account{scale=0.35}></color>  **Time-to-event**
+<color:#255ba7><$ma_account{scale=0.35}></color>  **Experiment input**
 
 | **person_id** | **relatives** | **d1_failure_status** | **d1_failure_time** | **d1_relatives** |  **d2_failure_status** | **d2_failure_time** | **d2_relatives** |
 | ...           | ...           | ...                   | ...                 | ...              |  ...                   | ...                 | ...              |
@@ -96,7 +96,7 @@ file tte [
 ]
 
 file results [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Experiment output**
 
 | **fixed_meta** | **fixed_se**   | **fixee_l95** | **fixed_u95** | **rand_meta** | **rand_se**   | **rand_l95**  | **rand_u95** |
 | 0.01868003     | 0.03380838     | -0.04758439   | 0.08494446    | 0.01756866    | 0.0425034     | -0.065738     | 0.1008753    |
@@ -108,8 +108,6 @@ Boundary1(scope, "Epimight") {
   Process(h2, "**Heritability**")
   Process(gc, "**Genetic correlation**")
   Process(meta, "**Meta analysis**")
-
-  ' File(genetic_correlation, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**")
 }
 
 tte ..> preproc

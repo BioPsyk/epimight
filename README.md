@@ -21,6 +21,8 @@
 
 ## How it works
 
+![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)
+
 Each time the pipeline is run, it's carrying out an experiment that:
 
 - Determines the genetic correlation between 2 disorders
@@ -38,8 +40,6 @@ It does that by analysing time-to-event data that contain each sample individual
   - Individual failure status
   - Individual failure time
   - Amount of relatives diagnosed
-
-![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)]
 
 ## Quick Start 🚀
 
