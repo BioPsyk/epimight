@@ -85,35 +85,14 @@
 !include <material/matrix>
 !include ./diagrams/ibp.puml
 
-' rectangle "Experiment input" as exp_input {
-'   actor "Sample" as samples
-'   actor "Relatives" as relatives
-'   file "**Disorder 1**\nDiagnoses" as d1
-'   file "**Disorder 2**\nDiagnoses" as d2
-'
-'   samples -UP-> relatives
-'   samples -UP-> d2
-'   samples -UP-> d1
-' }
+file tte [
+<color:#255ba7><$ma_account{scale=0.35}></color>  **Time-to-event**
 
-file d1_tte [
-<color:#255ba7><$ma_account{scale=0.35}></color>  **Disorder 1**
-
-| **person_id** | **failure_status** | **failure_time** | **relatives** | **diagnosed_relatives** |
-| ...           | ...                | ...              | ...           | ...                     |
-| 99962         | 0                  | 30               | 2             | 0                       |
-| 99968         | 0                  | 28               | 1             | 0                       |
-| 99970         | 1                  | 18               | 3             | 2                       |
-]
-
-file d2_tte [
-<color:#255ba7><$ma_account{scale=0.35}></color>  **Disorder 2**
-
-| **person_id** | **failure_status** | **failure_time** | **relatives** | **diagnosed_relatives** |
-| ...           | ...                | ...              | ...           | ...                     |
-| 99962         | 2                  | 30               | 2             | 1                       |
-| 99968         | 1                  | 28               | 1             | 1                       |
-| 99970         | 0                  | 18               | 3             | 0                       |
+| **person_id** | **relatives** | **d1_failure_status** | **d1_failure_time** | **d1_relatives** |  **d2_failure_status** | **d2_failure_time** | **d2_relatives** |
+| ...           | ...           | ...                   | ...                 | ...              |  ...                   | ...                 | ...              |
+| 99962         | 2             | 0                     | 29                  |                  |  2                     | 30                  | 1                |
+| 99968         | 1             | 0                     | 34                  |                  |  1                     | 28                  | 1                |
+| 99970         | 3             | 1                     | 19                  |                  |  0                     | 18                  | 0                |
 ]
 
 file results [
@@ -133,8 +112,7 @@ Boundary1(scope, "Epimight") {
   ' File(genetic_correlation, "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**")
 }
 
-d1_tte ..> preproc
-d2_tte ..> preproc
+tte ..> preproc
 'samples ..> preproc
 
 Arrow_Down(preproc, cif)
