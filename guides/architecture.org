@@ -96,7 +96,7 @@ file tte [
 ]
 
 file results [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Experiment results**
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
 
 | **fixed_meta** | **fixed_se**   | **fixee_l95** | **fixed_u95** | **rand_meta** | **rand_se**   | **rand_l95**  | **rand_u95** |
 | 0.01868003     | 0.03380838     | -0.04758439   | 0.08494446    | 0.01756866    | 0.0425034     | -0.065738     | 0.1008753    |
