@@ -85,28 +85,23 @@
 !include <material/matrix>
 !include ./diagrams/ibp.puml
 
-Boundary1(input, "Experiment input") {
-  actor "Sample" as sample
-  actor "Relatives" as relatives
-  collections "**Disorder 1**\nDiagnoses" as d1
-  collections "**Disorder 2**\nDiagnoses" as d2
-}
+actor "Sample" as sample
+actor "Relatives" as relatives
+collections "**Disorder 1**\nDiagnoses" as d1
+collections "**Disorder 2**\nDiagnoses" as d2
+Boundary1(exp_in, "Experiment input")
+Boundary1(epimight, "Epimight pipeline")
+Boundary1(exp_out, "Experiment output")
+rectangle "Fixed model" as fixed_model
+rectangle "Random model" as random_model
 
 sample -UP-> relatives
 sample -UP-> d2
 sample -UP-> d1
 relatives -LEFT-> d1
 relatives -RIGHT-> d2
-
-Boundary1(epimight, "Epimight pipeline")
-
-Boundary1(output, "Experiment output") {
-  rectangle "Fixed model" as fixed_model
-  rectangle "Random model" as random_model
-}
-
-sample ..> epimight
-
+sample -- exp_inp
+exp_inp -->
 epimight ..> fixed_model
 epimight ..> random_model
 @enduml
