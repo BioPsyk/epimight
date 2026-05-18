@@ -86,16 +86,19 @@
 !include ./diagrams/ibp.puml
 
 file tte [
-<color:#255ba7><$ma_account{scale=0.35}></color>  **Experiment input**
+<color:#255ba7><$ma_account{scale=0.35}></color>  **Time-to-event**
 
 | **person_id** | **disorder** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** | **failure_status** | **failure_time** |
 | ...           | ...          | ...                   | ...                  | ...                     | ...                | ...              |
-| 99962         |              | PO                    | 2                    | 1                       | 0                  | 29               |
-| 99962         |              | FS                    | 1                    | 1                       | 0                  | 29               |
-| 99968         |              | PO                    | 1                    | 0                       | 0                  | 34               |
-| 99968         |              | PO                    | 1                    | 0                       | 0                  | 34               |
-| 99970         |              | PO                    | 3                    | 2                       | 1                  | 19               |
+| 99962         | SCZ          | PO                    | 2                    | 1                       | 1                  | 29               |
+| 99962         | SCZ          | FS                    | 1                    | 1                       | 1                  | 29               |
+| 99962         | CAD          | PO                    | 2                    | 0                       | 2                  | 34               |
+| 99962         | CAD          | FS                    | 1                    | 0                       | 2                  | 34               |
 ]
+
+rectangle "**Disorder 1**\nSCZ" as disorder1
+rectangle "**Disorder 2**\nCAD" as disorder2
+rectangle "**Relationship kind**\nPO" as relkind
 
 file results [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Experiment output**
@@ -113,7 +116,9 @@ Boundary1(scope, "Epimight") {
 }
 
 tte ..> preproc
-'samples ..> preproc
+disorder1 ..> preproc
+disorder2 ..> preproc
+relkind ..> preproc
 
 Arrow_Down(preproc, cif)
 Arrow_Right(cif, h2)
