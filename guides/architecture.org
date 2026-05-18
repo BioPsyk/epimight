@@ -88,11 +88,11 @@
 file tte [
 <color:#255ba7><$ma_account{scale=0.35}></color>  **Experiment input**
 
-| **person_id** | **relatives** | **d1_failure_status** | **d1_failure_time** | **d1_relatives** |  **d2_failure_status** | **d2_failure_time** | **d2_relatives** |
-| ...           | ...           | ...                   | ...                 | ...              |  ...                   | ...                 | ...              |
-| 99962         | 2             | 0                     | 29                  | 1                |  2                     | 30                  | 1                |
-| 99968         | 1             | 0                     | 34                  | 0                |  1                     | 28                  | 1                |
-| 99970         | 3             | 1                     | 19                  | 2                |  0                     | 18                  | 0                |
+| **person_id** | **relationship_kind** | **relatives** | **d1_failure_status** | **d1_failure_time** | **d1_relatives** |  **d2_failure_status** | **d2_failure_time** | **d2_relatives** |
+| ...           | ...                   | ...           | ...                   | ...                 | ...              |  ...                   | ...                 | ...              |
+| 99962         | PO                    | 2             | 0                     | 29                  | 1                |  2                     | 30                  | 1                |
+| 99968         | PO                    | 1             | 0                     | 34                  | 0                |  1                     | 28                  | 1                |
+| 99970         | PO                    | 3             | 1                     | 19                  | 2                |  0                     | 18                  | 0                |
 ]
 
 file results [
