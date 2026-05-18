@@ -12,7 +12,7 @@ skinparam maxMessageSize 150
 hide stereotype
 
 <style>
-  process {
+  root {
     BackgroundColor #ffffff
     LineColor       #7a869a
     LineThickness   2
@@ -21,42 +21,21 @@ hide stereotype
   }
 
   rectangle {
-    BackgroundColor #ffffff
-    LineColor       #7a869a
-    LineThickness   2
-    RoundCorner     15
-    FontStyle       normal
+    RoundCorner 15
   }
 
   storage {
-    BackgroundColor #ffffff
-    LineColor     #7a869a
     LineThickness 0
-    FontStyle       normal
   }
 
   file {
-    BackgroundColor #ffffff
-    LineColor       #7a869a
-    LineThickness   2
-    RoundCorner     0
-    TextAlignment   left
-    FontStyle       normal
-  }
-
-  collections {
-    BackgroundColor #ffffff
-    LineColor       #7a869a
-    LineThickness   2
-    RoundCorner     0
-    FontStyle       normal
+    TextAlignment left
   }
 
   legend {
     BackgroundColor #ffffff
     LineThickness 0
   }
-
 </style>
 
 skinparam rectangle<<boundary1>> {

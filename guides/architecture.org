@@ -85,6 +85,10 @@
 !include <material/matrix>
 !include ./diagrams/ibp.puml
 
+file "Experiment input" as exp_input {
+
+}
+
 file d1_tte [
 <color:#255ba7><$ma_account{scale=0.35}></color>  **Disorder 1**
 

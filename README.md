@@ -21,7 +21,7 @@
 
 ## How it works
 
-You define
+Each time the pipeline is run, it's carrying out an experiment. Each experiment determines the genetic correlation between two disorders from a sample population.
 
 ![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)]
 
@@ -41,6 +41,8 @@ meta-analyzed using a fixed and random model.
 Next step is to adapt `run-epimight.R` to run on real data, this guide explains how that is done, step-by-step:
 
 - [Guide: running the pipeline](./guides/pipeline/guide.org)
+
+## Advanced usage
 
 If you want to use each individual analysis by itself or implement your own pipeline, these guides explains how each analysis works, step-by-step (reading them in order is recommended):
 
