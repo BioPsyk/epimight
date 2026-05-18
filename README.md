@@ -23,23 +23,7 @@
 
 ![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)
 
-Each time the pipeline is run, it's carrying out an experiment that:
-
-- Determines the genetic correlation between 2 disorders
-- For a specific kind of relationship (parent/offspring, siblings, cousins, etc.)
-- In a sample population
-
-It does that by analysing time-to-event data that contain each sample individual with the following information:
-
-- Amount of relatives of specified kind
-- Disorder 1
-  - Individual failure status
-  - Individual failure time
-  - Amount of relatives diagnosed
-- Disorder 2
-  - Individual failure status
-  - Individual failure time
-  - Amount of relatives diagnosed
+Each time the pipeline is run, it's carrying out an experiment that determines the genetic correlation between 2 disorders
 
 ## Quick Start 🚀
 
