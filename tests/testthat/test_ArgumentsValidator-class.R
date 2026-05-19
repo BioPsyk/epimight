@@ -458,7 +458,7 @@ describe("date type", {
       validator$run(born_at = "a2020-12-03")
     )
     expect_error(
-      validator$run(born_at = "1800/03/28")
+      validator$run(born_at = "180003/28")
     )
   })
 })
@@ -493,6 +493,41 @@ describe("integer enum", {
     )
     expect_error(
       validator$run(failure_status = FALSE)
+    )
+  })
+})
+
+describe("data.table integer enum", {
+  validator <- ArgumentsValidator$new(
+    tte = list(
+      required = TRUE,
+      type = "data.table",
+      columns = list(
+        failure_status = list(
+          type     = "integer",
+          enum     = list(0, 1, 2),
+          required = TRUE
+        )
+      )
+    )
+  )
+
+  it("succeeds on correct values", {
+    validator$run(tte = data.table(failure_status = c(0)))
+    validator$run(tte = data.table(failure_status = c(0, 1)))
+    validator$run(tte = data.table(failure_status = c(0, 1, 2)))
+    validator$run(tte = data.table(failure_status = c(0, 1, 2, 1, 0, 2)))
+  })
+
+  it("fails on unknown enums", {
+    expect_error(
+      validator$run(tte = data.table(failure_status = c(3)))
+    )
+    expect_error(
+      validator$run(tte = data.table(failure_status = c(3, 4)))
+    )
+    expect_error(
+      validator$run(tte = data.table(failure_status = c(0, 1, -1)))
     )
   })
 })

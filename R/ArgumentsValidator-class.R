@@ -171,18 +171,21 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of element in parent named list.
     #' @param rule Ruleset that contains rules for all columns in the given value to validated.
     #' @param value Data.table to validate
-    check_data.table = function(key, rule, value) {
+    check_data.table = function(rule_key, rule, value) {
+      message("check_data_table (", rule_key, "):")
+      print(value)
+
       if (!is.data.table(value)) {
-        stop("Argument '", key, "' was not a data.table")
+        stop("Argument '", rule_key, "' was not a data.table")
       }
 
       if (is.null(rule$columns)) {
-        stop("Rule for argument '", key, "' did not have 'columns' specified")
+        stop("Rule for argument '", rule_key, "' did not have 'columns' specified")
       }
 
       for (col_key in names(rule$columns)) {
         col_rule <- rule$columns[[col_key]]
-        full_key <- sprintf("%s[[%s]]", key, col_key)
+        full_key <- sprintf("%s[[%s]]", rule_key, col_key)
 
         if (isTRUE(col_rule$required) && !(col_key %in% colnames(value))) {
           stop("Data.table column '", full_key, "' did not exist")
@@ -191,6 +194,10 @@ ArgumentsValidator <- R6::R6Class( #nolint
         }
 
         col_value <- value[[col_key]]
+
+        message(" check_data_table (", col_key, "): ")
+        print(class(col_value))
+        print(col_value)
 
         value[[col_key]] <- self$check_type(full_key, col_rule, col_value)
       }
@@ -204,6 +211,8 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param rule Ruleset that contains the minimum and maximum values.
     #' @param value Numeric value to check.
     check_range = function(key, rule, value) {
+      if (any(is.null(value))) return(value)
+
       if (!is.null(rule$minimum) && value < rule$minimum) {
         stop("Argument '", key, "' was smaller than minimum value: ", rule$minimum)
       }
@@ -249,9 +258,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Argument '", key, "' was not a Date (see `as.Date` for details) or date formatted string")
       }
 
-      return(
-        as.Date(value)
-      )
+      return(as.Date(value))
     },
     #' @description
     #' Checks that the given value is the type that the given ruleset specifies.
@@ -259,44 +266,45 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of element in parent named list.
     #' @param rule Ruleset for the given value.
     #' @param value Value to validate.
-    check_type = function(key, rule, value) {
+    check_type = function(rule_key, rule, value) {
       type <- rule$type
 
       if (is.null(type)) {
-        stop("Rule for argument '", key, "' did not have 'type' specified")
+        stop("Rule for argument '", rule_key, "' did not have 'type' specified")
       } else if (type == "list") {
         return(
-          self$check_list(key, rule, value)
+          self$check_list(rule_key, rule, value)
         )
       } else if (type == "named_list") {
         return(
-          self$check_named_list(key, rule, value)
+          self$check_named_list(rule_key, rule, value)
         )
       } else if (type == "generic_named_list") {
         return(
-          self$check_generic_named_list(key, rule, value)
+          self$check_generic_named_list(rule_key, rule, value)
         )
       } else if (type == "data.table") {
         return(
-          self$check_data.table(key, rule, value)
+          self$check_data.table(rule_key, rule, value)
         )
       } else if (type == "date") {
         return(
-          self$check_date(key, rule, value)
+          self$check_date(rule_key, rule, value)
         )
       }
 
       if (type == "string" && !is.character(value)) {
-        stop("Argument '", key, "' was not a string")
+        stop("Argument '", rule_key, "' was not a string")
       } else if (type == "integer" && !self$is_integer(value)) {
-        stop("Argument '", key, "' was not an integer")
+        stop("Argument '", rule_key, "' was not an integer")
       } else if (type == "numeric" && !is.numeric(value)) {
-        stop("Argument '", key, "' was not a numeric")
+        stop("Argument '", rule_key, "' was not a numeric")
       }
 
-      if (!is.null(value)) {
-        value <- self$check_range(key, rule, value)
-        value <- self$check_enum(key, rule$enum, value)
+      value <- self$check_range(rule_key, rule, value)
+
+      if (!is.null(rule$enum)) {
+        value <- self$check_enum(rule_key, rule$enum, value)
       }
 
       return(value)
@@ -308,14 +316,15 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of argument to validate.
     #' @returns Arguments after validation of key was done.
     handle_rule = function(args, key) {
-      rule  <- private$rules[[key]]
-      value <- args[[key]]
+      rule <- private$rules[[key]]
 
       if (is.null(rule)) {
         stop("Rule for key '", key, "' is NULL")
       } else if (!self$is_named_list(rule)) {
         stop("Rule for key '", key, "' is not a named list: (", class(rule), ") -> ", rule)
       }
+
+      value <- args[[key]]
 
       if (is.null(value)) {
         if (isTRUE(rule$required)) {
