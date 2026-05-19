@@ -452,4 +452,47 @@ describe("date type", {
     validator$run(born_at = "2020-12-03")
     validator$run(born_at = "1800-03-28")
   })
+
+  it("fails when strings incorrect format is put in", {
+    expect_error(
+      validator$run(born_at = "a2020-12-03")
+    )
+    expect_error(
+      validator$run(born_at = "1800/03/28")
+    )
+  })
+})
+
+describe("integer enum", {
+  validator <- ArgumentsValidator$new(
+    failure_status = list(
+      type     = "integer",
+      enum     = list(0, 1, 2),
+      required = TRUE
+    )
+  )
+
+  it("works when correct values are put in", {
+    validator$run(failure_status = 0)
+    validator$run(failure_status = 1)
+    validator$run(failure_status = 2)
+  })
+
+  it("fails when unknown values are put in", {
+    expect_error(
+      validator$run(failure_status = 3)
+    )
+    expect_error(
+      validator$run(failure_status = -1)
+    )
+  })
+
+  it("fails when incorrect types are put in", {
+    expect_error(
+      validator$run(failure_status = "asd")
+    )
+    expect_error(
+      validator$run(failure_status = FALSE)
+    )
+  })
 })
