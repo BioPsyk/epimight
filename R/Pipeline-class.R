@@ -59,9 +59,15 @@ Pipeline <- R6::R6Class( #nolint
 
       # Makes sure that there are atleast 2 distinct disorders in the given time-to-event data.
       validator$add_post_validation(function(args, rules) {
-        if (args$tte |> distinct(disorder) |> nrow() < 2) {
+        distinct_disorders <- args$tte |> distinct(disorder) |> nrow()
+
+        if (distinct_disorders < 2) {
           stop("Given tte had less than 2 distinct disorders")
         }
+
+        print(
+          args$tte |> group_by(disorder, relationship_kind) |> summarise(count = n())
+        )
 
         return(args)
       })

@@ -117,6 +117,20 @@ describe("initialize", {
     ))
   })
 
+  it("fails when there are missing individuals", {
+    expect_error(Pipeline$new(
+      tte = data.table(
+        person_id           = c("p1", "p1"),
+        disorder            = c("SCZ", "SCZ"),
+        failure_status      = c(0, 1),
+        failure_time        = c(10, 10),
+        relationship_kind   = c("PO", "PO"),
+        relatives           = c(1, 1),
+        relatives_diagnosed = c(0, 0)
+      )
+    ))
+  })
+
   it("allows valid tte", {
     Pipeline$new(
       tte = data.table(
