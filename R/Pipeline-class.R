@@ -213,7 +213,13 @@ Pipeline <- R6::R6Class( #nolint
         stop("Disorder 2, cohort 1 had no TTE events")
       }
 
-      private$run_draw(tte_c1)
+      results <- vector("list", private$K)
+
+      for (k in seq_len(private$K)) {
+        results[[k]] <- private$run_draw(tte_c1)
+      }
+
+      print(results)
     }
   )
 )

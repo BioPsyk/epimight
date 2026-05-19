@@ -178,7 +178,6 @@ describe("run_experiment", {
   })
 
   it("allows valid experiment selection", {
-
     pipeline$run(
       disorder1 = list(
         id = "SCZ"
@@ -186,7 +185,8 @@ describe("run_experiment", {
       disorder2 = list(
         id = "CAD"
       ),
-      relationship_kind = "PO"
+      relationship_kind = "PO",
+      draws = 2
     )
   })
 })
