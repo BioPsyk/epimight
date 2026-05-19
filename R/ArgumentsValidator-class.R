@@ -229,8 +229,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param value String/numeric to validate
     check_enum = function(key, rule, value) {
       if (is.null(rule$enum)) return(value)
-      if (is.null(value)) return(value)
-      if (value %in% rule$enum) return(value)
+      if (all(value %in% rule$enum)) return(value)
 
       stop(
         "Argument '", key, "' value '",
