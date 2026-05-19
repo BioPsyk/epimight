@@ -23,7 +23,7 @@ Pipeline <- R6::R6Class( #nolint
 
       return(as.integer(rbinom(length(p), size = 1L, prob = p)))
     },
-    prepare_tte_for_run = function(disorder1_id, disorder2_id, relkind) {
+    get_run_tte = function(disorder1_id, disorder2_id, relkind) {
       tte <- private$tte |>
         filter(relationship_kind == relkind) |>
         select(-relationship_kind)
@@ -265,7 +265,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args     <- validator$run(...)
-      tte_c1   <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
+      tte_c1   <- private$get_run_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind)
       re_d1_c1 <- private$run_cif(tte_c1, "d1", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
 
       if (is.null(re_d1_c1)) {
