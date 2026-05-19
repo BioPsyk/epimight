@@ -82,6 +82,7 @@ Pipeline <- R6::R6Class( #nolint
           !!as.name(estimate_col) := estimate,
           !!as.name(cases_col)    := cases
         ) |>
+        select(-variance, -l95, -u95) |>
         as.data.table()
     },
     run_h2 = function(re_c1, re_c2, relkind, group_columns) {
@@ -92,15 +93,12 @@ Pipeline <- R6::R6Class( #nolint
         tmp_group_columns <- list("time")
       }
 
-      print(re_c1)
-      print(re_c2)
+      combined <- re_c1 |> inner_join(re_c2, by = join_by(!!!tmp_group_columns))
 
-      combined_estimates <- re_c1 |>
-        inner_join(re_c2, by = join_by(!!!tmp_group_columns))
-
+      print(combined)
       private$analysis$h2$run(
         relationship_kind = relkind,
-        estimates         = combined_estimates
+        estimates         = combined
       )
     },
     run_draw = function(tte_c1, re_d1_c1, re_d2_c1, args) {
@@ -110,16 +108,18 @@ Pipeline <- R6::R6Class( #nolint
       tmp_tte$d2_relatives_diagnosed = private$downsample_relatives_diagnosed(tmp_tte$d2_relatives_diagnosed, tmp_tte$d2_relatives)
 
       tte_c2 <- tmp_tte[d1_relatives_diagnosed > 0]
-      tte_c3 <- tmp_tte[d2_relatives_diagnosed > 0]
+      if (nrow(tte_c2) == 0) return(NULL)
 
-      if (nrow(tte_c2) == 0 || nrow(tte_c3) == 0) return(NULL)
+      tte_c3 <- tmp_tte[d2_relatives_diagnosed > 0]
+      if (nrow(tte_c3) == 0) return(NULL)
 
       re_d1_c2 <- private$run_cif(tte_c2, "d1", "cohort2", args$group_columns, args$earliest_onset, args$latest_onset)
-      re_d1_c3 <- private$run_cif(tte_c3, "d1", "cohort3", args$group_columns, args$earliest_onset, args$latest_onset)
-      re_d2_c3 <- private$run_cif(tte_c3, "d2", "cohort3", args$group_columns, args$earliest_onset, args$latest_onset)
-
       if (is.null(re_d1_c2)) return(NULL)
+
+      re_d1_c3 <- private$run_cif(tte_c3, "d1", "cohort3", args$group_columns, args$earliest_onset, args$latest_onset)
       if (is.null(re_d1_c3)) return(NULL)
+
+      re_d2_c3 <- private$run_cif(tte_c3, "d2", "cohort3", args$group_columns, args$earliest_onset, args$latest_onset)
       if (is.null(re_d2_c3)) return(NULL)
 
       h2_d1 <- private$run_h2(re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns)
@@ -247,14 +247,12 @@ Pipeline <- R6::R6Class( #nolint
 
       args     <- validator$run(...)
       tte_c1   <- private$get_run_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind)
-      re_d1_c1 <- private$run_cif(tte_c1, "d1", "cohort1", args$group_columns, args$earliest_onset, args$latest_onset)
-      re_d2_c1 <- private$run_cif(tte_c1, "d2", "cohort1", args$group_columns, args$earliest_onset, args$latest_onset)
 
-      if (is.null(re_d1_c1)) {
-        stop("Disorder 1, cohort 1 had no TTE events")
-      } else if (is.null(re_d2_c1)) {
-        stop("Disorder 2, cohort 1 had no TTE events")
-      }
+      re_d1_c1 <- private$run_cif(tte_c1, "d1", "cohort1", args$group_columns, args$earliest_onset, args$latest_onset)
+      if (is.null(re_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
+
+      re_d2_c1 <- private$run_cif(tte_c1, "d2", "cohort1", args$group_columns, args$earliest_onset, args$latest_onset)
+      if (is.null(re_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
       results <- vector("list", args$draws)
 

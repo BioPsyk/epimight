@@ -27,6 +27,14 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
     #' @param rc relationship coefficient.
     #' @returns Data.table with results
     calculate_h2 = function(id, k1, kr, a1, ar, rc) {
+      message("calculate_h2")
+      message("id: ", id)
+      message("k1: ", k1)
+      message("kr: ", kr)
+      message("a1: ", a1)
+      message("ar: ", ar)
+      message("rc: ", rc)
+
       if (is.character(rc)) {
         rc <- self$relationship_coefficient_from_kind(rc)
       }
