@@ -125,7 +125,12 @@ Pipeline <- R6::R6Class( #nolint
       h2_d1 <- private$run_h2(re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns)
       if (is.null(h2_d1)) return(NULL)
 
-      h2_d2 <- private$run_h2(re_d2_c1, re_d2_c3, args$relationship_kind, args$group_columns)
+      h2_d2 <- private$run_h2(
+        re_d2_c1,
+        re_d2_c3 |> rename(c2_estimate = c3_estimate, c2_cases = c3_cases),
+        args$relationship_kind,
+        args$group_columns
+      )
       if (is.null(h2_d2)) return(NULL)
 
       return(1)
@@ -143,6 +148,11 @@ Pipeline <- R6::R6Class( #nolint
             person_id = list(
               type     = "string",
               required = TRUE
+            ),
+            born_at_year = list(
+              type     = "number",
+              required = TRUE,
+              minimum  = 0
             ),
             disorder = list(
               type     = "string",
