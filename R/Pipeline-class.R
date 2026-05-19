@@ -248,14 +248,14 @@ Pipeline <- R6::R6Class( #nolint
           enum     = names(epimight:::relationship_kinds),
           required = TRUE
         ),
+        group_columns = list(
+          type  = "list",
+          items = list(type = "string")
+        ),
         draws = list(
           type    = "integer",
           minimum = 1,
           default = 1
-        ),
-        group_columns = list(
-          type  = "list",
-          items = list(type = "string")
         ),
         rubin_level = list(
           type    = "string",
