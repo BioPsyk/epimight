@@ -125,6 +125,7 @@ Pipeline <- R6::R6Class( #nolint
       h2_d1 <- private$run_h2(re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns)
       #h2_d2 <- private$run_h2(re_d2_c1, re_d2_c3, args$relationship_kind, args$group_columns)
 
+
       return(1)
     }
   ),
