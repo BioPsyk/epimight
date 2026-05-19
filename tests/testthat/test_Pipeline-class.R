@@ -117,16 +117,16 @@ describe("initialize", {
     ))
   })
 
-  it("fails when there are missing individuals", {
+  it("fails when some disorders have missing individuals", {
     expect_error(Pipeline$new(
       tte = data.table(
-        person_id           = c("p1", "p1"),
-        disorder            = c("SCZ", "SCZ"),
-        failure_status      = c(0, 1),
-        failure_time        = c(10, 10),
-        relationship_kind   = c("PO", "PO"),
-        relatives           = c(1, 1),
-        relatives_diagnosed = c(0, 0)
+        person_id           = c("p1", "p1", "p2"),
+        disorder            = c("SCZ", "CAD", "SCZ"),
+        failure_status      = c(0, 1, 2),
+        failure_time        = c(10, 20, 23),
+        relationship_kind   = c("PO", "PO", "PO"),
+        relatives           = c(2, 2, 1),
+        relatives_diagnosed = c(0, 1, 1)
       )
     ))
   })

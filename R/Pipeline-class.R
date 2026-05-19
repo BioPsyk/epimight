@@ -59,15 +59,15 @@ Pipeline <- R6::R6Class( #nolint
 
       # Makes sure that there are atleast 2 distinct disorders in the given time-to-event data.
       validator$add_post_validation(function(args, rules) {
-        distinct_disorders <- args$tte |> distinct(disorder) |> nrow()
+        people_per_combo <- args$tte |> group_by(disorder, relationship_kind) |> summarise(count = n())
 
-        if (distinct_disorders < 2) {
+        if (length(unique(people_per_combo |> pull(count))) > 1) {
+          message("Total individuals per disorder and relationship kind combination: ")
+          print(people_per_disorder)
+          stop("Sample imbalance found")
+        } else if (people_per_combo |> distinct(disorder) |> nrow() < 2) {
           stop("Given tte had less than 2 distinct disorders")
         }
-
-        print(
-          args$tte |> group_by(disorder, relationship_kind) |> summarise(count = n())
-        )
 
         return(args)
       })
