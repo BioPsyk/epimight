@@ -54,6 +54,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args <- validator$run(...)
+      private$tte = args$tte
     }
   )
 )
