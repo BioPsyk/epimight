@@ -43,7 +43,7 @@ Pipeline <- R6::R6Class( #nolint
         ) |>
         select(-disorder) |>
         rename(
-          d1_failure_status      = failure_stats,
+          d1_failure_status      = failure_status,
           d1_failure_time        = failure_time,
           d1_relatives_diagnosed = relatives_diagnosed
         )
@@ -53,20 +53,20 @@ Pipeline <- R6::R6Class( #nolint
           disorder          == disorder2_id,
           relationship_kind == relkind
         ) |>
-        select(-disorder, -relatives) |>
+        select(person_id, relationship_kind, failure_status, failure_time, relatives_diagnosed) |>
         rename(
-          d2_failure_status      = failure_stats,
+          d2_failure_status      = failure_status,
           d2_failure_time        = failure_time,
           d2_relatives_diagnosed = relatives_diagnosed
         )
 
-      d1_tte_nrow <- d1_tte |> nrow() == 0
-      d2_tte_nrow <- d2_tte |> nrow() == 0
+      d1_tte_nrow <- d1_tte |> nrow()
+      d2_tte_nrow <- d2_tte |> nrow()
 
       if (d1_tte_nrow == 0) {
-        stop("No rows left after filter: disorder == \"", disorder1_id, "\" && relationship_kind == \"", relationship_kind, "\")")
+        stop("No rows left after filter: disorder == \"", disorder1_id, "\" && relationship_kind == \"", relkind, "\")")
       } else if (d2_tte_nrow == 0) {
-        stop("No rows left after filter: disorder == \"", disorder2_id, "\" && relationship_kind == \"", relationship_kind, "\")")
+        stop("No rows left after filter: disorder == \"", disorder2_id, "\" && relationship_kind == \"", relkind, "\")")
       } else if (d1_tte_nrow != d2_tte_nrow) {
         stop("Sample imbalance found, disorder 1 had ", d1_tte_nrow, " individuals, disorder 2 had ", d2_tte_nrow, " individuals")
       }
@@ -197,7 +197,6 @@ Pipeline <- R6::R6Class( #nolint
 
       args <- validator$run(...)
       tte  <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
-
     }
   )
 )
