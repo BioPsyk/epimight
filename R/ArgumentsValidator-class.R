@@ -171,21 +171,21 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of element in parent named list.
     #' @param rule Ruleset that contains rules for all columns in the given value to validated.
     #' @param value Data.table to validate
-    check_data.table = function(rule_key, rule, value) {
-      message("check_data_table (", rule_key, "):")
+    check_data.table = function(key, rule, value) {
+      message("check_data_table (", key, "):")
       print(value)
 
       if (!is.data.table(value)) {
-        stop("Argument '", rule_key, "' was not a data.table")
+        stop("Argument '", key, "' was not a data.table")
       }
 
       if (is.null(rule$columns)) {
-        stop("Rule for argument '", rule_key, "' did not have 'columns' specified")
+        stop("Rule for argument '", key, "' did not have 'columns' specified")
       }
 
       for (col_key in names(rule$columns)) {
         col_rule <- rule$columns[[col_key]]
-        full_key <- sprintf("%s[[%s]]", rule_key, col_key)
+        full_key <- sprintf("%s[[%s]]", key, col_key)
 
         if (isTRUE(col_rule$required) && !(col_key %in% colnames(value))) {
           stop("Data.table column '", full_key, "' did not exist")
@@ -211,8 +211,6 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param rule Ruleset that contains the minimum and maximum values.
     #' @param value Numeric value to check.
     check_range = function(key, rule, value) {
-      if (any(is.null(value))) return(value)
-
       if (!is.null(rule$minimum) && value < rule$minimum) {
         stop("Argument '", key, "' was smaller than minimum value: ", rule$minimum)
       }
@@ -229,10 +227,10 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of element in parent named list.
     #' @param rule Ruleset that contains the enum list to check against.
     #' @param value String/numeric to validate
-    check_enum = function(key, enum, value) {
-      if (is.null(enum)) return(value)
+    check_enum = function(key, rule, value) {
+      if (is.null(rule$enum)) return(value)
 
-      for (comp in enum) {
+      for (comp in rule$enum) {
         if (comp == value) return(value)
       }
 
@@ -266,46 +264,43 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of element in parent named list.
     #' @param rule Ruleset for the given value.
     #' @param value Value to validate.
-    check_type = function(rule_key, rule, value) {
+    check_type = function(key, rule, value) {
       type <- rule$type
 
       if (is.null(type)) {
-        stop("Rule for argument '", rule_key, "' did not have 'type' specified")
+        stop("Rule for argument '", key, "' did not have 'type' specified")
       } else if (type == "list") {
         return(
-          self$check_list(rule_key, rule, value)
+          self$check_list(key, rule, value)
         )
       } else if (type == "named_list") {
         return(
-          self$check_named_list(rule_key, rule, value)
+          self$check_named_list(key, rule, value)
         )
       } else if (type == "generic_named_list") {
         return(
-          self$check_generic_named_list(rule_key, rule, value)
+          self$check_generic_named_list(key, rule, value)
         )
       } else if (type == "data.table") {
         return(
-          self$check_data.table(rule_key, rule, value)
+          self$check_data.table(key, rule, value)
         )
       } else if (type == "date") {
         return(
-          self$check_date(rule_key, rule, value)
+          self$check_date(key, rule, value)
         )
       }
 
       if (type == "string" && !is.character(value)) {
-        stop("Argument '", rule_key, "' was not a string")
+        stop("Argument '", key, "' was not a string")
       } else if (type == "integer" && !self$is_integer(value)) {
-        stop("Argument '", rule_key, "' was not an integer")
+        stop("Argument '", key, "' was not an integer")
       } else if (type == "numeric" && !is.numeric(value)) {
-        stop("Argument '", rule_key, "' was not a numeric")
+        stop("Argument '", key, "' was not a numeric")
       }
 
-      value <- self$check_range(rule_key, rule, value)
-
-      if (!is.null(rule$enum)) {
-        value <- self$check_enum(rule_key, rule$enum, value)
-      }
+      value <- self$check_range(key, rule, value)
+      value <- self$check_enum(key, rule, value)
 
       return(value)
     },
