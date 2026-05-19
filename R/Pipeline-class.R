@@ -49,6 +49,11 @@ Pipeline <- R6::R6Class( #nolint
               type     = "string",
               required = TRUE
             ),
+            born_at_year = list(
+              type     = "integer",
+              minimum  = 0,
+              required = TRUE
+            ),
             disorder = list(
               type     = "string",
               required = TRUE
@@ -90,12 +95,42 @@ Pipeline <- R6::R6Class( #nolint
     run = function(...) {
       validator <- ArgumentsValidator$new(
         disorder1 = list(
-          required = TRUE,
-          type     = "string"
+          required   = TRUE,
+          type       = "named_list",
+          properties = list(
+            id = list(
+              required = TRUE,
+              type     = "string"
+            ),
+            earliest_onset = list(
+              type    = "integer",
+              minimum = 0,
+              default = 0
+            ),
+            latest_onset = list(
+              type    = "integer",
+              minimum = 1
+            )
+          )
         ),
         disorder2 = list(
-          required = TRUE,
-          type     = "string"
+          required   = TRUE,
+          type       = "named_list",
+          properties = list(
+            id = list(
+              required = TRUE,
+              type     = "string"
+            ),
+            earliest_onset = list(
+              type    = "integer",
+              minimum = 0,
+              default = 0
+            ),
+            latest_onset = list(
+              type    = "integer",
+              minimum = 1
+            )
+          )
         ),
         relationship_kind = list(
           type     = "string",

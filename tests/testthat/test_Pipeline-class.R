@@ -13,7 +13,7 @@ set.seed(6)
 d1_tte <- generate_random_tte(10000)
 d1_tte <- generate_failure(d1_tte, 20, 10)
 d1_tte <- generate_diagnosed_relatives(d1_tte, "relatives_diagnosed") |>
-  select(-born_at_year, -dead_at_year) |>
+  select(-born_at, -dead_at_year) |>
   relocate(failure_time, .after = person_id) |>
   relocate(failure_status, .after = failure_time) |>
   relocate(relatives, .after = failure_status) |>
@@ -26,7 +26,7 @@ d1_tte_dt <- data.table(d1_tte)
 d2_tte <- generate_random_tte(10000)
 d2_tte <- generate_failure(d2_tte, 19, 11)
 d2_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
-  select(-born_at_year, -dead_at_year) |>
+  select(-born_at, -dead_at_year) |>
   relocate(failure_time, .after = person_id) |>
   relocate(failure_status, .after = failure_time) |>
   relocate(relatives, .after = failure_status) |>
@@ -67,6 +67,7 @@ describe("initialize", {
     expect_error(Pipeline$new(
       tte = data.table(
         person_id           = c("p1", "p1"),
+        born_at_year        = c(1950, 1951),
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 10),
@@ -79,6 +80,7 @@ describe("initialize", {
     expect_error(Pipeline$new(
       tte = data.table(
         person_id           = c("p1", "p1"),
+        born_at_year        = c(1950, 1951),
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 10),
@@ -93,6 +95,7 @@ describe("initialize", {
     expect_error(Pipeline$new(
       tte = data.table(
         person_id           = c(1, 1),
+        born_at_year        = c(1950, 1951),
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
@@ -107,6 +110,7 @@ describe("initialize", {
     Pipeline$new(
       tte = data.table(
         person_id           = c("p1", "p1"),
+        born_at_year        = c(1950, 1951),
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
@@ -127,32 +131,64 @@ describe("run_experiment", {
 
   it("fails when disorder 1 is not found", {
     expect_error(pipeline$run(
-      disorder1         = "unknown",
-      disorder2         = "CAD",
+      disorder1 = list(
+        id             = "unknown",
+        earliest_onset = 1,
+        latest_onset   = 100
+      ),
+      disorder2 = list(
+        id             = "CAD",
+        earliest_onset = 0,
+        latest_onset   = 100
+      ),
       relationship_kind = "PO"
     ))
   })
 
   it("fails when disorder 2 is not found", {
     expect_error(pipeline$run(
-      disorder1         = "SCZ",
-      disorder2         = "unknown",
+      disorder1 = list(
+        id             = "SCZ",
+        earliest_onset = 1,
+        latest_onset   = 100
+      ),
+      disorder2 = list(
+        id             = "unknown",
+        earliest_onset = 0,
+        latest_onset   = 100
+      ),
       relationship_kind = "PO"
     ))
   })
 
   it("fails when relationship_kind is not found", {
     expect_error(pipeline$run(
-      disorder1         = "SCZ",
-      disorder2         = "CAD",
+      disorder1 = list(
+        id             = "SCZ",
+        earliest_onset = 1,
+        latest_onset   = 100
+      ),
+      disorder2 = list(
+        id             = "CAD",
+        earliest_onset = 0,
+        latest_onset   = 100
+      ),
       relationship_kind = "unknown"
     ))
   })
 
   it("allows valid experiment selection", {
     pipeline$run(
-      disorder1         = "SCZ",
-      disorder2         = "CAD",
+      disorder1 = list(
+        id             = "SCZ",
+        earliest_onset = 1,
+        latest_onset   = 100
+      ),
+      disorder2 = list(
+        id             = "CAD",
+        earliest_onset = 0,
+        latest_onset   = 100
+      ),
       relationship_kind = "PO"
     )
   })
