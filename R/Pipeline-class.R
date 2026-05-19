@@ -37,13 +37,29 @@ Pipeline <- R6::R6Class( #nolint
     },
     prepare_tte_for_run = function(disorder1_id, disorder2_id, relkind) {
       tte <- private$tte |>
-        filter(
-          (disorder == disorder1_id | disorder == disorder2_id),
-          relationship_kind == relkind
+        filter(relationship_kind == relkind) |>
+        select(-relationship_kind)
+
+      tte_d1 <- tte |>
+        filter(disorder == disorder1_id) |>
+        select(-disorder) |>
+        rename(
+          d1_failure_status      = failure_status,
+          d1_failure_time        = failure_time,
+          d1_relatives_diagnosed = relatives_diagnosed
         )
 
-      d1_nrow <- tte |> filter(disorder == disorder1_id) |> nrow()
-      d2_nrow <- tte |> filter(disorder == disorder2_id) |> nrow()
+      tte_d2 <- private$tte |>
+        filter(disorder == disorder2_id) |>
+        select(-disorder) |>
+        rename(
+          d2_failure_status      = failure_status,
+          d2_failure_time        = failure_time,
+          d2_relatives_diagnosed = relatives_diagnosed
+        ) |> select(person_id, d2_failure_status, d2_failure_time, d2_relatives_diagnosed)
+
+      d1_nrow <- tte_d1 |> nrow()
+      d2_nrow <- tte_d2 |> nrow()
 
       if (d1_nrow == 0) {
         stop("No rows left after filter: disorder == \"", disorder1_id, "\" && relationship_kind == \"", relkind, "\")")
@@ -53,7 +69,7 @@ Pipeline <- R6::R6Class( #nolint
         stop("Sample imbalance found, disorder 1 had ", d1_nrow, " individuals, disorder 2 had ", d2_nrow, " individuals")
       }
 
-      return(tte)
+      return(inner_join(tte_d1, tte_d2, by = join_by(person_id)))
     }
   ),
   public = list(
@@ -173,11 +189,11 @@ Pipeline <- R6::R6Class( #nolint
         )
       )
 
-      args <- validator$run(...)
-      tte  <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
+      args   <- validator$run(...)
+      tte_c1 <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
 
       re_d1_c1 <- private$analysis$cif$run(
-        tte            = tte |> filter(disorder == args$disorder1$id),
+        tte            = tte_c1 |> rename(failure_status = d1_failure_status, failure_time = d1_failure_time),
         earliest_onset = args$disorder1$earliest_onset,
         group_columns  = args$group_columns
       )
@@ -187,7 +203,7 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       re_d2_c1 <- private$analysis$cif$run(
-        tte            = tte |> filter(disorder == args$disorder2$id),
+        tte            = tte_c1 |> rename(failure_status = d2_failure_status, failure_time = d2_failure_time),
         earliest_onset = args$disorder2$earliest_onset,
         group_columns  = args$group_columns
       )
@@ -196,7 +212,7 @@ Pipeline <- R6::R6Class( #nolint
         stop("Disorder 2, cohort 1 had no TTE events")
       }
 
-
+      print(tte_c1)
     }
   )
 )
