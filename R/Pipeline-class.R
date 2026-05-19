@@ -65,6 +65,7 @@ Pipeline <- R6::R6Class( #nolint
       estimate_col <- paste0(cohort, "_estimate")
       cases_col    <- paste0(cohort, "_cases")
 
+
       tmp_tte <- tte |>
         rename(
           failure_status = !!as.name(status_col),

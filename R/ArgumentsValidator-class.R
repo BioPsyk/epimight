@@ -185,7 +185,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         full_key <- sprintf("%s[[%s]]", key, col_key)
 
         if (isTRUE(col_rule$required) && !(col_key %in% colnames(value))) {
-          stop("Data.table column '", full_key, "' did not exist")
+          stop("Data.table column '", full_key, "' did not exist: ", paste(colnames(value), collapse = ", "))
         } else if (!isTRUE(col_rule$required) && !(col_key %in% colnames(value))) {
           next
         }
