@@ -101,6 +101,16 @@ Pipeline <- R6::R6Class( #nolint
           type     = "string",
           enum     = names(epimight:::relationship_kinds),
           required = TRUE
+        ),
+        draws = list(
+          type    = "integer",
+          minimum = 1,
+          default = 1
+        ),
+        rubin_level = list(
+          type    = "string",
+          enum    = list("meta", "per_year"),
+          default = "meta"
         )
       )
 
