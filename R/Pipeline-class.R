@@ -18,22 +18,10 @@ Pipeline <- R6::R6Class( #nolint
     #' p = relatives_diagnosed / relatives.  This avoids cohort dilution
     #' at high prevalence, where nearly everyone has at least one affected
     #' relative and the genetic enrichment of c2/c3 vanishes.
-    #'
-    #' @param tte TTE data
-    #' @return TTE data with relatives downsampled.
-    downsample_relatives = function(tte) {
-      return(
-        tte |>
-        mutate(
-          p = ifelse(relatives > 0, pmin(relatives_diagnosed / relatives, 1.0), 0.0),
-          relatives_diagnosed = as.integer(rbinom(
-            length(p),
-            size = 1L,
-            prob = p
-          ))
-        ) |>
-        select(-p)
-      )
+    downsample_relatives_diagnosed = function(relatives_diagnosed, relatives) {
+      p = ifelse(relatives > 0, pmin(relatives_diagnosed / relatives, 1.0), 0.0)
+
+      return(as.integer(rbinom(length(p), size = 1L, prob = p)))
     },
     prepare_tte_for_run = function(disorder1_id, disorder2_id, relkind) {
       tte <- private$tte |>
@@ -70,6 +58,19 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       return(inner_join(tte_d1, tte_d2, by = join_by(person_id)))
+    },
+    run_draw = function(tte_c1) {
+      tte <- copy(tte_c1)
+
+      tte$d1_relatives_diagnosed = private$downsample_relatives_diagnosed(
+        tte$d1_relatives_diagnosed,
+        tte$d1_relatives
+      )
+
+      tte$d2_relatives_diagnosed = private$downsample_relatives_diagnosed(
+        tte$d2_relatives_diagnosed,
+        tte$d2_relatives
+      )
     }
   ),
   public = list(
@@ -212,7 +213,7 @@ Pipeline <- R6::R6Class( #nolint
         stop("Disorder 2, cohort 1 had no TTE events")
       }
 
-      print(tte_c1)
+      private$run_draw(tte_c1)
     }
   )
 )
