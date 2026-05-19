@@ -103,48 +103,6 @@ describe("initialize", {
     ))
   })
 
-  it("fails when there are less than 2 distinct disorders", {
-    expect_error(Pipeline$new(
-      tte = data.table(
-        person_id           = c("p1", "p1"),
-        disorder            = c("SCZ", "SCZ"),
-        failure_status      = c(0, 1),
-        failure_time        = c(10, 10),
-        relationship_kind   = c("PO", "PO"),
-        relatives           = c(1, 1),
-        relatives_diagnosed = c(0, 0)
-      )
-    ))
-  })
-
-  it("fails when some disorders have missing individuals", {
-    expect_error(Pipeline$new(
-      tte = data.table(
-        person_id           = c("p1", "p1", "p2"),
-        disorder            = c("SCZ", "CAD", "SCZ"),
-        failure_status      = c(0, 1, 2),
-        failure_time        = c(10, 20, 23),
-        relationship_kind   = c("PO", "PO", "PO"),
-        relatives           = c(2, 2, 1),
-        relatives_diagnosed = c(0, 1, 1)
-      )
-    ))
-  })
-
-  it("fails when some relationship kinds have missing individuals", {
-    expect_error(Pipeline$new(
-      tte = data.table(
-        person_id           = c("p1", "p1", "p2", "p2"),
-        disorder            = c("SCZ", "CAD", "SCZ", "CAD"),
-        failure_status      = c(0, 1, 2, 0),
-        failure_time        = c(10, 20, 23, 50),
-        relationship_kind   = c("PO", "PO", "PO", "FS"),
-        relatives           = c(2, 2, 1, 2),
-        relatives_diagnosed = c(0, 1, 1, 1)
-      )
-    ))
-  })
-
   it("allows valid tte", {
     Pipeline$new(
       tte = data.table(
@@ -162,9 +120,32 @@ describe("initialize", {
   })
 })
 
-
 describe("run_experiment", {
   it("doesn't allow empty arguments", {
-    expect_error(Pipeline$new())
+    expect_error(pipeline$run())
+  })
+
+  it("fails when disorder 1 is not found", {
+    expect_error(pipeline$run(
+      disorder1         = "unknown",
+      disorder2         = "CAD",
+      relationship_kind = "PO"
+    ))
+  })
+
+  it("fails when disorder 2 is not found", {
+    expect_error(pipeline$run(
+      disorder1         = "SCZ",
+      disorder2         = "unknown",
+      relationship_kind = "PO"
+    ))
+  })
+
+  it("allows valid experiment selection", {
+    pipeline$run(
+      disorder1         = "SCZ",
+      disorder2         = "CAD",
+      relationship_kind = "PO"
+    )
   })
 })

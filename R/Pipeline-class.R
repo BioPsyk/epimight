@@ -58,43 +58,47 @@ Pipeline <- R6::R6Class( #nolint
         )
       )
 
-      # Makes sure that there are atleast 2 distinct disorders in the given time-to-event data.
-      validator$add_post_validation(function(args, rules) {
-        people_per_combo <- args$tte |> group_by(disorder, relationship_kind) |> summarise(count = n())
-
-        if (length(unique(people_per_combo |> pull(count))) > 1) {
-          table <- paste(kable(people_per_combo, format = "simple"), collapse = "\n")
-          stop(paste0("Sample imbalance found:\n", table))
-        } else if (people_per_combo |> distinct(disorder) |> nrow() < 2) {
-          stop("Given tte had less than 2 distinct disorders")
-        }
-
-        return(args)
-      })
-
       args <- validator$run(...)
       private$tte = args$tte
     },
     #' @description
-    #' Creates an pipeline instance that stores the given time-to-event data.
-    run_experiment = function(...) {
+    #' Runs a single experiment using the given disorders and relationship_kind.
+    run = function(...) {
       validator <- ArgumentsValidator$new(
-        disorder_1 = list(
+        disorder1 = list(
           required = TRUE,
           type     = "string"
         ),
-        disorder_2 = list(
+        disorder2 = list(
           required = TRUE,
           type     = "string"
         ),
         relationship_kind = list(
-          type     = "character",
+          type     = "string",
           enum     = names(epimight:::relationship_kinds),
           required = TRUE
         )
       )
 
       args <- validator$run(...)
+
+      run_tte <- private$tte |>
+        filter(
+          disorder == args$disorder1 | disorder == args$disorder2
+        )
+
+      sample_counts     <- run_tte |> group_by(disorder, relationship_kind) |> summarise(count = n())
+      sample_counts_fmt <- paste(kable(sample_counts, format = "simple"), collapse = "\n")
+
+      if (length(unique(sample_counts |> pull(count))) > 1) {
+        stop(paste0("Sample imbalance found:\n", sample_counts_fmt))
+      } else if (sample_counts |> filter(disorder == args$disorder1) |> nrow() == 0) {
+        stop(paste0("Disorder 1 (", args$disorder1, ") was not found in TTE data:\n", sample_counts_fmt))
+      } else if (sample_counts |> filter(disorder == args$disorder2) |> nrow() == 0) {
+        stop(paste0("Disorder 2 (", args$disorder2, ") was not found in TTE data:\n", sample_counts_fmt))
+      }
+
+      print(run_tte)
     }
   )
 )
