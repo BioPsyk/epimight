@@ -11,6 +11,7 @@ Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
     tte = NULL,
+    analysis = NULL,
     #' @description
     #' Downsample relative counts to independent Bernoulli indicators.
     #'
@@ -49,11 +50,6 @@ Pipeline <- R6::R6Class( #nolint
               type     = "string",
               required = TRUE
             ),
-            born_at_year = list(
-              type     = "integer",
-              minimum  = 0,
-              required = TRUE
-            ),
             disorder = list(
               type     = "string",
               required = TRUE
@@ -88,7 +84,12 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args <- validator$run(...)
-      private$tte = args$tte
+      private$tte <- args$tte
+      private$analysis <- list(
+        h2  = HeritabilityAnalysis$new(),
+        cif = CumulativeIncidenceAnalysis$new(),
+        gc  = GeneticCorrelationAnalysis$new()
+      )
     },
     #' @description
     #' Runs a single experiment using the given disorders and relationship_kind.
