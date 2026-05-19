@@ -309,6 +309,21 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Rule for key '", key, "' is not a named list: (", class(rule), ") -> ", rule)
       }
 
+      known_types <- list(
+        "string",
+        "integer",
+        "numeric",
+        "list",
+        "named_list",
+        "generic_named_list",
+        "data.table",
+        "date"
+      )
+
+      if (!(rule$type %in% known_types)) {
+        stop("Rule for key '", key, "' has unknown type: ", rule$type)
+      }
+
       value <- args[[key]]
 
       if (is.null(value)) {

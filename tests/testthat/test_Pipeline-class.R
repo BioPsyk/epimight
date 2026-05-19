@@ -18,7 +18,7 @@ d1_tte <- generate_diagnosed_relatives(d1_tte, "relatives_diagnosed") |>
   relocate(failure_status, .after = failure_time) |>
   relocate(relatives, .after = failure_status) |>
   relocate(relatives_diagnosed, .after = relatives) |>
-  mutate(disorder = "SCZ", relationship_kind = "PO") |>
+  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
   as.data.frame()
 
 d1_tte_dt <- data.table(d1_tte)
@@ -31,7 +31,7 @@ d2_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
   relocate(failure_status, .after = failure_time) |>
   relocate(relatives, .after = failure_status) |>
   relocate(relatives_diagnosed, .after = relatives) |>
-  mutate(disorder = "CAD", relationship_kind = "PO") |>
+  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
   as.data.frame()
 
 d2_tte_dt <- data.table(d2_tte)
@@ -63,9 +63,10 @@ describe("initialize", {
     ))
   })
 
-  it("doesn't allow wrong tte columns", {
+  it("doesn't allow unknown relationship kinds", {
     expect_error(Pipeline$new(
       tte = data.table(
+        person_id           = c("p1", "p1"),
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 10),
@@ -77,6 +78,7 @@ describe("initialize", {
 
     expect_error(Pipeline$new(
       tte = data.table(
+        person_id           = c("p1", "p1"),
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 10),
@@ -87,9 +89,24 @@ describe("initialize", {
     ))
   })
 
+  it("doesn't allow numeric person IDs", {
+    expect_error(Pipeline$new(
+      tte = data.table(
+        person_id           = c(1, 1),
+        disorder            = c("SCZ", "CAD"),
+        failure_status      = c(0, 1),
+        failure_time        = c(10, 20),
+        relationship_kind   = c("PO", "PO"),
+        relatives           = c(2, 2),
+        relatives_diagnosed = c(0, 1)
+      )
+    ))
+  })
+
   it("fails when there are less than 2 distinct disorders", {
     expect_error(Pipeline$new(
       tte = data.table(
+        person_id           = c("p1", "p1"),
         disorder            = c("SCZ", "SCZ"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 10),
@@ -103,6 +120,7 @@ describe("initialize", {
   it("allows valid tte", {
     Pipeline$new(
       tte = data.table(
+        person_id           = c("p1", "p1"),
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),

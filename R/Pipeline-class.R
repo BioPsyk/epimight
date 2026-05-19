@@ -20,8 +20,12 @@ Pipeline <- R6::R6Class( #nolint
           required = TRUE,
           type     = "data.table",
           columns  = list(
+            person_id = list(
+              type     = "string",
+              required = TRUE
+            ),
             disorder = list(
-              type     = "character",
+              type     = "string",
               required = TRUE
             ),
             failure_status = list(
@@ -35,7 +39,7 @@ Pipeline <- R6::R6Class( #nolint
               required = TRUE
             ),
             relationship_kind = list(
-              type     = "character",
+              type     = "string",
               enum     = names(epimight:::relationship_kinds),
               required = TRUE
             ),
