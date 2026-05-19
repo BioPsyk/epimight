@@ -152,11 +152,6 @@ Pipeline <- R6::R6Class( #nolint
               type     = "string",
               required = TRUE
             ),
-            born_at_year = list(
-              type     = "number",
-              required = TRUE,
-              minimum  = 0
-            ),
             disorder = list(
               type     = "string",
               required = TRUE
