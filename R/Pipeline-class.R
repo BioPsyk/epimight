@@ -59,11 +59,11 @@ Pipeline <- R6::R6Class( #nolint
 
       return(inner_join(tte_d1, tte_d2, by = join_by(person_id)))
     },
-    run_cif = function(tte, disorder, group_columns, earliest_onset, latest_onset) {
+    run_cif = function(tte, disorder, cohort, group_columns, earliest_onset, latest_onset) {
       status_col   <- paste0(disorder, "_failure_status")
       time_col     <- paste0(disorder, "_failure_time")
-      estimate_col <- paste0(disorder, "_estimate")
-      cases_col    <- paste0(disorder, "_cases")
+      estimate_col <- paste0(cohort, "_estimate")
+      cases_col    <- paste0(cohort, "_cases")
 
       tmp_tte <- tte |>
         rename(
@@ -122,43 +122,20 @@ Pipeline <- R6::R6Class( #nolint
         return(NULL)
       }
 
-      re_d1_c2 <- private$analysis$cif$run(
-        tte            = tte_c2 |> rename(failure_status = d1_failure_status, failure_time = d1_failure_time),
-        earliest_onset = args$disorder1$earliest_onset,
-        group_columns  = args$group_columns
-      ) |>
-        rename(
-          cohort2_estimates = estimate,
-          cohort2_cases     = cases
-        )
+
+      re_d1_c2 <- private$run_cif(tte_c2, "d1", "c2", args$group_columns, args$earliest_onset, args$latest_onset)
 
       if (is.null(re_d1_c2)) {
         return(NULL)
       }
 
-      re_d1_c3 <- private$analysis$cif$run(
-        tte            = tte_c3 |> rename(failure_status = d1_failure_status, failure_time = d1_failure_time),
-        earliest_onset = args$disorder1$earliest_onset,
-        group_columns  = args$group_columns
-      ) |>
-        rename(
-          cohort3_estimates = estimate,
-          cohort3_cases     = cases
-        )
+      re_d1_c3 <- private$run_cif(tte_c3, "d1", "c3", args$group_columns, args$earliest_onset, args$latest_onset)
 
       if (is.null(re_d1_c3)) {
         return(NULL)
       }
 
-      re_d2_c3 <- private$analysis$cif$run(
-        tte            = tte_c3 |> rename(failure_status = d2_failure_status, failure_time = d2_failure_time),
-        earliest_onset = args$disorder2$earliest_onset,
-        group_columns  = args$group_columns
-      ) |>
-        rename(
-          cohort3_estimates = estimate,
-          cohort3_cases     = cases
-        )
+      re_d2_c3 <- private$run_cif(tte_c3, "d2", "c3", args$group_columns, args$earliest_onset, args$latest_onset)
 
       if (is.null(re_d2_c3)) {
         return(NULL)
@@ -289,13 +266,13 @@ Pipeline <- R6::R6Class( #nolint
 
       args     <- validator$run(...)
       tte_c1   <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
-      re_d1_c1 <- private$run_cif(tte_c1, "d1", args$group_columns, args$earliest_onset, args$latest_onset)
+      re_d1_c1 <- private$run_cif(tte_c1, "d1", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
 
       if (is.null(re_d1_c1)) {
         stop("Disorder 1, cohort 1 had no TTE events")
       }
 
-      re_d2_c1 <- private$run_cif(tte_c1, "d2", args$group_columns, args$earliest_onset, args$latest_onset)
+      re_d2_c1 <- private$run_cif(tte_c1, "d2", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
 
       if (is.null(re_d2_c1)) {
         stop("Disorder 2, cohort 1 had no TTE events")
