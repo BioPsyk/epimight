@@ -177,7 +177,7 @@ Pipeline <- R6::R6Class( #nolint
       tte  <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
 
       re_d1_c1 <- private$analysis$cif$run(
-        tte            = tte$d1,
+        tte            = tte |> filter(disorder == args$disorder1$id),
         earliest_onset = args$disorder1$earliest_onset,
         group_columns  = args$group_columns
       )
@@ -187,7 +187,7 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       re_d2_c1 <- private$analysis$cif$run(
-        tte            = tte$d2,
+        tte            = tte |> filter(disorder == args$disorder2$id),
         earliest_onset = args$disorder2$earliest_onset,
         group_columns  = args$group_columns
       )
