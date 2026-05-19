@@ -221,7 +221,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param rule Ruleset that contains the enum list to check against.
     #' @param value String/numeric to validate
     check_enum = function(key, rule, value) {
-      if (is.null(rule$enum)) return(value)
+      if (!("enum" %in% names(rule)) || is.null(rule$enum)) return(value)
       if (all(value %in% rule$enum)) return(value)
 
       stop(
