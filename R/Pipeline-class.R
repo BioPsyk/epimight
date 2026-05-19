@@ -8,7 +8,9 @@
 #' @export
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
-  private = list(),
+  private = list(
+    tte = NULL
+  ),
   public = list(
     #' @description
     #' Creates an pipeline instance.
@@ -35,7 +37,7 @@ Pipeline <- R6::R6Class( #nolint
         )
       )
 
-      args      <- validator$run(...)
+      args <- validator$run(...)
     }
   )
 )
