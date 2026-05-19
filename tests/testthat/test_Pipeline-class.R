@@ -186,7 +186,8 @@ describe("run_experiment", {
         id = "CAD"
       ),
       relationship_kind = "PO",
-      draws = 2
+      draws = 2,
+      group_columns = list("born_at_year")
     )
   })
 })

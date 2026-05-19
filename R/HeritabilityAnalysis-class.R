@@ -77,10 +77,10 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
           required = TRUE,
           type = "data.table",
           columns = list(
-            cohort1_estimates = list(type = "numeric"),
-            cohort1_cases     = list(type = "integer"),
-            cohort2_estimates = list(type = "numeric"),
-            cohort2_cases     = list(type = "integer")
+            c1_estimates = list(type = "numeric"),
+            c1_cases     = list(type = "integer"),
+            c2_estimates = list(type = "numeric"),
+            c2_cases     = list(type = "integer")
           )
         )
       )
@@ -92,10 +92,10 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
       suppressWarnings({
         results <- self$calculate_h2(
           estimates$id,
-          estimates$cohort1_estimate,
-          estimates$cohort2_estimate,
-          estimates$cohort1_cases,
-          estimates$cohort2_cases,
+          estimates$c1_estimate,
+          estimates$c2_estimate,
+          estimates$c1_cases,
+          estimates$c2_cases,
           args$relationship_kind
         ) |>
           filter_all(

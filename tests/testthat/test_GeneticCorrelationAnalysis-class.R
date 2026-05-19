@@ -78,10 +78,10 @@ run_h2_stratified <- function(c1_estimates, c2_estimates) {
   combined_estimates <- c1_estimates |>
     inner_join(c2_estimates, by = join_by(time, born_at_year)) |>
     rename(
-      cohort1_estimates = estimate.x,
-      cohort1_cases     = cases.x,
-      cohort2_estimates = estimate.y,
-      cohort2_cases     = cases.y
+      cohort1_estimate = estimate.x,
+      cohort1_cases    = cases.x,
+      cohort2_estimate = estimate.y,
+      cohort2_cases    = cases.y
     ) |>
     select(time, born_at_year, starts_with("cohort")) |>
     get_last_time_stratified()
@@ -93,70 +93,6 @@ run_h2_stratified <- function(c1_estimates, c2_estimates) {
 }
 
 describe("run", {
-  #it("Produces significant genetic correlation when stratifying on birth year", {
-  #  re_d1_c1 <- run_cif_stratified("d1", "c1")
-  #  re_d1_c2 <- run_cif_stratified("d1", "c2")
-  #  re_d1_c3 <- run_cif_stratified("d1", "c3")
-  #  re_d2_c1 <- run_cif_stratified("d2", "c1")
-  #  re_d2_c3 <- run_cif_stratified("d2", "c3")
-
-  #  h2_d1 <- run_h2_stratified(re_d1_c1, re_d1_c2)
-  #  h2_d2 <- run_h2_stratified(re_d2_c1, re_d2_c3)
-
-  #  re_d1_c1 <- get_last_time_stratified(re_d1_c1)
-  #  re_d1_c3 <- get_last_time_stratified(re_d1_c3)
-  #  re_d2_c1 <- get_last_time_stratified(re_d2_c1)
-
-  #  re_combined <- inner_join(re_d1_c1, re_d1_c3, by = join_by(time, born_at_year)) |>
-  #    rename(
-  #      re_d1_c1_estimates = estimate.x,
-  #      re_d1_c1_cases     = cases.x,
-  #      re_d1_c3_estimates = estimate.y,
-  #      re_d1_c3_cases     = cases.y,
-  #    ) |>
-  #    select(time, born_at_year, starts_with("re_")) |>
-  #    inner_join(re_d2_c1, by = join_by(time, born_at_year)) |>
-  #    rename(
-  #      re_d2_c1_estimates = estimate,
-  #      re_d2_c1_cases     = cases
-  #    ) |>
-  #    select(time, born_at_year, starts_with("re_"))
-
-  #  h_combined <- inner_join(h2_d1, h2_d2, by = join_by(time, born_at_year)) |>
-  #    rename(
-  #      h2_d1 = h2.x,
-  #      h2_d2 = h2.y
-  #    ) |>
-  #    select(time, born_at_year, starts_with("h2_"))
-
-  #  combined <- inner_join(re_combined, h_combined, by = join_by(time, born_at_year)) |>
-  #    as.data.table()
-
-  #  gc_d1_d2 <- gc_analysis$run(
-  #    relationship_kind      = relationship_kind,
-  #    estimates              = combined
-  #  )
-
-  #  validator <- ArgumentsValidator$new(
-  #    meta = list(
-  #      required = TRUE,
-  #      type     = "data.table",
-  #      columns  = list(
-  #        fixed_meta = list(required = TRUE, type = "numeric"),
-  #        fixed_se   = list(required = TRUE, type = "numeric"),
-  #        fixed_l95  = list(required = TRUE, type = "numeric"),
-  #        fixed_u95  = list(required = TRUE, type = "numeric"),
-  #        rand_meta  = list(required = TRUE, type = "numeric"),
-  #        rand_se    = list(required = TRUE, type = "numeric"),
-  #        rand_l95   = list(required = TRUE, type = "numeric"),
-  #        rand_u95   = list(required = TRUE, type = "numeric")
-  #      )
-  #    )
-  #  )
-
-  #  validator$run(meta = gc_analysis$run_meta(gc_d1_d2))
-  #})
-
   it("Produces same results as dk_rg_byYOB", {
     #=================================================================================
     # Old results
@@ -217,16 +153,16 @@ describe("run", {
 
     re_combined <- inner_join(re_d1_c1, re_d1_c3, by = join_by(time, born_at_year)) |>
       rename(
-        re_d1_c1_estimates = estimate.x,
-        re_d1_c1_cases     = cases.x,
-        re_d1_c3_estimates = estimate.y,
-        re_d1_c3_cases     = cases.y,
+        re_d1_c1_estimate = estimate.x,
+        re_d1_c1_cases    = cases.x,
+        re_d1_c3_estimate = estimate.y,
+        re_d1_c3_cases    = cases.y,
       ) |>
       select(time, born_at_year, starts_with("re_")) |>
       inner_join(re_d2_c1, by = join_by(time, born_at_year)) |>
       rename(
-        re_d2_c1_estimates = estimate,
-        re_d2_c1_cases     = cases
+        re_d2_c1_estimate = estimate,
+        re_d2_c1_cases    = cases
       ) |>
       select(time, born_at_year, starts_with("re_"))
 
