@@ -63,7 +63,8 @@ Pipeline <- R6::R6Class( #nolint
         people_per_combo <- args$tte |> group_by(disorder, relationship_kind) |> summarise(count = n())
 
         if (length(unique(people_per_combo |> pull(count))) > 1) {
-          stop(paste0("Sample imbalance found: ", kable(people_per_combo, format = "markdown")))
+          table <- paste(kable(people_per_combo, format = "simple"), collapse = "\n")
+          stop(paste0("Sample imbalance found:\n", table))
         } else if (people_per_combo |> distinct(disorder) |> nrow() < 2) {
           stop("Given tte had less than 2 distinct disorders")
         }
