@@ -6,7 +6,7 @@
 # * https://r-pkgs.org/tests.html
 # * https://testthat.r-lib.org/reference/test_package.html#special-files
 
-library(testthat)
-library(epimight)
+library(testthat, quietly = TRUE, warn.conflicts = FALSE)
+library(epimight, quietly = TRUE, warn.conflicts = FALSE)
 
 test_check("epimight")

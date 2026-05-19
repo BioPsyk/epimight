@@ -16,12 +16,7 @@ Pipeline <- R6::R6Class( #nolint
     #' Creates an pipeline instance.
     initialize = function() {
       validator <- ArgumentsValidator$new(
-        relationship_kind = list(
-          required = TRUE,
-          type = "string",
-          enum = names(epimight:::relationship_kinds)
-        ),
-        estimates = list(
+        tte = list(
           required = TRUE,
           type = "data.table",
           columns = list(
