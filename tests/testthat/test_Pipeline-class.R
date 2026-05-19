@@ -142,11 +142,11 @@ describe("run_experiment", {
   })
 
   it("fails when relationship_kind is not found", {
-    pipeline$run(
+    expect_error(pipeline$run(
       disorder1         = "SCZ",
       disorder2         = "CAD",
       relationship_kind = "unknown"
-    )
+    ))
   })
 
   it("allows valid experiment selection", {
