@@ -23,7 +23,7 @@ Pipeline <- R6::R6Class( #nolint
 
       return(as.integer(rbinom(length(p), size = 1L, prob = p)))
     },
-    get_run_tte = function(disorder1_id, disorder2_id, relkind) {
+    get_run_tte = function(disorder1_id, disorder2_id, relkind, group_columns) {
       tte <- private$tte |>
         filter(relationship_kind == relkind) |>
         select(-relationship_kind)
@@ -57,7 +57,17 @@ Pipeline <- R6::R6Class( #nolint
         stop("Sample imbalance found, disorder 1 had ", d1_nrow, " individuals, disorder 2 had ", d2_nrow, " individuals")
       }
 
-      return(inner_join(tte_d1, tte_d2, by = join_by(person_id)))
+      combined <- inner_join(tte_d1, tte_d2, by = join_by(person_id))
+
+      if (!is.list(group_columns)) return(combined)
+
+      for (col in group_columns) {
+        if (!(col %in% colnames(combined))) {
+          stop("group_column \"", col, "\" was not found in TTE dataset: ", paste(colnames(combined), collapse = ", "))
+        }
+      }
+
+      return(combined)
     },
     run_cif = function(tte, disorder, cohort, group_columns, earliest_onset, latest_onset) {
       status_col   <- paste0(disorder, "_failure_status")
@@ -257,7 +267,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args   <- validator$run(...)
-      tte_c1 <- private$get_run_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind)
+      tte_c1 <- private$get_run_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$group_columns)
 
       re_d1_c1 <- private$run_cif(tte_c1, "d1", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
       if (is.null(re_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")

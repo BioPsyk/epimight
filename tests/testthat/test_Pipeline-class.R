@@ -177,6 +177,20 @@ describe("run_experiment", {
     ))
   })
 
+  it("fails when group column cannot be found in TTE dataset", {
+    pipeline$run(
+      disorder1 = list(
+        id = "SCZ"
+      ),
+      disorder2 = list(
+        id = "CAD"
+      ),
+      relationship_kind = "PO",
+      draws = 2,
+      group_columns = list("born_at_year", "unknown")
+    )
+  })
+
   it("allows valid experiment selection", {
     pipeline$run(
       disorder1 = list(
