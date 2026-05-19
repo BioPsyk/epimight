@@ -172,9 +172,6 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param rule Ruleset that contains rules for all columns in the given value to validated.
     #' @param value Data.table to validate
     check_data.table = function(key, rule, value) {
-      message("check_data_table (", key, "):")
-      print(value)
-
       if (!is.data.table(value)) {
         stop("Argument '", key, "' was not a data.table")
       }
@@ -194,10 +191,6 @@ ArgumentsValidator <- R6::R6Class( #nolint
         }
 
         col_value <- value[[col_key]]
-
-        message(" check_data_table (", col_key, "): ")
-        print(class(col_value))
-        print(col_value)
 
         value[[col_key]] <- self$check_type(full_key, col_rule, col_value)
       }
