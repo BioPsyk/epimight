@@ -38,6 +38,8 @@ d2_tte_dt <- data.table(d2_tte)
 
 tte_dt <- rbindlist(list(d1_tte_dt, d2_tte_dt))
 
+pipeline <- Pipeline$new(tte = tte_dt)
+
 #=================================================================================
 # Tests
 #=================================================================================
@@ -64,23 +66,36 @@ describe("initialize", {
   it("doesn't allow wrong tte columns", {
     expect_error(Pipeline$new(
       tte = data.table(
-        disorder            = c("SCZ"),
-        failure_status      = c(0),
-        failure_time        = c(10),
-        relationship_kind   = c(10), # Wrong type
-        relatives           = c(1),
-        relatives_diagnosed = c(0)
+        disorder            = c("SCZ", "CAD"),
+        failure_status      = c(0, 1),
+        failure_time        = c(10, 10),
+        relationship_kind   = c(10, 20), # Wrong type
+        relatives           = c(1, 1),
+        relatives_diagnosed = c(0, 0)
       )
     ))
 
     expect_error(Pipeline$new(
       tte = data.table(
-        disorder            = c("SCZ"),
-        failure_status      = c(0),
-        failure_time        = c(10),
-        relationship_kind   = c("parent-offspring"), # Unknown value
-        relatives           = c(1),
-        relatives_diagnosed = c(0)
+        disorder            = c("SCZ", "CAD"),
+        failure_status      = c(0, 1),
+        failure_time        = c(10, 10),
+        relationship_kind   = c("parent-offspring", "cousins"), # Unknown value
+        relatives           = c(1, 1),
+        relatives_diagnosed = c(0, 0)
+      )
+    ))
+  })
+
+  it("fails when there are less than 2 distinct disorders", {
+    expect_error(Pipeline$new(
+      tte = data.table(
+        disorder            = c("SCZ", "SCZ"),
+        failure_status      = c(0, 1),
+        failure_time        = c(10, 10),
+        relationship_kind   = c("PO", "PO"),
+        relatives           = c(1, 1),
+        relatives_diagnosed = c(0, 0)
       )
     ))
   })
@@ -88,7 +103,7 @@ describe("initialize", {
   it("allows valid tte", {
     Pipeline$new(
       tte = data.table(
-        disorder            = c("SCZ", "SCZ"),
+        disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
         relationship_kind   = c("PO", "PO"),
@@ -98,5 +113,11 @@ describe("initialize", {
     )
 
     Pipeline$new(tte = tte_dt)
+  })
+})
+
+describe("run_experiment", {
+  it("doesn't allow empty arguments", {
+    expect_error(Pipeline$new())
   })
 })

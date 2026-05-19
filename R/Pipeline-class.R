@@ -13,13 +13,13 @@ Pipeline <- R6::R6Class( #nolint
   ),
   public = list(
     #' @description
-    #' Creates an pipeline instance.
+    #' Creates an pipeline instance that stores the given time-to-event data.
     initialize = function(...) {
       validator <- ArgumentsValidator$new(
         tte = list(
           required = TRUE,
-          type = "data.table",
-          columns = list(
+          type     = "data.table",
+          columns  = list(
             disorder = list(
               type     = "character",
               required = TRUE
@@ -53,8 +53,38 @@ Pipeline <- R6::R6Class( #nolint
         )
       )
 
+      # Makes sure that there are atleast 2 distinct disorders in the given time-to-event data.
+      validator$add_post_validation(function(args, rules) {
+        if (args$tte |> distinct(disorder) |> nrow() < 2) {
+          stop("Given tte had less than 2 distinct disorders")
+        }
+
+        return(args)
+      })
+
       args <- validator$run(...)
       private$tte = args$tte
+    },
+    #' @description
+    #' Creates an pipeline instance that stores the given time-to-event data.
+    run_experiment = function(...) {
+      validator <- ArgumentsValidator$new(
+        disorder_1 = list(
+          required = TRUE,
+          type     = "string"
+        ),
+        disorder_2 = list(
+          required = TRUE,
+          type     = "string"
+        ),
+        relationship_kind = list(
+          type     = "character",
+          enum     = names(epimight:::relationship_kinds),
+          required = TRUE
+        )
+      )
+
+      args <- validator$run(...)
     }
   )
 )
