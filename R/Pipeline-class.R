@@ -41,24 +41,14 @@ Pipeline <- R6::R6Class( #nolint
           disorder          == disorder1_id,
           relationship_kind == relkind
         ) |>
-        select(-disorder) |>
-        rename(
-          d1_failure_status      = failure_status,
-          d1_failure_time        = failure_time,
-          d1_relatives_diagnosed = relatives_diagnosed
-        )
+        select(-disorder)
 
       d2_tte <- private$tte |>
         filter(
           disorder          == disorder2_id,
           relationship_kind == relkind
         ) |>
-        select(person_id, relationship_kind, failure_status, failure_time, relatives_diagnosed) |>
-        rename(
-          d2_failure_status      = failure_status,
-          d2_failure_time        = failure_time,
-          d2_relatives_diagnosed = relatives_diagnosed
-        )
+        select(-disorder)
 
       d1_tte_nrow <- d1_tte |> nrow()
       d2_tte_nrow <- d2_tte |> nrow()
@@ -71,15 +61,10 @@ Pipeline <- R6::R6Class( #nolint
         stop("Sample imbalance found, disorder 1 had ", d1_tte_nrow, " individuals, disorder 2 had ", d2_tte_nrow, " individuals")
       }
 
-      tte <- inner_join(
-        d1_tte,
-        d2_tte,
-        by = join_by(person_id, relationship_kind)
-      )
-
-      print(tte)
-
-      return(tte)
+      return(list(
+        d1 = d1_tte,
+        d2 = d2_tte
+      ))
     }
   ),
   public = list(
@@ -150,8 +135,8 @@ Pipeline <- R6::R6Class( #nolint
             ),
             earliest_onset = list(
               type    = "integer",
-              minimum = 0,
-              default = 0
+              minimum = 1,
+              default = 1
             ),
             latest_onset = list(
               type    = "integer",
@@ -169,8 +154,8 @@ Pipeline <- R6::R6Class( #nolint
             ),
             earliest_onset = list(
               type    = "integer",
-              minimum = 0,
-              default = 0
+              minimum = 1,
+              default = 1
             ),
             latest_onset = list(
               type    = "integer",
@@ -197,6 +182,18 @@ Pipeline <- R6::R6Class( #nolint
 
       args <- validator$run(...)
       tte  <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
+
+      cif_d1_c1 <- private$analysis$cif$run(
+        tte            = tte$d1,
+        earliest_onset = args$disorder1$earliest_onset,
+        group_columns  = list("born_at_year")
+      )
+
+      cif_d2_c1 <- private$analysis$cif$run(
+        tte            = tte$d2,
+        earliest_onset = args$disorder2$earliest_onset,
+        group_columns  = list("born_at_year")
+      )
     }
   )
 )
