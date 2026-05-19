@@ -84,6 +84,9 @@ Pipeline <- R6::R6Class( #nolint
           !!as.name(cases_col)    := cases
         ) |>
         select(-variance, -l95, -u95) |>
+        group_by(!!!group_columns) |>
+        arrange(desc(time)) |>
+        filter(row_number() == 1) |>
         as.data.table()
     },
     run_h2 = function(re_c1, re_c2, relkind, group_columns) {
@@ -258,8 +261,8 @@ Pipeline <- R6::R6Class( #nolint
         )
       )
 
-      args     <- validator$run(...)
-      tte_c1   <- private$get_run_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind)
+      args   <- validator$run(...)
+      tte_c1 <- private$get_run_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind)
 
       re_d1_c1 <- private$run_cif(tte_c1, "d1", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
       if (is.null(re_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
