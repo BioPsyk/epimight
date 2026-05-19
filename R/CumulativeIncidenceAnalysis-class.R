@@ -161,7 +161,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         ),
         group_columns = list(
           type  = "list",
-          items = list(type = "character")
+          items = list(type = "string")
         ),
         earliest_onset = list(
           type    = "integer",

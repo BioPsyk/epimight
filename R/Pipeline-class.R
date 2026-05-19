@@ -173,6 +173,10 @@ Pipeline <- R6::R6Class( #nolint
           minimum = 1,
           default = 1
         ),
+        group_columns = list(
+          type  = "list",
+          items = list(type = "string")
+        ),
         rubin_level = list(
           type    = "string",
           enum    = list("meta", "per_year"),
@@ -186,13 +190,13 @@ Pipeline <- R6::R6Class( #nolint
       cif_d1_c1 <- private$analysis$cif$run(
         tte            = tte$d1,
         earliest_onset = args$disorder1$earliest_onset,
-        group_columns  = list("born_at_year")
+        group_columns  = args$group_columns
       )
 
       cif_d2_c1 <- private$analysis$cif$run(
         tte            = tte$d2,
         earliest_onset = args$disorder2$earliest_onset,
-        group_columns  = list("born_at_year")
+        group_columns  = args$group_columns
       )
     }
   )
