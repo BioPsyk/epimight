@@ -90,12 +90,14 @@ Pipeline <- R6::R6Class( #nolint
       sample_counts     <- run_tte |> group_by(disorder, relationship_kind) |> summarise(count = n())
       sample_counts_fmt <- paste(kable(sample_counts, format = "simple"), collapse = "\n")
 
-      if (length(unique(sample_counts |> pull(count))) > 1) {
+      if (run_tte |> nrow() == 0) {
+        stop(paste0("relationship_kind (", args$relationship_kind, ") was not found in TTE data"))
+      } else if (length(unique(sample_counts |> pull(count))) > 1) {
         stop(paste0("Sample imbalance found:\n", sample_counts_fmt))
       } else if (sample_counts |> filter(disorder == args$disorder1) |> nrow() == 0) {
-        stop(paste0("Disorder 1 (", args$disorder1, ") was not found in TTE data:\n", sample_counts_fmt))
+        stop(paste0("disorder1 (", args$disorder1, ") was not found in TTE data:\n", sample_counts_fmt))
       } else if (sample_counts |> filter(disorder == args$disorder2) |> nrow() == 0) {
-        stop(paste0("Disorder 2 (", args$disorder2, ") was not found in TTE data:\n", sample_counts_fmt))
+        stop(paste0("disorder2 (", args$disorder2, ") was not found in TTE data:\n", sample_counts_fmt))
       }
 
       print(run_tte)
