@@ -233,8 +233,9 @@ Pipeline <- R6::R6Class( #nolint
           required = TRUE
         ),
         group_columns = list(
-          type  = "list",
-          items = list(type = "string")
+          type    = "list",
+          items   = list(type = "string"),
+          default = list()
         ),
         draws = list(
           type    = "integer",

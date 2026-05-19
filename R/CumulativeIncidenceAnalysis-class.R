@@ -177,7 +177,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
-      if (!exists("group_columns", where = args)) {
+      if (!exists("group_columns", where = args) || length(args$group_columns) == 0) {
         return(
           private$run_single(
             tte            = args$tte,
