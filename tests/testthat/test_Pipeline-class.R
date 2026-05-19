@@ -64,8 +64,37 @@ describe("initialize", {
   it("doesn't allow wrong tte columns", {
     expect_error(Pipeline$new(
       tte = data.table(
-        person_id = c(1, 2, 3),
+        disorder            = c("SCZ"),
+        failure_status      = c(0),
+        failure_time        = c(10),
+        relationship_kind   = c(10), # Wrong type
+        relatives           = c(1),
+        relatives_diagnosed = c(0)
       )
     ))
+
+    expect_error(Pipeline$new(
+      tte = data.table(
+        disorder            = c("SCZ"),
+        failure_status      = c(0),
+        failure_time        = c(10),
+        relationship_kind   = c("parent-offspring"), # Unknown value
+        relatives           = c(1),
+        relatives_diagnosed = c(0)
+      )
+    ))
+  })
+
+  it("allows valid tte", {
+    Pipeline$new(
+      tte = data.table(
+        disorder            = c("SCZ", "SCZ"),
+        failure_status      = c(0, 1),
+        failure_time        = c(10, 20),
+        relationship_kind   = c("PO", "PO"),
+        relatives           = c(2, 2),
+        relatives_diagnosed = c(0, 1)
+      )
+    )
   })
 })

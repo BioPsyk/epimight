@@ -14,7 +14,7 @@ Pipeline <- R6::R6Class( #nolint
   public = list(
     #' @description
     #' Creates an pipeline instance.
-    initialize = function() {
+    initialize = function(...) {
       validator <- ArgumentsValidator$new(
         tte = list(
           required = TRUE,
@@ -36,7 +36,7 @@ Pipeline <- R6::R6Class( #nolint
             ),
             relationship_kind = list(
               type     = "character",
-              enum     = epimight:::relationship_kinds,
+              enum     = names(epimight:::relationship_kinds),
               required = TRUE
             ),
             relatives = list(
@@ -50,16 +50,6 @@ Pipeline <- R6::R6Class( #nolint
               required = TRUE
             )
           )
-        ),
-        earliest_onset = list(
-          type    = "integer",
-          default = 1,
-          minimum = 1
-        ),
-        latest_onset = list(
-          type    = "integer",
-          default = 100,
-          minimum = 1
         )
       )
 
