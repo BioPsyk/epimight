@@ -153,7 +153,7 @@ Pipeline <- R6::R6Class( #nolint
 
       run_tte <- private$tte |>
         filter(
-          disorder == args$disorder1 | disorder == args$disorder2
+          disorder == args$disorder1$id | disorder == args$disorder2$id
         )
 
       sample_counts     <- run_tte |> group_by(disorder) |> summarise(count = n())
@@ -161,10 +161,10 @@ Pipeline <- R6::R6Class( #nolint
 
       if (length(unique(sample_counts |> pull(count))) > 1) {
         stop(paste0("Sample imbalance found:\n", sample_counts_fmt))
-      } else if (sample_counts |> filter(disorder == args$disorder1) |> nrow() == 0) {
-        stop(paste0("disorder1 (", args$disorder1, ") was not found in TTE data:\n", sample_counts_fmt))
-      } else if (sample_counts |> filter(disorder == args$disorder2) |> nrow() == 0) {
-        stop(paste0("disorder2 (", args$disorder2, ") was not found in TTE data:\n", sample_counts_fmt))
+      } else if (sample_counts |> filter(disorder == args$disorder1$id) |> nrow() == 0) {
+        stop(paste0("disorder1 (", args$disorder1$id, ") was not found in TTE data:\n", sample_counts_fmt))
+      } else if (sample_counts |> filter(disorder == args$disorder2$id) |> nrow() == 0) {
+        stop(paste0("disorder2 (", args$disorder2$id, ") was not found in TTE data:\n", sample_counts_fmt))
       }
 
       run_tte <- run_tte |> filter(relationship_kind == args$relationship_kind)
