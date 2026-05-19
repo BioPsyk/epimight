@@ -36,35 +36,24 @@ Pipeline <- R6::R6Class( #nolint
       )
     },
     prepare_tte_for_run = function(disorder1_id, disorder2_id, relkind) {
-      d1_tte <- private$tte |>
+      tte <- private$tte |>
         filter(
-          disorder          == disorder1_id,
+          (disorder == disorder1_id | disorder == disorder2_id),
           relationship_kind == relkind
-        ) |>
-        select(-disorder)
+        )
 
-      d2_tte <- private$tte |>
-        filter(
-          disorder          == disorder2_id,
-          relationship_kind == relkind
-        ) |>
-        select(-disorder)
+      d1_nrow <- tte |> filter(disorder == disorder1_id) |> nrow()
+      d2_nrow <- tte |> filter(disorder == disorder2_id) |> nrow()
 
-      d1_tte_nrow <- d1_tte |> nrow()
-      d2_tte_nrow <- d2_tte |> nrow()
-
-      if (d1_tte_nrow == 0) {
+      if (d1_nrow == 0) {
         stop("No rows left after filter: disorder == \"", disorder1_id, "\" && relationship_kind == \"", relkind, "\")")
-      } else if (d2_tte_nrow == 0) {
+      } else if (d2_nrow == 0) {
         stop("No rows left after filter: disorder == \"", disorder2_id, "\" && relationship_kind == \"", relkind, "\")")
-      } else if (d1_tte_nrow != d2_tte_nrow) {
-        stop("Sample imbalance found, disorder 1 had ", d1_tte_nrow, " individuals, disorder 2 had ", d2_tte_nrow, " individuals")
+      } else if (d1_nrow != d2_nrow) {
+        stop("Sample imbalance found, disorder 1 had ", d1_nrow, " individuals, disorder 2 had ", d2_nrow, " individuals")
       }
 
-      return(list(
-        d1 = d1_tte,
-        d2 = d2_tte
-      ))
+      return(tte)
     }
   ),
   public = list(
@@ -187,17 +176,27 @@ Pipeline <- R6::R6Class( #nolint
       args <- validator$run(...)
       tte  <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
 
-      cif_d1_c1 <- private$analysis$cif$run(
+      re_d1_c1 <- private$analysis$cif$run(
         tte            = tte$d1,
         earliest_onset = args$disorder1$earliest_onset,
         group_columns  = args$group_columns
       )
 
-      cif_d2_c1 <- private$analysis$cif$run(
+      if (is.null(re_d1_c1)) {
+        stop("Disorder 1, cohort 1 had no TTE events")
+      }
+
+      re_d2_c1 <- private$analysis$cif$run(
         tte            = tte$d2,
         earliest_onset = args$disorder2$earliest_onset,
         group_columns  = args$group_columns
       )
+
+      if (is.null(re_d2_c1)) {
+        stop("Disorder 2, cohort 1 had no TTE events")
+      }
+
+
     }
   )
 )
