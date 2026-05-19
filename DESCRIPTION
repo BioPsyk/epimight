@@ -32,7 +32,6 @@ Imports:
     readr,
     tidyr,
     yaml,
-    knitr,
     rjson
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3

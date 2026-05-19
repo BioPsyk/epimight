@@ -5,7 +5,6 @@
 #' @import dplyr
 #' @import dtplyr
 #' @import tidyr
-#' @import knitr
 #' @export
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
@@ -35,6 +34,46 @@ Pipeline <- R6::R6Class( #nolint
         ) |>
         select(-p)
       )
+    },
+    prepare_tte_for_run = function(tte, disorder1_id, disorder2_id, relationship_kind) {
+      d1_tte <- private$tte |>
+        filter(disorder == disorder1_id && relationship_kind == relationship_kind) |>
+        select(-disorder) |>
+        rename(
+          d1_failure_status      = failure_stats,
+          d1_failure_time        = failure_time,
+          d1_relatives_diagnosed = relatives_diagnosed
+        )
+
+      d2_tte <- private$tte |>
+        filter(disorder == disorder2_id && relationship_kind == relationship_kind) |>
+        select(-disorder, -relatives) |>
+        rename(
+          d2_failure_status      = failure_stats,
+          d2_failure_time        = failure_time,
+          d2_relatives_diagnosed = relatives_diagnosed
+        )
+
+      d1_tte_nrow <- d1_tte |> nrow() == 0
+      d2_tte_nrow <- d2_tte |> nrow() == 0
+
+      if (d1_tte_nrow == 0) {
+        stop("No rows left after filter: disorder == \"", disorder1_id, "\" && relationship_kind == \"", relationship_kind, "\")")
+      } else if (d2_tte_nrow == 0) {
+        stop("No rows left after filter: disorder == \"", disorder2_id, "\" && relationship_kind == \"", relationship_kind, "\")")
+      } else if (d1_tte_nrow != d2_tte_nrow) {
+        stop("Sample imbalance found, disorder 1 had ", d1_tte_nrow, " individuals, disorder 2 had ", d2_tte_nrow, " individuals")
+      }
+
+      tte <- inner_join(
+        d1_tte,
+        d2_tte,
+        by = join_by(person_id, relationship_kind)
+      )
+
+      print(tte)
+
+      return(tte)
     }
   ),
   public = list(
@@ -151,30 +190,8 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args <- validator$run(...)
+      tte  <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
 
-      run_tte <- private$tte |>
-        filter(
-          disorder == args$disorder1$id | disorder == args$disorder2$id
-        )
-
-      sample_counts     <- run_tte |> group_by(disorder) |> summarise(count = n())
-      sample_counts_fmt <- paste(kable(sample_counts, format = "simple"), collapse = "\n")
-
-      if (length(unique(sample_counts |> pull(count))) > 1) {
-        stop(paste0("Sample imbalance found:\n", sample_counts_fmt))
-      } else if (sample_counts |> filter(disorder == args$disorder1$id) |> nrow() == 0) {
-        stop(paste0("disorder1 (", args$disorder1$id, ") was not found in TTE data:\n", sample_counts_fmt))
-      } else if (sample_counts |> filter(disorder == args$disorder2$id) |> nrow() == 0) {
-        stop(paste0("disorder2 (", args$disorder2$id, ") was not found in TTE data:\n", sample_counts_fmt))
-      }
-
-      run_tte <- run_tte |> filter(relationship_kind == args$relationship_kind)
-
-      if (run_tte |> nrow() == 0) {
-        stop(paste0("relationship_kind (", args$relationship_kind, ") was not found in TTE data"))
-      }
-
-      print(run_tte)
     }
   )
 )
