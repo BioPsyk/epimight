@@ -85,8 +85,12 @@ Pipeline <- R6::R6Class( #nolint
         as.data.table()
     },
     run_h2 = function(re_c1, re_c2, relkind, group_columns) {
-      tmp_group_columns <- copy(group_columns)
-      tmp_group_columns[[length(tmp_group_columns) + 1]] <- "time"
+      if (is.list(group_columns)) {
+        tmp_group_columns <- copy(group_columns)
+        tmp_group_columns[[length(tmp_group_columns) + 1]] <- "time"
+      } else {
+        tmp_group_columns <- list("time")
+      }
 
       combined_estimates <- re_c1 |>
         inner_join(re_c2, by = join_by(!!!group_columns)) |>
@@ -121,8 +125,8 @@ Pipeline <- R6::R6Class( #nolint
       if (is.null(re_d1_c3)) return(NULL)
       if (is.null(re_d2_c3)) return(NULL)
 
-      h2_d1 <- private$run_h2(re_d1_c1, re_d1_c2)
-      h2_d2 <- private$run_h2(re_d2_c1, re_d2_c3)
+      h2_d1 <- private$run_h2(re_d1_c1, re_d1_c2, args$group_columns)
+      h2_d2 <- private$run_h2(re_d2_c1, re_d2_c3, args$group_columns)
 
       return(1)
     }
