@@ -23,7 +23,7 @@ Pipeline <- R6::R6Class( #nolint
 
       return(as.integer(rbinom(length(p), size = 1L, prob = p)))
     },
-    get_run_tte = function(disorder1_id, disorder2_id, relkind, group_columns) {
+    get_tte = function(disorder1_id, disorder2_id, relkind, group_columns) {
       tte <- private$tte |>
         filter(relationship_kind == relkind) |>
         select(-relationship_kind)
@@ -73,14 +73,14 @@ Pipeline <- R6::R6Class( #nolint
       status_col   <- paste0(disorder, "_failure_status")
       time_col     <- paste0(disorder, "_failure_time")
 
-      group_symbols <- rlang::syms(group_columns)
-
       tmp_tte <- tte |>
         rename(
           failure_status = !!as.name(status_col),
           failure_time   = !!as.name(time_col)
         ) |>
         as.data.table()
+
+      group_symbols <- rlang::syms(group_columns)
 
       private$analysis$cif$run(
         tte            = tmp_tte,
@@ -89,21 +89,17 @@ Pipeline <- R6::R6Class( #nolint
         latest_onset   = latest_onset
       ) |>
         # Prefix all cohort specific columns
-        rename_with(~ paste0(cohort, "_", .), .cols = c(estimate, cases, variance, l95, u95)) |>
-        group_by(time, !!!group_symbols) |>
-        arrange(desc(time)) |>
-        filter(row_number() == 1) |>
-        as.data.table()
+        rename_with(~ paste0(cohort, "_", .), .cols = c(estimate, cases, variance, l95, u95))
     },
     run_h2 = function(re_c1, re_c2, relkind, group_columns) {
-      if (is.list(group_columns)) {
-        tmp_group_columns <- copy(group_columns)
-        tmp_group_columns[[length(tmp_group_columns) + 1]] <- "time"
-      } else {
-        tmp_group_columns <- list("time")
-      }
+      group_symbols <- rlang::syms(group_columns)
 
-      combined <- re_c1 |> inner_join(re_c2, by = join_by(!!!tmp_group_columns))
+      combined <- re_c1 |>
+        inner_join(re_c2, by = join_by(time, !!!group_columns))
+        #group_by(time, !!!group_symbols) |>
+        #arrange(desc(time)) |>
+        #filter(row_number() == 1) |>
+        #as.data.table()
 
       private$analysis$h2$run(
         relationship_kind = relkind,
@@ -142,7 +138,19 @@ Pipeline <- R6::R6Class( #nolint
       )
       if (is.null(h2_d2)) return(NULL)
 
-      return(1)
+      re_d1_c1 <- re_d1_c1 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c1_"))
+      re_d1_c3 <- re_d1_c3 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c3_"))
+      re_d2_c1 <- re_d2_c1 |> rename_with(~ paste0("re_d2_", .), .cols = starts_with("c1_"))
+      h2_d1    <- h2_d1 |> rename_with(~ paste0("h2_d1_", .), .cols = c(se, l95, u95)) |> rename(h2_d1 = h2)
+      h2_d2    <- h2_d2 |> rename_with(~ paste0("h2_d2_", .), .cols = c(se, l95, u95)) |> rename(h2_d2 = h2)
+
+      combined <- re_d1_c1 |>
+        inner_join(re_d1_c3, by = join_by(!!!args$group_columns)) |>
+        inner_join(re_d2_c1, by = join_by(!!!args$group_columns)) |>
+        inner_join(h2_d1, by = join_by(!!!args$group_columns)) |>
+        inner_join(h2_d2, by = join_by(!!!args$group_columns))
+
+      return(0)
     }
   ),
   public = list(
@@ -263,7 +271,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args   <- validator$run(...)
-      tte_c1 <- private$get_run_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$group_columns)
+      tte_c1 <- private$get_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$group_columns)
 
       re_d1_c1 <- private$run_cif(tte_c1, "d1", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
       if (is.null(re_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
@@ -271,10 +279,24 @@ Pipeline <- R6::R6Class( #nolint
       re_d2_c1 <- private$run_cif(tte_c1, "d2", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
       if (is.null(re_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
-      results <- vector("list", args$draws)
+      successful_draws <- list()
 
       for (k in seq_len(args$draws)) {
-        results[[k]] <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
+        draw <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
+
+        if (is.null(draw)) next
+
+        successful_draws <- append(successful_draws, draw)
+      }
+
+      failed_draws <- args$draws - length(successful_draws)
+
+      if (failed_draws == args$draws) {
+        stop("None of the ", args$draws, " draws were successful")
+      }
+
+      if (failed_draws > 0) {
+        message("Warning: ", failed_draws, " draws failed")
       }
     }
   )
