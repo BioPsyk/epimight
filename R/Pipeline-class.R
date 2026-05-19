@@ -59,18 +59,115 @@ Pipeline <- R6::R6Class( #nolint
 
       return(inner_join(tte_d1, tte_d2, by = join_by(person_id)))
     },
-    run_draw = function(tte_c1) {
-      tte <- copy(tte_c1)
+    run_cif = function(tte, disorder, group_columns, earliest_onset, latest_onset) {
+      status_col   <- paste0(disorder, "_failure_status")
+      time_col     <- paste0(disorder, "_failure_time")
+      estimate_col <- paste0(disorder, "_estimate")
+      cases_col    <- paste0(disorder, "_cases")
 
-      tte$d1_relatives_diagnosed = private$downsample_relatives_diagnosed(
-        tte$d1_relatives_diagnosed,
-        tte$d1_relatives
+      tmp_tte <- tte |>
+        rename(
+          failure_status = !!as.name(status_col),
+          failure_time   = !!as.name(time_col)
+        ) |>
+        as.data.table()
+
+      private$analysis$cif$run(
+        tte            = tmp_tte,
+        group_columns  = group_columns,
+        earliest_onset = earliest_onset,
+        latest_onset   = latest_onset
+      ) |>
+        rename(
+          !!as.name(estimate_col) := estimate,
+          !!as.name(cases_col)    := cases
+        ) |>
+        as.data.table()
+    },
+    run_h2 = function(re_c1, re_c2, relkind, group_columns) {
+      tmp_group_columns <- copy(group_columns)
+      tmp_group_columns[[length(tmp_group_columns) + 1]] <- "time"
+
+      combined_estimates <- re_c1 |>
+        inner_join(re_c2, by = join_by(!!!group_columns)) |>
+        rename(
+          cohort1_estimates = estimate.x,
+          cohort1_cases     = cases.x,
+          cohort2_estimates = estimate.y,
+          cohort2_cases     = cases.y
+        )
+
+      private$analysis$h2$run(
+        relationship_kind = relkind,
+        estimates         = combined_estimates
+      )
+    },
+    run_draw = function(tte_c1, re_d1_c1, re_d2_c1, args) {
+      tmp_tte <- copy(tte_c1)
+
+      tmp_tte$d1_relatives_diagnosed = private$downsample_relatives_diagnosed(
+        tmp_tte$d1_relatives_diagnosed,
+        tmp_tte$d1_relatives
       )
 
-      tte$d2_relatives_diagnosed = private$downsample_relatives_diagnosed(
-        tte$d2_relatives_diagnosed,
-        tte$d2_relatives
+      tmp_tte$d2_relatives_diagnosed = private$downsample_relatives_diagnosed(
+        tmp_tte$d2_relatives_diagnosed,
+        tmp_tte$d2_relatives
       )
+
+      tte_c2 <- tmp_tte[d1_relatives_diagnosed > 0]
+      tte_c3 <- tmp_tte[d2_relatives_diagnosed > 0]
+
+      if (nrow(tte_c2) == 0 || nrow(tte_c3) == 0) {
+        return(NULL)
+      }
+
+      re_d1_c2 <- private$analysis$cif$run(
+        tte            = tte_c2 |> rename(failure_status = d1_failure_status, failure_time = d1_failure_time),
+        earliest_onset = args$disorder1$earliest_onset,
+        group_columns  = args$group_columns
+      ) |>
+        rename(
+          cohort2_estimates = estimate,
+          cohort2_cases     = cases
+        )
+
+      if (is.null(re_d1_c2)) {
+        return(NULL)
+      }
+
+      re_d1_c3 <- private$analysis$cif$run(
+        tte            = tte_c3 |> rename(failure_status = d1_failure_status, failure_time = d1_failure_time),
+        earliest_onset = args$disorder1$earliest_onset,
+        group_columns  = args$group_columns
+      ) |>
+        rename(
+          cohort3_estimates = estimate,
+          cohort3_cases     = cases
+        )
+
+      if (is.null(re_d1_c3)) {
+        return(NULL)
+      }
+
+      re_d2_c3 <- private$analysis$cif$run(
+        tte            = tte_c3 |> rename(failure_status = d2_failure_status, failure_time = d2_failure_time),
+        earliest_onset = args$disorder2$earliest_onset,
+        group_columns  = args$group_columns
+      ) |>
+        rename(
+          cohort3_estimates = estimate,
+          cohort3_cases     = cases
+        )
+
+      if (is.null(re_d2_c3)) {
+        return(NULL)
+      }
+
+      # h2_d1 <- private$run_h2_stratified(re_d1_c1, re_d1_c2)
+      # h2_d2 <- private$run_h2_stratified(re_d2_c1, re_d2_c3)
+
+      return(1)
     }
   ),
   public = list(
@@ -190,33 +287,24 @@ Pipeline <- R6::R6Class( #nolint
         )
       )
 
-      args   <- validator$run(...)
-      tte_c1 <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
-
-      re_d1_c1 <- private$analysis$cif$run(
-        tte            = tte_c1 |> rename(failure_status = d1_failure_status, failure_time = d1_failure_time),
-        earliest_onset = args$disorder1$earliest_onset,
-        group_columns  = args$group_columns
-      )
+      args     <- validator$run(...)
+      tte_c1   <- private$prepare_tte_for_run(args$disorder1$id, args$disorder2$id, args$relationship_kind)
+      re_d1_c1 <- private$run_cif(tte_c1, "d1", args$group_columns, args$earliest_onset, args$latest_onset)
 
       if (is.null(re_d1_c1)) {
         stop("Disorder 1, cohort 1 had no TTE events")
       }
 
-      re_d2_c1 <- private$analysis$cif$run(
-        tte            = tte_c1 |> rename(failure_status = d2_failure_status, failure_time = d2_failure_time),
-        earliest_onset = args$disorder2$earliest_onset,
-        group_columns  = args$group_columns
-      )
+      re_d2_c1 <- private$run_cif(tte_c1, "d2", args$group_columns, args$earliest_onset, args$latest_onset)
 
       if (is.null(re_d2_c1)) {
         stop("Disorder 2, cohort 1 had no TTE events")
       }
 
-      results <- vector("list", private$K)
+      results <- vector("list", args$draws)
 
-      for (k in seq_len(private$K)) {
-        results[[k]] <- private$run_draw(tte_c1)
+      for (k in seq_len(args$draws)) {
+        results[[k]] <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
       }
 
       print(results)
