@@ -204,11 +204,11 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param rule Ruleset that contains the minimum and maximum values.
     #' @param value Numeric value to check.
     check_range = function(key, rule, value) {
-      if (!is.null(rule$minimum) && value < rule$minimum) {
+      if (!is.null(rule$minimum) && any(value < rule$minimum)) {
         stop("Argument '", key, "' was smaller than minimum value: ", rule$minimum)
       }
 
-      if (!is.null(rule$maximum) && value > rule$maximum) {
+      if (!is.null(rule$maximum) && any(value > rule$maximum)) {
         stop("Argument '", key, "' was larger than maximum value: ", rule$maximum)
       }
 
