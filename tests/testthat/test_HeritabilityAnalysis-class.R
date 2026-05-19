@@ -97,7 +97,7 @@ describe("run", {
         c2_estimate = estimate.y,
         c2_cases    = cases.y
       ) |>
-      select(time, c1_estimates, c1_cases, c2_estimates, c2_cases) |>
+      select(time, c1_estimate, c1_cases, c2_estimate, c2_cases) |>
       arrange(desc(time)) |>
       filter(row_number() == 1) |>
       as.data.table()
@@ -139,12 +139,12 @@ describe("run", {
     combined <- cohort1 |>
       inner_join(cohort2, by = join_by(time, born_at_year)) |>
       rename(
-        cohort1_estimates = estimate.x,
-        cohort1_cases     = cases.x,
-        cohort2_estimates = estimate.y,
-        cohort2_cases     = cases.y
+        c1_estimate = estimate.x,
+        c1_cases    = cases.x,
+        c2_estimate = estimate.y,
+        c2_cases    = cases.y
       ) |>
-      select(time, born_at_year, cohort1_estimates, cohort1_cases, cohort2_estimates, cohort2_cases) |>
+      select(time, born_at_year, c1_estimate, c1_cases, c2_estimate, c2_cases) |>
       group_by(born_at_year) |>
       arrange(desc(time)) |>
       filter(row_number() == 1) |>
@@ -223,12 +223,12 @@ describe("run", {
     combined <- cohort1 |>
       inner_join(cohort2, by = join_by(time, born_at_year)) |>
       rename(
-        cohort1_estimates = estimate.x,
-        cohort1_cases     = cases.x,
-        cohort2_estimates = estimate.y,
-        cohort2_cases     = cases.y
+        c1_estimate = estimate.x,
+        c1_cases    = cases.x,
+        c2_estimate = estimate.y,
+        c2_cases    = cases.y
       ) |>
-      select(time, born_at_year, cohort1_estimates, cohort1_cases, cohort2_estimates, cohort2_cases) |>
+      select(time, born_at_year, c1_estimate, c1_cases, c2_estimate, c2_cases) |>
       group_by(born_at_year) |>
       arrange(desc(time)) |>
       filter(row_number() == 1) |>
