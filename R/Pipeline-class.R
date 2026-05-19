@@ -96,7 +96,6 @@ Pipeline <- R6::R6Class( #nolint
 
       combined <- re_c1 |> inner_join(re_c2, by = join_by(!!!tmp_group_columns))
 
-      print(combined)
       private$analysis$h2$run(
         relationship_kind = relkind,
         estimates         = combined
@@ -124,8 +123,10 @@ Pipeline <- R6::R6Class( #nolint
       if (is.null(re_d2_c3)) return(NULL)
 
       h2_d1 <- private$run_h2(re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns)
-      #h2_d2 <- private$run_h2(re_d2_c1, re_d2_c3, args$relationship_kind, args$group_columns)
+      if (is.null(h2_d1)) return(NULL)
 
+      h2_d2 <- private$run_h2(re_d2_c1, re_d2_c3, args$relationship_kind, args$group_columns)
+      if (is.null(h2_d2)) return(NULL)
 
       return(1)
     }
