@@ -35,9 +35,12 @@ Pipeline <- R6::R6Class( #nolint
         select(-p)
       )
     },
-    prepare_tte_for_run = function(tte, disorder1_id, disorder2_id, relationship_kind) {
+    prepare_tte_for_run = function(disorder1_id, disorder2_id, relkind) {
       d1_tte <- private$tte |>
-        filter(disorder == disorder1_id && relationship_kind == relationship_kind) |>
+        filter(
+          disorder          == disorder1_id,
+          relationship_kind == relkind
+        ) |>
         select(-disorder) |>
         rename(
           d1_failure_status      = failure_stats,
@@ -46,7 +49,10 @@ Pipeline <- R6::R6Class( #nolint
         )
 
       d2_tte <- private$tte |>
-        filter(disorder == disorder2_id && relationship_kind == relationship_kind) |>
+        filter(
+          disorder          == disorder2_id,
+          relationship_kind == relkind
+        ) |>
         select(-disorder, -relatives) |>
         rename(
           d2_failure_status      = failure_stats,
