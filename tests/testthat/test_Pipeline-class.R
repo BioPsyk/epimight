@@ -38,8 +38,6 @@ d2_tte_dt <- data.table(d2_tte)
 
 tte_dt <- rbindlist(list(d1_tte_dt, d2_tte_dt))
 
-print(tte_dt)
-
 #=================================================================================
 # Tests
 #=================================================================================
@@ -47,5 +45,27 @@ print(tte_dt)
 describe("initialize", {
   it("doesn't allow empty arguments", {
     expect_error(Pipeline$new())
+  })
+
+  it("doesn't allow wrong tte type", {
+    expect_error(Pipeline$new(
+      tte = "hello"
+    ))
+
+    expect_error(Pipeline$new(
+      tte = 21
+    ))
+
+    expect_error(Pipeline$new(
+      tte = FALSE
+    ))
+  })
+
+  it("doesn't allow wrong tte columns", {
+    expect_error(Pipeline$new(
+      tte = data.table(
+        person_id = c(1, 2, 3),
+      )
+    ))
   })
 })

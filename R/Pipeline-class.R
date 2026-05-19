@@ -20,15 +20,46 @@ Pipeline <- R6::R6Class( #nolint
           required = TRUE,
           type = "data.table",
           columns = list(
-            re_d1_c1_estimates = list(type = "numeric"),
-            re_d1_c1_cases     = list(type = "integer"),
-            re_d1_c3_estimates = list(type = "numeric"),
-            re_d1_c3_cases     = list(type = "integer"),
-            re_d2_c1_estimates = list(type = "numeric"),
-            re_d2_c1_cases     = list(type = "integer"),
-            h2_d1              = list(type = "numeric"),
-            h2_d2              = list(type = "numeric")
+            disorder = list(
+              type     = "character",
+              required = TRUE
+            ),
+            failure_status = list(
+              type     = "integer",
+              enum     = list(0, 1, 2),
+              required = TRUE
+            ),
+            failure_time = list(
+              type     = "numeric",
+              minimum  = 0,
+              required = TRUE
+            ),
+            relationship_kind = list(
+              type     = "character",
+              enum     = epimight:::relationship_kinds,
+              required = TRUE
+            ),
+            relatives = list(
+              type     = "integer",
+              minimum  = 0,
+              required = TRUE
+            ),
+            relatives_diagnosed = list(
+              type     = "integer",
+              minimum  = 0,
+              required = TRUE
+            )
           )
+        ),
+        earliest_onset = list(
+          type    = "integer",
+          default = 1,
+          minimum = 1
+        ),
+        latest_onset = list(
+          type    = "integer",
+          default = 100,
+          minimum = 1
         )
       )
 
