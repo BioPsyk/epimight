@@ -72,9 +72,8 @@ Pipeline <- R6::R6Class( #nolint
     run_cif = function(tte, disorder, cohort, group_columns, earliest_onset, latest_onset) {
       status_col   <- paste0(disorder, "_failure_status")
       time_col     <- paste0(disorder, "_failure_time")
-      estimate_col <- paste0(cohort, "_estimate")
-      cases_col    <- paste0(cohort, "_cases")
 
+      group_symbols <- rlang::syms(group_columns)
 
       tmp_tte <- tte |>
         rename(
@@ -89,14 +88,9 @@ Pipeline <- R6::R6Class( #nolint
         earliest_onset = earliest_onset,
         latest_onset   = latest_onset
       ) |>
-        # Prefix the CIF output columns with the disorder ID
-        rename(
-          !!as.name(estimate_col) := estimate,
-          !!as.name(cases_col)    := cases
-        ) |>
-        select(-variance, -l95, -u95) |>
-        # For each group, we only keep the last CIF estimate
-        group_by(!!!group_columns) |>
+        # Prefix all cohort specific columns
+        rename_with(~ paste0(cohort, "_", .), .cols = c(estimate, cases, variance, l95, u95)) |>
+        group_by(time, !!!group_symbols) |>
         arrange(desc(time)) |>
         filter(row_number() == 1) |>
         as.data.table()
@@ -272,6 +266,9 @@ Pipeline <- R6::R6Class( #nolint
       tte_c1 <- private$get_run_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$group_columns)
 
       re_d1_c1 <- private$run_cif(tte_c1, "d1", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
+      print(re_d1_c1)
+      return(1)
+
       if (is.null(re_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
 
       re_d2_c1 <- private$run_cif(tte_c1, "d2", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
@@ -282,8 +279,6 @@ Pipeline <- R6::R6Class( #nolint
       for (k in seq_len(args$draws)) {
         results[[k]] <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
       }
-
-      print(results)
     }
   )
 )
