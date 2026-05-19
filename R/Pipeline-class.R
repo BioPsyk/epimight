@@ -89,11 +89,13 @@ Pipeline <- R6::R6Class( #nolint
         earliest_onset = earliest_onset,
         latest_onset   = latest_onset
       ) |>
+        # Prefix the CIF output columns with the disorder ID
         rename(
           !!as.name(estimate_col) := estimate,
           !!as.name(cases_col)    := cases
         ) |>
         select(-variance, -l95, -u95) |>
+        # For each group, we only keep the last CIF estimate
         group_by(!!!group_columns) |>
         arrange(desc(time)) |>
         filter(row_number() == 1) |>
