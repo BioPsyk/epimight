@@ -227,7 +227,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
       stop(
         "Argument '", key, "' value '",
         value, "', was not one of allowed values: '",
-        paste(enum, collapse = ", "),
+        paste(rule$enum, collapse = ", "),
         "'"
       )
     },

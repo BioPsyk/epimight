@@ -10,7 +10,31 @@
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
-    tte = NULL
+    tte = NULL,
+    #' @description
+    #' Downsample relative counts to independent Bernoulli indicators.
+    #'
+    #' For each individual, draws a 0/1 indicator with probability
+    #' p = relatives_diagnosed / relatives.  This avoids cohort dilution
+    #' at high prevalence, where nearly everyone has at least one affected
+    #' relative and the genetic enrichment of c2/c3 vanishes.
+    #'
+    #' @param tte TTE data
+    #' @return TTE data with relatives downsampled.
+    downsample_relatives = function(tte) {
+      return(
+        tte |>
+        mutate(
+          p = ifelse(relatives > 0, pmin(relatives_diagnosed / relatives, 1.0), 0.0),
+          relatives_diagnosed = as.integer(rbinom(
+            length(p),
+            size = 1L,
+            prob = p
+          ))
+        ) |>
+        select(-p)
+      )
+    }
   ),
   public = list(
     #' @description
