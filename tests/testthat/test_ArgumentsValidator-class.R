@@ -443,17 +443,17 @@ describe("date type", {
     )
   )
 
-  it("works when proper date types are put in", {
+  it("succeeds on Date type", {
     validator$run(born_at = as.Date("2020-12-03"))
     validator$run(born_at = as.Date("1800-03-28"))
   })
 
-  it("works when strings with date format is put in", {
+  it("succeeds on strings with right format", {
     validator$run(born_at = "2020-12-03")
     validator$run(born_at = "1800-03-28")
   })
 
-  it("fails when strings incorrect format is put in", {
+  it("fails on incorrect formats", {
     expect_error(
       validator$run(born_at = "a2020-12-03")
     )
@@ -472,13 +472,13 @@ describe("integer enum", {
     )
   )
 
-  it("works when correct values are put in", {
+  it("succeeds on correct values", {
     validator$run(failure_status = 0)
     validator$run(failure_status = 1)
     validator$run(failure_status = 2)
   })
 
-  it("fails when unknown values are put in", {
+  it("fails on unknown enums", {
     expect_error(
       validator$run(failure_status = 3)
     )
@@ -487,7 +487,7 @@ describe("integer enum", {
     )
   })
 
-  it("fails when incorrect types are put in", {
+  it("fails on incorrect types", {
     expect_error(
       validator$run(failure_status = "asd")
     )
