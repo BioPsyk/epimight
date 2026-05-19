@@ -5,6 +5,7 @@
 #' @import dplyr
 #' @import dtplyr
 #' @import tidyr
+#' @import knitr
 #' @export
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
@@ -62,9 +63,7 @@ Pipeline <- R6::R6Class( #nolint
         people_per_combo <- args$tte |> group_by(disorder, relationship_kind) |> summarise(count = n())
 
         if (length(unique(people_per_combo |> pull(count))) > 1) {
-          message("Total individuals per disorder and relationship_kind combination: ")
-          print(people_per_combo)
-          stop("Sample imbalance found")
+          stop(paste0("Sample imbalance found: ", kable(people_per_combo, format = "markdown")))
         } else if (people_per_combo |> distinct(disorder) |> nrow() < 2) {
           stop("Given tte had less than 2 distinct disorders")
         }
