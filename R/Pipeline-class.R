@@ -105,44 +105,24 @@ Pipeline <- R6::R6Class( #nolint
     run_draw = function(tte_c1, re_d1_c1, re_d2_c1, args) {
       tmp_tte <- copy(tte_c1)
 
-      tmp_tte$d1_relatives_diagnosed = private$downsample_relatives_diagnosed(
-        tmp_tte$d1_relatives_diagnosed,
-        tmp_tte$d1_relatives
-      )
-
-      tmp_tte$d2_relatives_diagnosed = private$downsample_relatives_diagnosed(
-        tmp_tte$d2_relatives_diagnosed,
-        tmp_tte$d2_relatives
-      )
+      tmp_tte$d1_relatives_diagnosed = private$downsample_relatives_diagnosed(tmp_tte$d1_relatives_diagnosed, tmp_tte$d1_relatives)
+      tmp_tte$d2_relatives_diagnosed = private$downsample_relatives_diagnosed(tmp_tte$d2_relatives_diagnosed, tmp_tte$d2_relatives)
 
       tte_c2 <- tmp_tte[d1_relatives_diagnosed > 0]
       tte_c3 <- tmp_tte[d2_relatives_diagnosed > 0]
 
-      if (nrow(tte_c2) == 0 || nrow(tte_c3) == 0) {
-        return(NULL)
-      }
-
+      if (nrow(tte_c2) == 0 || nrow(tte_c3) == 0) return(NULL)
 
       re_d1_c2 <- private$run_cif(tte_c2, "d1", "c2", args$group_columns, args$earliest_onset, args$latest_onset)
-
-      if (is.null(re_d1_c2)) {
-        return(NULL)
-      }
-
       re_d1_c3 <- private$run_cif(tte_c3, "d1", "c3", args$group_columns, args$earliest_onset, args$latest_onset)
-
-      if (is.null(re_d1_c3)) {
-        return(NULL)
-      }
-
       re_d2_c3 <- private$run_cif(tte_c3, "d2", "c3", args$group_columns, args$earliest_onset, args$latest_onset)
 
-      if (is.null(re_d2_c3)) {
-        return(NULL)
-      }
+      if (is.null(re_d1_c2)) return(NULL)
+      if (is.null(re_d1_c3)) return(NULL)
+      if (is.null(re_d2_c3)) return(NULL)
 
-      # h2_d1 <- private$run_h2_stratified(re_d1_c1, re_d1_c2)
-      # h2_d2 <- private$run_h2_stratified(re_d2_c1, re_d2_c3)
+      h2_d1 <- private$run_h2(re_d1_c1, re_d1_c2)
+      h2_d2 <- private$run_h2(re_d2_c1, re_d2_c3)
 
       return(1)
     }
