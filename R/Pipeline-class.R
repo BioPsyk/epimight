@@ -13,6 +13,29 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Creates an pipeline instance.
     initialize = function() {
+      validator <- ArgumentsValidator$new(
+        relationship_kind = list(
+          required = TRUE,
+          type = "string",
+          enum = names(epimight:::relationship_kinds)
+        ),
+        estimates = list(
+          required = TRUE,
+          type = "data.table",
+          columns = list(
+            re_d1_c1_estimates = list(type = "numeric"),
+            re_d1_c1_cases     = list(type = "integer"),
+            re_d1_c3_estimates = list(type = "numeric"),
+            re_d1_c3_cases     = list(type = "integer"),
+            re_d2_c1_estimates = list(type = "numeric"),
+            re_d2_c1_cases     = list(type = "integer"),
+            h2_d1              = list(type = "numeric"),
+            h2_d2              = list(type = "numeric")
+          )
+        )
+      )
+
+      args      <- validator$run(...)
     }
   )
 )

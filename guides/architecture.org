@@ -88,12 +88,12 @@
 file tte [
 <color:#255ba7><$ma_account{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **disorder** | **relatives_kind** | **relatives_amount** | **relatives_diagnosed** | **failure_status** | **failure_time** |
-| ...            | ...          | ...                | ...                  | ...                     | ...                | ...              |
-<#76b354>| 99962 | SCZ          | PO                 | 2                    | 1                       | 1                  | 29               |
-| 99962          | SCZ          | FS                 | 1                    | 1                       | 1                  | 29               |
-<#76b354>| 99962 | CAD          | PO                 | 2                    | 0                       | 2                  | 34               |
-| 99962          | CAD          | FS                 | 1                    | 0                       | 2                  | 34               |
+| **person_id**  | **disorder** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** |
+| ...            | ...          | ...                | ...              | ...                   | ...                  | ...                     |
+<#76b354>| 99962 | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
+| 99962          | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
+<#76b354>| 99962 | CAD          | 2                  | 34               | PO                    | 2                    | 0                       |
+| 99962          | CAD          | 2                  | 34               | FS                    | 1                    | 0                       |
 ]
 
 rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
