@@ -88,6 +88,7 @@ generate_random_tte <- function(n_count) {
 
   survival_data <- data.frame(
     person_id      = 1:n_count,
+    gender         = sample(c("m", "f"), n_count, replace = TRUE),
     born_at        = sample(birth_dates, n_count, replace = TRUE),
     death_age      = round(
       rnorm(n_count, mean = 68.9, sd = 8.2)

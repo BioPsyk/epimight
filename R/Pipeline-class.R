@@ -266,9 +266,6 @@ Pipeline <- R6::R6Class( #nolint
       tte_c1 <- private$get_run_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$group_columns)
 
       re_d1_c1 <- private$run_cif(tte_c1, "d1", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
-      print(re_d1_c1)
-      return(1)
-
       if (is.null(re_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
 
       re_d2_c1 <- private$run_cif(tte_c1, "d2", "c1", args$group_columns, args$earliest_onset, args$latest_onset)
