@@ -96,5 +96,7 @@ describe("initialize", {
         relatives_diagnosed = c(0, 1)
       )
     )
+
+    Pipeline$new(tte = tte_dt)
   })
 })
