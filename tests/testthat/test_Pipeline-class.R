@@ -131,6 +131,20 @@ describe("initialize", {
     ))
   })
 
+  it("fails when some relationship kinds have missing individuals", {
+    expect_error(Pipeline$new(
+      tte = data.table(
+        person_id           = c("p1", "p1", "p2", "p2"),
+        disorder            = c("SCZ", "CAD", "SCZ", "CAD"),
+        failure_status      = c(0, 1, 2, 0),
+        failure_time        = c(10, 20, 23, 50),
+        relationship_kind   = c("PO", "PO", "PO", "FS"),
+        relatives           = c(2, 2, 1, 2),
+        relatives_diagnosed = c(0, 1, 1, 1)
+      )
+    ))
+  })
+
   it("allows valid tte", {
     Pipeline$new(
       tte = data.table(
