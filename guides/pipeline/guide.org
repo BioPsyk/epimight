@@ -303,6 +303,7 @@ After creating the pipeline instance, you run trails by supplying the ~run_trail
   - Earliest onset
   - Latest onset
 - Relationship kind
+- How many draws to perform
 
 For example, if you want to run a trail between schizophrenia and coronary artery disease of full siblings, you would run:
 
