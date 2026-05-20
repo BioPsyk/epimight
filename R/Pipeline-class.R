@@ -189,6 +189,28 @@ Pipeline <- R6::R6Class( #nolint
       ) |> mutate(source = "gc_d1_d2")
 
       rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |> select(draw, source, everything())
+    },
+    combine_meta_results = function(meta_results) {
+      K           <- nrow(meta_results)
+      theta       <- meta_results$fixed_meta
+      se          <- meta_results$fixed_se
+      theta_bar   <- mean(theta)
+      W           <- mean(se^2)
+      B           <- var(theta)
+      T_var       <- W + (1 + 1 / K) * B
+      combined_se <- sqrt(T_var)
+
+      data.table(
+        fixed_meta  = theta_bar,
+        fixed_se    = combined_se,
+        fixed_l95   = theta_bar - 1.96 * combined_se,
+        fixed_u95   = theta_bar + 1.96 * combined_se,
+        within_var  = W,
+        between_var = B,
+        total_var   = T_var,
+        b_over_t    = B / T_var,
+        k_resamples = K
+      )
     }
   ),
   public = list(
