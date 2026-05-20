@@ -101,9 +101,8 @@ Pipeline <- R6::R6Class( #nolint
         relationship_kind = relationship_kind,
         estimates         = re_c1 |> inner_join(re_c2, by = join_by(time, !!!group_columns))
       ) |>
-        rename_with(~ paste0("h2_", disorder_prefix, "_", .), .cols = c(se, l95, u95)) |>
-        rename_with(~ paste0("h2_", disorder_prefix), .cols = c(h2)) |>
-        select(starts_with("h2_"), time, !!!group_columns)
+        rename_with(~ paste0("h2_", disorder_prefix, "_", .), .cols = c(estimate, se, l95, u95)) |>
+        select(time, !!!group_columns, starts_with("h2_"))
     },
     #' @description
     #' Runs a single draw which produces stratified genetic correlation for the 2 disorders specified in the
@@ -179,28 +178,27 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Meta analyzes all draw results grouped by draw.
     meta_analyze_draw_results = function(draw_results) {
-      h2_d1_meta <- private$analysis$h2$run_meta(
-        results       = draw_results,
-        se_column     = "h2_d1_se",
-        meta_column   = "h2_d1",
-        group_columns = list("draw")
-      ) |> mutate(source = "h2_d1")
+      sources <- list("h2_d1", "h2_d2", "gc_d1_d2")
+      result  <- NULL
 
-      h2_d2_meta <- private$analysis$h2$run_meta(
-        results       = draw_results,
-        se_column     = "h2_d2_se",
-        meta_column   = "h2_d2",
-        group_columns = list("draw")
-      ) |> mutate(source = "h2_d2")
+      analysis <- Analysis$new()
 
-      gc_d1_d2_meta <- private$analysis$gc$run_meta(
-        results       = draw_results,
-        se_column     = "gc_d1_d2_se",
-        meta_column   = "gc_d1_d2_rhh",
-        group_columns = list("draw")
-      ) |> mutate(source = "gc_d1_d2")
+      for (src in sources) {
+        meta <- analysis$run_meta(
+          results       = draw_results,
+          se_column     = paste0(src, "_se"),
+          meta_column   = paste0(src, "_estimate"),
+          group_columns = list("draw")
+        ) |> mutate(source = src)
 
-      rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |> select(draw, source, everything())
+        if (is.null(result)) {
+          result <- meta
+        } else {
+          result <- rbind(result, meta)
+        }
+      }
+
+      result |> select(draw, source, everything())
     },
     #' @description
     #' Combines meta values of each draw into a single meta for all draws.
@@ -377,7 +375,8 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(draw_results) == 0) stop("All draws failed")
 
-      print(draw_results)
+      draw_meta <- private$meta_analyze_draw_results(draw_results)
+      print(draw_meta)
 
       #print("successful")
       #print(successful_draws)

@@ -92,8 +92,8 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
             re_d1_c3_cases    = list(type = "integer"),
             re_d2_c1_estimate = list(type = "numeric"),
             re_d2_c1_cases    = list(type = "integer"),
-            h2_d1             = list(type = "numeric"),
-            h2_d2             = list(type = "numeric")
+            h2_d1_estimate    = list(type = "numeric"),
+            h2_d2_estimate    = list(type = "numeric")
           )
         )
       )
@@ -114,8 +114,8 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
           estimates$re_d1_c1_cases,
           estimates$re_d1_c3_cases,
           estimates$re_d2_c1_cases,
-          estimates$h2_d1,
-          estimates$h2_d2,
+          estimates$h2_d1_estimate,
+          estimates$h2_d2_estimate,
           args$relationship_kind
         ) |>
           filter_all(

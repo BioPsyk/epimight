@@ -53,11 +53,11 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
       u95 <- h2 + 1.96 * se
 
       output <- data.table(
-        id  = id,
-        h2  = h2,
-        se  = se,
-        l95 = l95,
-        u95 = u95
+        id       = id,
+        estimate = h2,
+        se       = se,
+        l95      = l95,
+        u95      = u95
       )
 
       return(output)
