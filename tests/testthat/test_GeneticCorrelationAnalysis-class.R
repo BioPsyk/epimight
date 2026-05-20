@@ -78,12 +78,12 @@ run_h2_stratified <- function(c1_estimates, c2_estimates) {
   combined_estimates <- c1_estimates |>
     inner_join(c2_estimates, by = join_by(time, born_at_year)) |>
     rename(
-      cohort1_estimate = estimate.x,
-      cohort1_cases    = cases.x,
-      cohort2_estimate = estimate.y,
-      cohort2_cases    = cases.y
+      c1_estimate = estimate.x,
+      c1_cases    = cases.x,
+      c2_estimate = estimate.y,
+      c2_cases    = cases.y
     ) |>
-    select(time, born_at_year, starts_with("cohort")) |>
+    select(time, born_at_year, starts_with("c")) |>
     get_last_time_stratified()
 
   h2_analysis$run(
