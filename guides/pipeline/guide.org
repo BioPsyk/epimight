@@ -431,3 +431,7 @@ Heritability analysis produces the following statistical values:
 - H2 geometric mean of ~h2_d1_estimate~ and ~h2_d2_estimate~ (~gc_d1_d2_gm_h2~)
 - Lower bound of a 95% confidence interval of h2 geometric mean (~gc_d1_d2_gm_l95~)
 - Upper bound of a 95% confidence interval of h2 geometric mean (~gc_d1_d2_gm_u95~)
+
+** Meta analyzed results
+
+TBD
