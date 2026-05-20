@@ -258,6 +258,25 @@ tte |> tail(4 * 4)
 |      9999 |         1991 | f      | SCZ      |              0 |           35 | FS                |         1 |                   0 |
 |      9999 |         1991 | f      | SCZ      |              0 |           35 | PO                |         1 |                   0 |
 
+For our example, that is a complete TTE data pool that can be passed to the pipeline.
+
+* Setting up the pipeline
+
+To setup the pipeline, we just need to import it:
+
+#+BEGIN_SRC R :exports code :eval no
+library(epimight)
+#+END_SRC
+
+And then create a new instance with our TTE pool (the variable ~tte~ is the data table shown in the previous chapter):
+
+#+BEGIN_SRC R :exports code
+pipeline <- Pipeline$new(pool = tte)
+#+END_SRC
+
+#+RESULTS:
+
+
 * asd
 
 

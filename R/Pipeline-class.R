@@ -10,7 +10,7 @@
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
-    tte_pool = NULL,
+    pool = NULL,
     analysis = NULL,
     #' @description
     #' Downsample relative counts to independent Bernoulli indicators.
@@ -28,7 +28,7 @@ Pipeline <- R6::R6Class( #nolint
     #' Retrieves time-to-event data to use in a run based on the given disorders, relationship kind and group columns.
     #' Makes sure that the retrieved data fulfills the requirements of carrying out a single pipeline run.
     get_tte = function(disorder1_id, disorder2_id, relkind, group_columns) {
-      tte <- private$tte_pool |>
+      tte <- private$pool |>
         filter(relationship_kind == relkind) |>
         select(-relationship_kind)
 
@@ -41,7 +41,7 @@ Pipeline <- R6::R6Class( #nolint
           d1_relatives_diagnosed = relatives_diagnosed
         )
 
-      tte_d2 <- private$tte_pool |>
+      tte_d2 <- private$pool |>
         filter(disorder == disorder2_id) |>
         select(-disorder) |>
         rename(
@@ -253,7 +253,7 @@ Pipeline <- R6::R6Class( #nolint
     #' Creates an pipeline instance that stores the given time-to-event data.
     initialize = function(...) {
       validator <- ArgumentsValidator$new(
-        tte = list(
+        pool = list(
           required = TRUE,
           type     = "data.table",
           columns  = list(
@@ -295,7 +295,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args <- validator$run(...)
-      private$tte_pool <- args$tte
+      private$pool <- args$pool
       private$analysis <- list(
         core = Analysis$new(),
         h2   = HeritabilityAnalysis$new(),

@@ -38,7 +38,7 @@ d2_tte_dt <- data.table(d2_tte)
 
 tte_dt <- rbindlist(list(d1_tte_dt, d2_tte_dt))
 
-pipeline <- Pipeline$new(tte = tte_dt)
+pipeline <- Pipeline$new(pool = tte_dt)
 
 #=================================================================================
 # Tests
@@ -65,7 +65,7 @@ describe("initialize", {
 
   it("doesn't allow unknown relationship kinds", {
     expect_error(Pipeline$new(
-      tte = data.table(
+      pool = data.table(
         person_id           = c("p1", "p1"),
         born_at_year        = c(1950, 1951),
         disorder            = c("SCZ", "CAD"),
@@ -78,7 +78,7 @@ describe("initialize", {
     ))
 
     expect_error(Pipeline$new(
-      tte = data.table(
+      pool = data.table(
         person_id           = c("p1", "p1"),
         born_at_year        = c(1950, 1951),
         disorder            = c("SCZ", "CAD"),
@@ -93,7 +93,7 @@ describe("initialize", {
 
   it("doesn't allow numeric person IDs", {
     expect_error(Pipeline$new(
-      tte = data.table(
+      pool = data.table(
         person_id           = c(1, 1),
         born_at_year        = c(1950, 1951),
         disorder            = c("SCZ", "CAD"),
@@ -108,7 +108,7 @@ describe("initialize", {
 
   it("allows valid tte", {
     Pipeline$new(
-      tte = data.table(
+      pool = data.table(
         person_id           = c("p1", "p1"),
         born_at_year        = c(1950, 1951),
         disorder            = c("SCZ", "CAD"),
@@ -120,7 +120,7 @@ describe("initialize", {
       )
     )
 
-    Pipeline$new(tte = tte_dt)
+    Pipeline$new(pool = tte_dt)
   })
 })
 
