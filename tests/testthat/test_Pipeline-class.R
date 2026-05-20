@@ -192,7 +192,7 @@ describe("run_experiment", {
   })
 
   it("allows valid experiment selection", {
-    pipeline$run(
+    results <- pipeline$run(
       disorder1 = list(
         id = "SCZ"
       ),
@@ -203,5 +203,7 @@ describe("run_experiment", {
       draws = 2,
       group_columns = list("gender", "born_at_year")
     )
+
+    print(results)
   })
 })
