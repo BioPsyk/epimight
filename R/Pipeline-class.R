@@ -103,22 +103,22 @@ Pipeline <- R6::R6Class( #nolint
       tmp_tte$d2_relatives_diagnosed = private$downsample_relatives_diagnosed(tmp_tte$d2_relatives_diagnosed, tmp_tte$d2_relatives)
 
       tte_c2 <- tmp_tte[d1_relatives_diagnosed > 0]
-      if (nrow(tte_c2) == 0) rlang::abort(message = "Creating tte_c2 resulted in an empty dataset", class = "DataError")
+      if (nrow(tte_c2) == 0) rlang::abort(message = "tte_c2 was empty", class = "DrawError", category = "data")
 
       tte_c3 <- tmp_tte[d2_relatives_diagnosed > 0]
-      if (nrow(tte_c3) == 0) rlang::abort(message = "Creating tte_c3 resulted in an empty dataset", class = "DataError")
+      if (nrow(tte_c3) == 0) rlang::abort(message = "tte_c3 was empty", class = "DrawError", category = "data")
 
       re_d1_c2 <- private$run_cif(tte_c2, "d1", "c2", args$group_columns, args$disorder1$earliest_onset, args$disorder1$latest_onset)
-      if (is.null(re_d1_c2)) rlang::abort(message = "Running CIF on d1 c2 produced an empty result", class = "CifError")
+      if (is.null(re_d1_c2)) rlang::abort(message = "re_d1_c2 was empty", class = "DrawError", category = "cif")
 
       re_d1_c3 <- private$run_cif(tte_c3, "d1", "c3", args$group_columns, args$disorder1$earliest_onset, args$disorder1$latest_onset)
-      if (is.null(re_d1_c3)) rlang::abort(message = "Running CIF on d1 c3 produced an empty result", class = "CifError")
+      if (is.null(re_d1_c3)) rlang::abort(message = "re_d1_c3 was empty", class = "DrawError", category = "cif")
 
       re_d2_c3 <- private$run_cif(tte_c3, "d2", "c3", args$group_columns, args$disorder2$earliest_onset, args$disorder2$latest_onset)
-      if (is.null(re_d2_c3)) rlang::abort(message = "Running CIF on d2 c3 produced an empty result", class = "CifError")
+      if (is.null(re_d2_c3)) rlang::abort(message = "re_d2_c3 was empty", class = "DrawError", category = "cif")
 
       h2_d1 <- private$run_h2("d1", re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns)
-      if (is.null(h2_d1)) rlang::abort(message = "Running h2 on re_d1_c1 and re_d1_c2 produced an empty result", class = "H2Error")
+      if (is.null(h2_d1)) rlang::abort(message = "h2_d1 was empty", class = "DrawError", category = "h2")
 
       h2_d2 <- private$run_h2(
         "d2",
@@ -127,7 +127,7 @@ Pipeline <- R6::R6Class( #nolint
         args$relationship_kind,
         args$group_columns
       )
-      if (is.null(h2_d2)) rlang::abort(message = "Running h2 on re_d2_c1 and re_d2_c3 produced an empty result", class = "H2Error")
+      if (is.null(h2_d2)) rlang::abort(message = "h2_d2 was empty", class = "DrawError", category = "h2")
 
       re_d1_c1 <- re_d1_c1 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c1_"))
       re_d1_c3 <- re_d1_c3 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c3_"))
@@ -151,14 +151,14 @@ Pipeline <- R6::R6Class( #nolint
         filter(row_number() == 1) |>
         as.data.table()
 
-      if (nrow(combined) == 0) rlang::abort(message = "Joining all Cif and H2 results produced an empty dataset", class = "DataError")
+      if (nrow(combined) == 0) rlang::abort(message = "all re and h2 combined was empty", class = "DrawError", category = "data")
 
       gc <- private$analysis$gc$run(
         relationship_kind = args$relationship_kind,
         estimates         = combined
       )
 
-      if (nrow(gc) == 0) rlang::abort(message = "Running gc on all cif and h2 results produced an empty result", class = "GcError")
+      if (nrow(gc) == 0) rlang::abort(message = "gc was empty", class = "DrawError", category = "gc")
 
       return(gc)
     }
@@ -302,19 +302,19 @@ Pipeline <- R6::R6Class( #nolint
           },
           DataError = function(cnd) {
             print("had cif error")
-            print(cnd)
+            print(cnd$message)
           },
           CifError = function(cnd) {
             print("had cif error")
-            print(cnd)
+            print(cnd$message)
           },
           H2Error = function(cnd) {
             print("had h2 error")
-            print(cnd)
+            print(cnd$message)
           },
           GcError = function(cnd) {
             print("had gc error")
-            print(cnd)
+            print(cnd$message)
           }
         )
       }
