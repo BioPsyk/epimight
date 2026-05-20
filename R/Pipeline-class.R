@@ -41,7 +41,7 @@ Pipeline <- R6::R6Class( #nolint
           d1_relatives_diagnosed = relatives_diagnosed
         )
 
-      tte_d2 <- private$pool |>
+      tte_d2 <- tte |>
         filter(disorder == disorder2_id) |>
         select(-disorder) |>
         rename(
@@ -305,7 +305,7 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' @description
     #' Runs a single experiment using the given disorders and relationship_kind.
-    run = function(...) {
+    run_trail = function(...) {
       validator <- ArgumentsValidator$new(
         disorder1 = list(
           required   = TRUE,
@@ -413,6 +413,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       list(
+        args         = args,
         draw_errors  = draw_errors,
         draw_results = draw_results,
         draw_meta    = draw_meta,
