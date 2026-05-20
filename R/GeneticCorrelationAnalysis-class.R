@@ -35,18 +35,18 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
         rc <- self$relationship_coefficient_from_kind(rc)
       }
 
-      tc   <- qnorm(kc, lower.tail = FALSE)
-      yc   <- dnorm(tc)
-      trc  <- qnorm(krc, lower.tail = FALSE)
-      yrc  <- dnorm(trc)
-      tf   <- qnorm(kf, lower.tail = FALSE)
-      yf   <- dnorm(tf)
-      h2   <- sqrt(h2_d2 * h2_d1)
-      i    <- yf / kf
-      num  <- tc - trc * sqrt(1 - (1 - tf / i) * (tc ^ 2 - trc ^ 2))
-      den  <- rc * (i + (i - tf) * trc ^ 2)
-      rhh  <- num / den
-      rhog <- rhh / h2
+      tc    <- qnorm(kc, lower.tail = FALSE)
+      yc    <- dnorm(tc)
+      trc   <- qnorm(krc, lower.tail = FALSE)
+      yrc   <- dnorm(trc)
+      tf    <- qnorm(kf, lower.tail = FALSE)
+      yf    <- dnorm(tf)
+      gm_h2 <- sqrt(h2_d2 * h2_d1)
+      i     <- yf / kf
+      num   <- tc - trc * sqrt(1 - (1 - tf / i) * (tc ^ 2 - trc ^ 2))
+      den   <- rc * (i + (i - tf) * trc ^ 2)
+      rhh   <- num / den
+      rhog  <- rhh / gm_h2
 
       # se estimation
       wg  <- kf ^ 2 / yf ^ 2 * (1 - kf) / af
@@ -58,15 +58,15 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
       u95 <- rhh + 1.96 * se
 
       results <- data.table(
-        id      = id,
-        rhh     = rhh,
-        rhog    = rhog,
-        se      = se,
-        l95     = l95,
-        u95     = u95,
-        h2      = h2,
-        h2_l95  = l95 / h2,
-        h2_u95  = u95 / h2
+        id        = id,
+        rhh       = rhh,
+        rhog      = rhog,
+        se        = se,
+        l95       = l95,
+        u95       = u95,
+        gm_h2     = gn_h2,
+        gm_h2_l95 = l95 / gm_h2,
+        gm_h2_u95 = u95 / gm_h2
       )
 
       return(results)

@@ -331,7 +331,8 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       print(failed_draws)
-      print(successful_draws)
+      print(successful_draws[[1]]$results$stratified)
+
 
       #print("successful")
       #print(successful_draws)
