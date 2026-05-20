@@ -188,6 +188,8 @@ Pipeline <- R6::R6Class( #nolint
       ) |> mutate(source = "gc_d1_d2")
 
       rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |> select(source, everything())
+    },
+    meta_analyze_draws = function(draws) {
     }
   ),
   public = list(
@@ -316,21 +318,27 @@ Pipeline <- R6::R6Class( #nolint
       re_d2_c1 <- private$run_cif(tte_c1, "d2", "c1", args$group_columns, args$disorder2$earliest_onset, args$disorder2$latest_onset)
       if (is.null(re_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
-      successful_draws <- list()
-      failed_draws     <- list()
+      all_results <- NULL
+      all_errors  <- list()
 
       for (k in seq_len(args$draws)) {
-        res <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
+        draw <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
 
-        if (is.null(res$error)) {
-          successful_draws <- append(successful_draws, res)
+        if (!is.null(draw$error)) {
+          all_errors <- append(all_errors, draw)
+          next
+        }
+
+        res <- draw$result |> mutate(draw = k)
+
+        if (is.null(all_results)) {
+          all_results <- res
         } else {
-          failed_draws <- append(failed_draws, res)
+          all_results <- rbind(all_results, res)
         }
       }
 
-      print(failed_draws)
-      print(successful_draws[[1]]$results$meta)
+      print(all_results)
 
       #print("successful")
       #print(successful_draws)
