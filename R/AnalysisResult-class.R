@@ -16,13 +16,12 @@ AnalysisResult <- R6::R6Class( #nolint
   public = list(
     error   = NULL,
     results = NULL,
-    was_successful = NULL,
+    successful = NULL,
     initialize = function() {
       private$start_time = Sys.time()
     },
     fail = function(id, category, problem) {
-      private$end_time    = Sys.time()
-      self$was_successful = FALSE
+      private$end_time = Sys.time()
 
       self$error = list(
         id       = id,
@@ -32,8 +31,7 @@ AnalysisResult <- R6::R6Class( #nolint
       return(self)
     },
     success = function(results) {
-      private$end_time    = Sys.time()
-      self$was_successful = TRUE
+      private$end_time = Sys.time()
 
       self$results = results
       return(self)

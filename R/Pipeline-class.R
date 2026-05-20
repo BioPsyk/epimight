@@ -164,31 +164,30 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(gc_d1_d2) == 0) return(result$fail("gc_d1_d2", "gc", "empty"))
 
+      result$success(gc_d1_d2)
+    },
+    meta_analyze_draw = function(draw) {
+      if (!is.null(draw$error)) stop("Tried to meta analyze a draw with an error")
+
       h2_d1_meta <- private$analysis$h2$run_meta(
-        results     = h2_d1,
+        results     = draw$result,
         se_column   = "h2_d1_se",
         meta_column = "h2_d1"
       ) |> mutate(source = "h2_d1")
 
       h2_d2_meta <- private$analysis$h2$run_meta(
-        results     = h2_d2,
+        results     = draw$result,
         se_column   = "h2_d2_se",
         meta_column = "h2_d2"
       ) |> mutate(source = "h2_d2")
 
       gc_d1_d2_meta <- private$analysis$gc$run_meta(
-        results     = gc_d1_d2,
+        results     = draw$result,
         se_column   = "gc_d1_d2_se",
         meta_column = "gc_d1_d2_rhh"
       ) |> mutate(source = "gc_d1_d2")
 
-      meta <- rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |>
-        select(source, everything())
-
-      result$success(list(
-        stratified = gc_d1_d2,
-        meta       = meta
-      ))
+      rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |> select(source, everything())
     }
   ),
   public = list(
@@ -323,7 +322,7 @@ Pipeline <- R6::R6Class( #nolint
       for (k in seq_len(args$draws)) {
         res <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
 
-        if (res$was_successful) {
+        if (is.null(res$error)) {
           successful_draws <- append(successful_draws, res)
         } else {
           failed_draws <- append(failed_draws, res)
@@ -331,7 +330,7 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       print(failed_draws)
-      print(successful_draws[[1]]$results$stratified)
+      print(successful_draws[[1]]$results$meta)
 
       #print("successful")
       #print(successful_draws)
