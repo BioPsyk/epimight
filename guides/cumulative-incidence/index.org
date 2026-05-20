@@ -236,11 +236,3 @@ endlegend
 #+CAPTION: Stratified arguments and output
 #+RESULTS: fig:run_stratified_args_output
 [[file:../diagrams/cumulative-incidence-run-stratified-args-output.png]]
-
-** Using function ~get_group_values~
-
-TBD
-
-** Using function ~make_group_summary~
-
-TBD

@@ -129,6 +129,9 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
         select(-id)
 
       return(results)
+    },
+    run_meta = function(...) {
+      super$run_meta(...)
     }
   )
 )
