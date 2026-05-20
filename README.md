@@ -19,12 +19,6 @@
 - 🧩 **Modular**: The pipeline consists of components that can be swapped out or used independently.
 - 💪 **Robust**: A rigorous test suite makes sure the package works as expected and careful input arguments validation makes sure the package is used correctly.
 
-## How it works
-
-The role of the `epimight` pipeline is to determine the genetic correlation between 2 disorders.
-
-![Pipeline component diagram](./guides/diagrams/pipeline-component-diagram.png)
-
 ## Quick Start 🚀
 
 1. Create a directory to work in
