@@ -45,7 +45,20 @@ Analysis <- R6::R6Class( #nolint
           type     = "numeric"
         )
 
-        validator$check_type("results", rule, args$estimates)
+        if (!("group_columns" %in% rules && is.list(rules$group_columns))) {
+          validator$check_type("results", rule, args$estimates)
+
+          return(args)
+        }
+
+        for (gcol in rules$group_columns) {
+          rule$columns[[args$se_column]] <- list(
+            required = TRUE,
+            type     = "any"
+          )
+        }
+
+        validator$check_type("estimates", rule, args$estimates)
 
         return(args)
       })

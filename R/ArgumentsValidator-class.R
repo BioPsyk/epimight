@@ -317,7 +317,8 @@ ArgumentsValidator <- R6::R6Class( #nolint
         "named_list",
         "generic_named_list",
         "data.table",
-        "date"
+        "date",
+        "any"
       )
 
       if (!(rule$type %in% known_types)) {
