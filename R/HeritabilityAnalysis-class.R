@@ -15,6 +15,7 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
   private = list(),
   public = list(
     initialize = function() {
+      super$initialize()
     },
     #' @description
     #' Calulates heritability (h2) along with standard error and confidence intervals.
@@ -122,6 +123,9 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
         select(-id)
 
       return(results)
+    },
+    run_meta = function(...) {
+      super$run_meta(...)
     }
   )
 )

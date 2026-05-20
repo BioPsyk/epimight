@@ -15,6 +15,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
   private = list(),
   public = list(
     initialize = function() {
+      super$initialize()
     },
     #' @description
     #' Calulates genetic correlation (rhog/rhh) along with standard error and confidence intervals.

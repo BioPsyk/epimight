@@ -149,7 +149,7 @@ describe("run", {
       filter(row_number() == 1) |>
       as.data.table()
 
-    results <- h2_analysis$run(
+    estimates <- h2_analysis$run(
       relationship_kind = relationship_kind,
       estimates         = combined
     )
@@ -171,6 +171,12 @@ describe("run", {
       )
     )
 
-    validator$run(meta = h2_analysis$run_meta(results))
+    meta <- h2_analysis$run_meta(
+      estimates = estimates,
+      estimate_column = "estimate",
+      se_column       = "se"
+    )
+
+    validator$run(meta = meta)
   })
 })
