@@ -106,22 +106,22 @@ Pipeline <- R6::R6Class( #nolint
       tmp_tte$d2_relatives_diagnosed = private$downsample_relatives_diagnosed(tmp_tte$d2_relatives_diagnosed, tmp_tte$d2_relatives)
 
       tte_c2 <- tmp_tte[d1_relatives_diagnosed > 0]
-      if (nrow(tte_c2) == 0) return(result$failed("tte_c2", "tte", "empty"))
+      if (nrow(tte_c2) == 0) return(result$fail("tte_c2", "tte", "empty"))
 
       tte_c3 <- tmp_tte[d2_relatives_diagnosed > 0]
-      if (nrow(tte_c3) == 0) return(result$failed("tte_c3", "tte", "empty"))
+      if (nrow(tte_c3) == 0) return(result$fail("tte_c3", "tte", "empty"))
 
       re_d1_c2 <- private$run_cif(tte_c2, "d1", "c2", args$group_columns, args$disorder1$earliest_onset, args$disorder1$latest_onset)
-      if (is.null(re_d1_c2)) return(result$failed("re_d1_c2", "cif", "empty"))
+      if (is.null(re_d1_c2)) return(result$fail("re_d1_c2", "cif", "empty"))
 
       re_d1_c3 <- private$run_cif(tte_c3, "d1", "c3", args$group_columns, args$disorder1$earliest_onset, args$disorder1$latest_onset)
-      if (is.null(re_d1_c3)) return(result$failed("re_d1_c3", "cif", "empty"))
+      if (is.null(re_d1_c3)) return(result$fail("re_d1_c3", "cif", "empty"))
 
       re_d2_c3 <- private$run_cif(tte_c3, "d2", "c3", args$group_columns, args$disorder2$earliest_onset, args$disorder2$latest_onset)
-      if (is.null(re_d2_c3)) return(result$failed("re_d2_c3", "cif", "empty"))
+      if (is.null(re_d2_c3)) return(result$fail("re_d2_c3", "cif", "empty"))
 
       h2_d1 <- private$run_h2("d1", re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns)
-      if (is.null(h2_d1)) return(result$failed("h2_d1", "h2", "empty"))
+      if (is.null(h2_d1)) return(result$fail("h2_d1", "h2", "empty"))
 
       h2_d2 <- private$run_h2(
         "d2",
@@ -130,7 +130,7 @@ Pipeline <- R6::R6Class( #nolint
         args$relationship_kind,
         args$group_columns
       )
-      if (is.null(h2_d2)) return(result$failed("h2_d2", "h2", "empty"))
+      if (is.null(h2_d2)) return(result$fail("h2_d2", "h2", "empty"))
 
       re_d1_c1 <- re_d1_c1 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c1_"))
       re_d1_c3 <- re_d1_c3 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c3_"))
@@ -155,16 +155,16 @@ Pipeline <- R6::R6Class( #nolint
         filter(row_number() == 1) |>
         as.data.table()
 
-      if (nrow(combined) == 0) return(result$failed("re_h2_combined", "tte", "empty"))
+      if (nrow(combined) == 0) return(result$fail("re_h2_combined", "tte", "empty"))
 
       gc_d1_d2 <- private$analysis$gc$run(
         relationship_kind = args$relationship_kind,
         estimates         = combined
       )
 
-      if (nrow(gc_d1_d2) == 0) return(result$failed("gc_d1_d2", "gc", "empty"))
+      if (nrow(gc_d1_d2) == 0) return(result$fail("gc_d1_d2", "gc", "empty"))
 
-      result$successful(h2_d1, h2_d2, gc_d1_d2)
+      result$success(h2_d1, h2_d2, gc_d1_d2)
     }
   ),
   public = list(
