@@ -162,7 +162,7 @@ Pipeline <- R6::R6Class( #nolint
         estimates         = combined
       )
 
-      if (nrow(gc) == 0) return(result$failed("gc_d1_d2", "gc", "empty"))
+      if (nrow(gc_d1_d2) == 0) return(result$failed("gc_d1_d2", "gc", "empty"))
 
       result$successful(h2_d1, h2_d2, gc_d1_d2)
     }
