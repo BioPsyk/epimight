@@ -113,7 +113,7 @@ Analysis <- R6::R6Class( #nolint
         relocate(rand_meta, .before = rand_se) |>
         as.data.table()
     },
-    run_rubin_combine = function(...) {
+    run_rubin = function(...) {
       args <- self$validator$run(...)
 
       K <- nrow(args$estimates)
