@@ -164,26 +164,31 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(gc_d1_d2) == 0) return(result$fail("gc_d1_d2", "gc", "empty"))
 
-      #h2_d1_meta <- private$analysis$h2$run_meta(
-      #  results     = h2_d1,
-      #  se_column   = "h2_d1_se",
-      #  meta_column = "h2_d1"
-      #) |> rename_with(~ paste0("h2_d1_", .))
+      h2_d1_meta <- private$analysis$h2$run_meta(
+        results     = h2_d1,
+        se_column   = "h2_d1_se",
+        meta_column = "h2_d1"
+      ) |> mutate(source = "h2_d1")
 
-      #h2_d2_meta <- private$analysis$h2$run_meta(
-      #  results     = h2_d2,
-      #  se_column   = "h2_d2_se",
-      #  meta_column = "h2_d2"
-      #) |> rename_with(~ paste0("h2_d2_", .))
+      h2_d2_meta <- private$analysis$h2$run_meta(
+        results     = h2_d2,
+        se_column   = "h2_d2_se",
+        meta_column = "h2_d2"
+      ) |> mutate(source = "h2_d2")
 
-      #gc_d1_d2_meta <- private$analysis$gc$run_meta(
-      #  results     = gc_d1_d2,
-      #  se_column   = "gc_d1_d2_se",
-      #  meta_column = "gc_d1_d2_rhh"
-      #) |> rename_with(~ paste0("h2_d2_", .))
-      # meta <- rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta))
+      gc_d1_d2_meta <- private$analysis$gc$run_meta(
+        results     = gc_d1_d2,
+        se_column   = "gc_d1_d2_se",
+        meta_column = "gc_d1_d2_rhh"
+      ) |> mutate(source = "gc_d1_d2")
 
-      result$success(gc_d1_d2)
+      meta <- rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |>
+        select(source, everything())
+
+      result$success(list(
+        stratified = gc_d1_d2,
+        meta       = meta
+      ))
     }
   ),
   public = list(
