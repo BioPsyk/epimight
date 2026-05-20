@@ -10,11 +10,45 @@
 #' @export
 Analysis <- R6::R6Class( #nolint
   "Analysis",
-  private = list(),
+  private = list(
+    validator = NULL
+  ),
   public = list(
     #' @description
-    #' Creates an analysis instance. Doesn't do anything, since this is an abstract class.
+    #' Creates an analysis instance and sets up a validator for the meta functions.
     initialize = function() {
+      private$validator <- ArgumentsValidator$new(
+        estimates = list(
+          required = TRUE,
+          type     = "data.table",
+          columns  = list()
+        ),
+        estimate_column = list(required = TRUE, type = "string"),
+        se_column       = list(required = TRUE, type = "string"),
+        group_columns   = list(
+          type    = "list",
+          items   = list(required = TRUE, type = "string"),
+          default = list()
+        )
+      )
+
+      # Makes sure the meta column actually exists in the results
+      # and that it has the right type.
+      private$validator$add_post_validation(function(args, rules) {
+        rule <- rules$estimates
+        rule$columns[[args$estimate_column]] <- list(
+          required = TRUE,
+          type     = "numeric"
+        )
+        rule$columns[[args$se_column]] <- list(
+          required = TRUE,
+          type     = "numeric"
+        )
+
+        validator$check_type("results", rule, args$estimates)
+
+        return(args)
+      })
     },
     #' @description
     #' Helper for converting a relationship kind into a relationship coefficient.
@@ -31,61 +65,28 @@ Analysis <- R6::R6Class( #nolint
     #'
     #' @return Meta analysis result
     run_meta = function(...) {
-      validator <- ArgumentsValidator$new(
-        results = list(
-          required = TRUE,
-          type     = "data.table",
-          columns  = list()
-        ),
-        se_column     = list(required = TRUE, type = "string"),
-        meta_column   = list(required = TRUE, type = "string"),
-        group_columns = list(
-          type    = "list",
-          items   = list(required = TRUE, type = "string"),
-          default = list()
-        )
-      )
-
-      # Makes sure the meta column actually exists in the results
-      # and that it has the right type.
-      validator$add_post_validation(function(args, rules) {
-        rule <- rules$results
-        rule$columns[[args$se_column]] <- list(
-          required = TRUE,
-          type     = "numeric"
-        )
-        rule$columns[[args$meta_column]] <- list(
-          required = TRUE,
-          type     = "numeric"
-        )
-
-        validator$check_type("results", rule, args$results)
-
-        return(args)
-      })
-
-      args <- validator$run(...)
+      args <- private$validator$run(...)
 
       group_symbols <- rlang::syms(args$group_columns)
 
-      args$results |>
+      args$estimates |>
         filter_all(
           all_vars(!is.infinite(.) & !is.na(.))
         ) |>
         rename(
-          meta = !!as.name(args$meta_column),
-          se   = !!as.name(args$se_column)
+          estimate = !!as.name(args$estimate_column),
+          se       = !!as.name(args$se_column)
         ) |>
         mutate(
           fixed_se = 1 / (se ^ 2),
-          rand_se  = 1 / ((se ^ 2) + var(meta))
+          rand_se  = 1 / ((se ^ 2) + var(estimate))
         ) |>
         group_by(!!!group_symbols) |>
         summarise(
           fixed_se_sum = sum(fixed_se),
-          fixed_meta   = sum(meta * fixed_se) / fixed_se_sum,
+          fixed_meta   = sum(estimate * fixed_se) / fixed_se_sum,
           rand_se_sum  = sum(rand_se),
-          rand_meta    = sum(meta * rand_se) / rand_se_sum
+          rand_meta    = sum(estimate * rand_se) / rand_se_sum
         ) |>
         mutate(
           fixed_se  = sqrt(1 / fixed_se_sum),
@@ -97,6 +98,34 @@ Analysis <- R6::R6Class( #nolint
         ) |>
         select(-fixed_se_sum, -rand_se_sum) |>
         relocate(rand_meta, .before = rand_se) |>
+        as.data.table()
+    },
+    run_rubin_combine = function(...) {
+      args <- self$validator$run(...)
+
+      K <- nrow(args$estimates)
+
+      args$estimates |>
+        filter_all(
+          all_vars(!is.infinite(.) & !is.na(.))
+        ) |>
+        rename(
+          estimate = !!as.name(args$estimate_column), # theta
+          se       = !!as.name(args$se_column)
+        ) |>
+        summarise(
+          fixed_meta  = mean(estimate), # theta bar
+          within_var  = mean(se ^ 2),   # W
+          between_var = var(estimate),  # B
+        ) |>
+        mutate(
+          k_resamples = K,
+          total_var   = W + (1 + 1 / K) * B, # T_var
+          b_over_t    = between_var / total_var,
+          fixed_se    = sqrt(total_var),
+          fixed_l95   = fixed_meta - 1.96 * fixed_se,
+          fixed_u95   = fixed_meta + 1.96 * fixed_se
+        ) |>
         as.data.table()
     }
   )
