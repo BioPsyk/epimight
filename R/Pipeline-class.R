@@ -69,9 +69,9 @@ Pipeline <- R6::R6Class( #nolint
 
       return(combined)
     },
-    run_cif = function(tte, disorder, cohort, group_columns) {
-      status_col   <- paste0(disorder$id, "_failure_status")
-      time_col     <- paste0(disorder$id, "_failure_time")
+    run_cif = function(tte, disorder_prefix, cohort_prefix, disorder, group_columns) {
+      status_col   <- paste0(disorder_prefix, "_failure_status")
+      time_col     <- paste0(disorder_prefix, "_failure_time")
 
       tmp_tte <- tte |>
         rename(
@@ -87,7 +87,7 @@ Pipeline <- R6::R6Class( #nolint
         latest_onset   = disorder$latest_onset
       ) |>
         # Prefix all cohort specific columns
-        rename_with(~ paste0(cohort, "_", .), .cols = c(estimate, cases, variance, l95, u95))
+        rename_with(~ paste0(cohort_prefix, "_", .), .cols = c(estimate, cases, variance, l95, u95))
     },
     run_h2 = function(re_c1, re_c2, relkind, group_columns) {
       group_symbols <- rlang::syms(group_columns)
@@ -116,13 +116,13 @@ Pipeline <- R6::R6Class( #nolint
       tte_c3 <- tmp_tte[d2_relatives_diagnosed > 0]
       if (nrow(tte_c3) == 0) return(NULL)
 
-      re_d1_c2 <- private$run_cif(tte_c2, args$disorder1, "c2", args$group_columns)
+      re_d1_c2 <- private$run_cif(tte_c2, "d1", "c2", args$disorder1, args$group_columns)
       if (is.null(re_d1_c2)) return(NULL)
 
-      re_d1_c3 <- private$run_cif(tte_c3, args$disorder1, "c3", args$group_columns)
+      re_d1_c3 <- private$run_cif(tte_c3, "d1", "c3", args$disorder1, args$group_columns)
       if (is.null(re_d1_c3)) return(NULL)
 
-      re_d2_c3 <- private$run_cif(tte_c3, args$disorder2, "c3", args$group_columns)
+      re_d2_c3 <- private$run_cif(tte_c3, "d2", "c3", args$disorder2, args$group_columns)
       if (is.null(re_d2_c3)) return(NULL)
 
       h2_d1 <- private$run_h2(re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns)
@@ -271,10 +271,10 @@ Pipeline <- R6::R6Class( #nolint
       args   <- validator$run(...)
       tte_c1 <- private$get_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$group_columns)
 
-      re_d1_c1 <- private$run_cif(tte_c1, args$disorder1, "c1", args$group_columns)
+      re_d1_c1 <- private$run_cif(tte_c1, "d1", "c1", args$disorder1, args$group_columns)
       if (is.null(re_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
 
-      re_d2_c1 <- private$run_cif(tte_c1, args$disorder2, "c1", args$group_columns)
+      re_d2_c1 <- private$run_cif(tte_c1, "d2", "c1", args$disorder2, args$group_columns)
       if (is.null(re_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
       successful_draws <- list()
