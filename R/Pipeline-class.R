@@ -295,13 +295,13 @@ Pipeline <- R6::R6Class( #nolint
       for (k in seq_len(args$draws)) {
         tryCatch(
           {
-            successful_draws <- append(
+            successful_draws <<- append(
               successful_draws,
               private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
             )
           },
-          DrawError = function(cnd) {
-            failed_draws <- append(failed_draws, cnd)
+          DrawError = function(error) {
+            failed_draws <<- append(failed_draws, error)
           }
         )
       }
