@@ -78,7 +78,6 @@ Analysis <- R6::R6Class( #nolint
     #'
     #' @return Meta analysis result
     run_meta = function(...) {
-      print("run_meta")
       args          <- private$validator$run(...)
       group_symbols <- rlang::syms(args$group_columns)
 
