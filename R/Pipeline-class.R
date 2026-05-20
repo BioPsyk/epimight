@@ -181,10 +181,8 @@ Pipeline <- R6::R6Class( #nolint
       sources <- list("h2_d1", "h2_d2", "gc_d1_d2")
       result  <- NULL
 
-      analysis <- Analysis$new()
-
       for (src in sources) {
-        meta <- analysis$run_meta(
+        meta <- private$analysis$core$run_meta(
           estimates       = draw_results,
           estimate_column = paste0(src, "_estimate"),
           se_column       = paste0(src, "_se"),
@@ -206,10 +204,8 @@ Pipeline <- R6::R6Class( #nolint
       sources <- list("h2_d1", "h2_d2", "gc_d1_d2")
       result  <- NULL
 
-      analysis <- Analysis$new()
-
       for (src in sources) {
-        rubin <- analysis$run_rubin(
+        rubin <- private$analysis$core$run_rubin(
           estimates       = draw_results,
           estimate_column = paste0(src, "_estimate"),
           se_column       = paste0(src, "_se"),
@@ -275,9 +271,10 @@ Pipeline <- R6::R6Class( #nolint
       args <- validator$run(...)
       private$tte_pool <- args$tte
       private$analysis <- list(
-        h2  = HeritabilityAnalysis$new(),
-        cif = CumulativeIncidenceAnalysis$new(),
-        gc  = GeneticCorrelationAnalysis$new()
+        core = Analysis$new(),
+        h2   = HeritabilityAnalysis$new(),
+        cif  = CumulativeIncidenceAnalysis$new(),
+        gc   = GeneticCorrelationAnalysis$new()
       )
     },
     #' @description
@@ -378,24 +375,19 @@ Pipeline <- R6::R6Class( #nolint
 
       draw_meta  <- private$run_draw_results_meta(draw_results)
       draw_rubin <- private$run_draw_results_rubin(draw_results, args$group_columns)
+      rubin_meta <- private$analysis$core$run_meta(
+        estimates       = draw_rubin,
+        estimate_column = "fixed_meta",
+        se_column       = "fixed_se"
+      )
 
-      print(draw_meta)
-      print(draw_rubin)
-
-      #print("successful")
-      #print(successful_draws)
-      #print("failed")
-      #print(length(failed_draws))
-
-      #failed_draws <- args$draws - length(successful_draws)
-
-      #if (failed_draws == args$draws) {
-      #  stop("None of the ", args$draws, " draws were successful")
-      #}
-
-      #if (failed_draws > 0) {
-      #  message("Warning: ", failed_draws, " draws failed")
-      #}
+      list(
+        draw_results = draw_results,
+        draw_errors  = draw_errors,
+        draw_meta    = draw_meta,
+        draw_rubin   = draw_rubin,
+        rubin_meta   = rubin_meta
+      )
     }
   )
 )

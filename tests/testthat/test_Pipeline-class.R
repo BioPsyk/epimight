@@ -201,8 +201,7 @@ describe("run_experiment", {
       ),
       relationship_kind = "PO",
       draws = 2,
-      #group_columns = list("gender", "born_at_year")
-      group_columns = list("born_at_year")
+      group_columns = list("gender", "born_at_year")
     )
   })
 })
