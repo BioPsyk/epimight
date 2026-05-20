@@ -293,11 +293,21 @@ Pipeline <- R6::R6Class( #nolint
       re_d2_c1 <- private$run_cif(tte_c1, "d2", "c1", args$group_columns, args$disorder2$earliest_onset, args$disorder2$latest_onset)
       if (is.null(re_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
-      draw_results <- list()
+      successful_draws <- list()
+      failed_draws     <- list()
 
       for (k in seq_len(args$draws)) {
-        draw_results[[k]] <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
+        res <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
+
+        if (res$was_successful) {
+          successful_draws <- append(successful_draws, res)
+        } else {
+          failed_draws <- append(failed_draws, res)
+        }
       }
+
+      print(failed_draws)
+      print(successful_draws)
 
       #print("successful")
       #print(successful_draws)
