@@ -185,10 +185,10 @@ Pipeline <- R6::R6Class( #nolint
 
       for (src in sources) {
         meta <- analysis$run_meta(
-          results       = draw_results,
-          se_column     = paste0(src, "_se"),
-          meta_column   = paste0(src, "_estimate"),
-          group_columns = list("draw")
+          estimates       = draw_results,
+          se_column       = paste0(src, "_se"),
+          estimate_column = paste0(src, "_estimate"),
+          group_columns   = list("draw")
         ) |> mutate(source = src)
 
         if (is.null(result)) {
@@ -199,30 +199,6 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       result |> select(draw, source, everything())
-    },
-    #' @description
-    #' Combines meta values of each draw into a single meta for all draws.
-    combine_draw_meta = function(draw_meta) {
-      k           <- nrow(draw_meta)
-      theta       <- draw_meta$fixed_meta
-      se          <- draw_meta$fixed_se
-      theta_bar   <- mean(theta)
-      W           <- mean(se^2)
-      B           <- var(theta)
-      T_var       <- W + (1 + 1 / K) * B
-      combined_se <- sqrt(T_var)
-
-      data.table(
-        fixed_meta  = theta_bar,
-        fixed_se    = combined_se,
-        fixed_l95   = theta_bar - 1.96 * combined_se,
-        fixed_u95   = theta_bar + 1.96 * combined_se,
-        within_var  = W,
-        between_var = B,
-        total_var   = T_var,
-        b_over_t    = B / T_var,
-        k_resamples = K
-      )
     }
   ),
   public = list(

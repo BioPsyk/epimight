@@ -46,7 +46,7 @@ Analysis <- R6::R6Class( #nolint
         )
 
         if (!("group_columns" %in% rules && is.list(rules$group_columns))) {
-          validator$check_type("results", rule, args$estimates)
+          validator$check_type("estimates", rule, args$estimates)
 
           return(args)
         }
