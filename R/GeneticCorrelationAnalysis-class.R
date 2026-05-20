@@ -105,9 +105,6 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
         ) |>
         mutate(id = row_number())
 
-      print(args$relatioship_kind)
-      print(estimates)
-
       suppressWarnings({
         results <- self$calculate_rhog(
           estimates$id,

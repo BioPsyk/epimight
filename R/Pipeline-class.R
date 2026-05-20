@@ -160,7 +160,11 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(gc) == 0) rlang::abort(message = "gc was empty", class = "DrawError", category = "gc")
 
-      return(gc)
+      list(
+        h2_d1 = h2_d1,
+        h2_d2 = h2_d2,
+        gc    = gc
+      )
     }
   ),
   public = list(
@@ -289,27 +293,21 @@ Pipeline <- R6::R6Class( #nolint
       re_d2_c1 <- private$run_cif(tte_c1, "d2", "c1", args$group_columns, args$disorder2$earliest_onset, args$disorder2$latest_onset)
       if (is.null(re_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
-      successful_draws <- list()
-      failed_draws     <- list()
+      draw_results <- list()
 
       for (k in seq_len(args$draws)) {
-        tryCatch(
-          {
-            successful_draws <<- append(
-              successful_draws,
-              private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
-            )
-          },
-          DrawError = function(error) {
-            failed_draws <<- append(failed_draws, error)
-          }
+        draw_results[[k]] <- tryCatch(
+          private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args),
+          DrawError = function(e) e
         )
       }
 
-      print("successful")
-      print(successful_draws)
-      print("failed")
-      print(failed_draws)
+      print(length(draw_results))
+
+      #print("successful")
+      #print(successful_draws)
+      #print("failed")
+      #print(length(failed_draws))
 
       #failed_draws <- args$draws - length(successful_draws)
 
