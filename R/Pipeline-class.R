@@ -349,8 +349,8 @@ Pipeline <- R6::R6Class( #nolint
       re_d2_c1 <- private$run_cif(tte_c1, "d2", "c1", args$group_columns, args$disorder2$earliest_onset, args$disorder2$latest_onset)
       if (is.null(re_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
-      draw_results <- NULL
       draw_errors  <- list()
+      draw_results <- NULL
 
       for (k in seq_len(args$draws)) {
         draw <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
@@ -382,8 +382,8 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       list(
-        draw_results = draw_results,
         draw_errors  = draw_errors,
+        draw_results = draw_results,
         draw_meta    = draw_meta,
         draw_rubin   = draw_rubin,
         rubin_meta   = rubin_meta
