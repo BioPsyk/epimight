@@ -80,7 +80,7 @@ source("./tests/utils.R")
 #  relocate(failure_status, .after = failure_time) |>
 #  relocate(relatives, .after = failure_status) |>
 #  relocate(relatives_diagnosed, .after = relatives) |>
-#  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
+#  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "FS") |>
 #  as.data.table()
 #
 #d2_tte <- copy(d1_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
@@ -90,12 +90,12 @@ source("./tests/utils.R")
 #  relocate(failure_status, .after = failure_time) |>
 #  relocate(relatives, .after = failure_status) |>
 #  relocate(relatives_diagnosed, .after = relatives) |>
-#  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
+#  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "FS") |>
 #  as.data.table()
 #
 #tte <- rbindlist(list(d1_tte, d2_tte)) |> select(-born_at, -dead_at_year) |>
 #  arrange(person_id, disorder, relationship_kind) |>
-#  select(person_id, born_at_year, gender, relatives, disorder, failure_status, failure_time, relationship_kind, relatives_diagnosed)
+#  select(person_id, born_at_year, gender, disorder, failure_status, failure_time, relationship_kind, relatives, relatives_diagnosed)
 #
 #write_csv(tte, "./guides/data/tte-pool.csv")
 
@@ -182,7 +182,7 @@ tte |>
 |     99999 |         1958 | f      |
 
 Then for each relationship kind, we need to know how many relatives each individual has. In the test data
-of this guide, we only have one relationship kind (~PO~ = "parent offspring").
+of this guide, we only have one relationship kind (~FS~ = "full siblings"):
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
@@ -193,28 +193,30 @@ tte |>
 #+RESULTS:
 | person_id | born_at_year | gender | relationship_kind | relatives |
 |-----------+--------------+--------+-------------------+-----------|
-|     99996 |         1966 | m      | PO                |         0 |
-|     99997 |         1967 | m      | PO                |         0 |
-|     99998 |         2001 | f      | PO                |         3 |
-|     99999 |         1958 | f      | PO                |         0 |
+|     99996 |         1966 | m      | FS                |         0 |
+|     99997 |         1967 | m      | FS                |         0 |
+|     99998 |         2001 | f      | FS                |         3 |
+|     99999 |         1958 | f      | FS                |         0 |
 
+Then for each disorder, we to know:
 
-Then we need to have the failure status/time of each disorder for each individual. In the test data of
-this guide, we have two disorders *schizophrenia* and *coronary artery disease*:
+- The individuals failure status/time
+- The relatives diagnosis status
+
+In the test data of this guide, we have two disorders *schizophrenia* and *coronary artery disease*:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
-  select(person_id, born_at_year, gender, disorder, failure_status, failure_time) |>
   tail(4)
 #+END_SRC
 
 #+RESULTS:
-| person_id | born_at_year | gender | disorder | failure_status | failure_time |
-|-----------+--------------+--------+----------+----------------+--------------|
-|     99998 |         2001 | f      | CAD      |              0 |           25 |
-|     99998 |         2001 | f      | SCZ      |              0 |           25 |
-|     99999 |         1958 | f      | CAD      |              0 |           68 |
-|     99999 |         1958 | f      | SCZ      |              0 |           68 |
+| person_id | born_at_year | gender | disorder | failure_status | failure_time | relationship_kind | relatives | relatives_diagnosed |
+|-----------+--------------+--------+----------+----------------+--------------+-------------------+-----------+---------------------|
+|     99998 |         2001 | f      | CAD      |              0 |           25 | FS                |         3 |                   3 |
+|     99998 |         2001 | f      | SCZ      |              0 |           25 | FS                |         3 |                   0 |
+|     99999 |         1958 | f      | CAD      |              0 |           68 | FS                |         0 |                   0 |
+|     99999 |         1958 | f      | SCZ      |              0 |           68 | FS                |         0 |                   0 |
 
 * asd
 
