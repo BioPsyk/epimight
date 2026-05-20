@@ -168,25 +168,27 @@ Pipeline <- R6::R6Class( #nolint
     },
     meta_analyze_draw_results = function(draw_results) {
       h2_d1_meta <- private$analysis$h2$run_meta(
-        results     = draw_results,
-        se_column   = "h2_d1_se",
-        meta_column = "h2_d1"
+        results       = draw_results,
+        se_column     = "h2_d1_se",
+        meta_column   = "h2_d1",
+        group_columns = list("draw")
       ) |> mutate(source = "h2_d1")
 
       h2_d2_meta <- private$analysis$h2$run_meta(
-        results     = draw_results,
-        se_column   = "h2_d2_se",
-        meta_column = "h2_d2"
+        results       = draw_results,
+        se_column     = "h2_d2_se",
+        meta_column   = "h2_d2",
+        group_columns = list("draw")
       ) |> mutate(source = "h2_d2")
 
       gc_d1_d2_meta <- private$analysis$gc$run_meta(
-        results     = draw_results,
-        se_column   = "gc_d1_d2_se",
-        meta_column = "gc_d1_d2_rhh"
+        results       = draw_results,
+        se_column     = "gc_d1_d2_se",
+        meta_column   = "gc_d1_d2_rhh",
+        group_columns = list("draw")
       ) |> mutate(source = "gc_d1_d2")
 
-      rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |>
-        select(source, everything())
+      rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |> select(draw, source, everything())
     }
   ),
   public = list(

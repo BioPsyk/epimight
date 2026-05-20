@@ -37,8 +37,13 @@ Analysis <- R6::R6Class( #nolint
           type     = "data.table",
           columns  = list()
         ),
-        se_column   = list(required = TRUE, type = "string"),
-        meta_column = list(required = TRUE, type = "string")
+        se_column     = list(required = TRUE, type = "string"),
+        meta_column   = list(required = TRUE, type = "string"),
+        group_columns = list(
+          type    = "list",
+          items   = list(required = TRUE, type = "string"),
+          default = list()
+        )
       )
 
       # Makes sure the meta column actually exists in the results
@@ -61,6 +66,8 @@ Analysis <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
+      group_symbols <- rlang::syms(args$group_columns)
+
       args$results |>
         filter_all(
           all_vars(!is.infinite(.) & !is.na(.))
@@ -73,6 +80,7 @@ Analysis <- R6::R6Class( #nolint
           fixed_se = 1 / (se ^ 2),
           rand_se  = 1 / ((se ^ 2) + var(meta))
         ) |>
+        group_by(!!!group_symbols) |>
         summarise(
           fixed_se_sum = sum(fixed_se),
           fixed_meta   = sum(meta * fixed_se) / fixed_se_sum,
