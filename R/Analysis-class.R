@@ -78,8 +78,7 @@ Analysis <- R6::R6Class( #nolint
     #'
     #' @return Meta analysis result
     run_meta = function(...) {
-      args <- private$validator$run(...)
-
+      args          <- private$validator$run(...)
       group_symbols <- rlang::syms(args$group_columns)
 
       args$estimates |>
@@ -114,8 +113,9 @@ Analysis <- R6::R6Class( #nolint
         as.data.table()
     },
     run_rubin = function(...) {
-      args <- private$validator$run(...)
-      K    <- nrow(args$estimates)
+      args          <- private$validator$run(...)
+      group_symbols <- rlang::syms(args$group_columns)
+      K             <- nrow(args$estimates)
 
       args$estimates |>
         filter_all(
