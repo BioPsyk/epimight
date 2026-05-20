@@ -187,7 +187,8 @@ Pipeline <- R6::R6Class( #nolint
         meta_column = "gc_d1_d2_rhh"
       ) |> mutate(source = "gc_d1_d2")
 
-      rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |> select(source, everything())
+      rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |>
+        select(source, everything())
     },
     meta_analyze_draws = function(draws) {
     }
@@ -329,7 +330,9 @@ Pipeline <- R6::R6Class( #nolint
           next
         }
 
-        res <- draw$result |> mutate(draw = k)
+        res <- draw$results |>
+          mutate(draw = k) |>
+          select(draw, everything())
 
         if (is.null(all_results)) {
           all_results <- res
