@@ -99,7 +99,7 @@ Pipeline <- R6::R6Class( #nolint
         select(starts_with("h2_"), time, !!!group_columns)
     },
     run_draw = function(tte_c1, re_d1_c1, re_d2_c1, args) {
-      result  <- DrawResult$new()
+      result  <- AnalysisResult$new()
       tmp_tte <- copy(tte_c1)
 
       tmp_tte$d1_relatives_diagnosed = private$downsample_relatives_diagnosed(tmp_tte$d1_relatives_diagnosed, tmp_tte$d1_relatives)
@@ -162,29 +162,28 @@ Pipeline <- R6::R6Class( #nolint
         estimates         = combined
       ) |> rename_with(~ paste0("gc_d1_d2_", .), .cols = c(rhh, rhog, se, l95, u95, h2, h2_l95, h2_u95))
 
-      print(gc_d1_d2)
-
       if (nrow(gc_d1_d2) == 0) return(result$fail("gc_d1_d2", "gc", "empty"))
 
-      h2_d1_meta <- private$analysis$h2$run_meta(
-        results     = h2_d1,
-        se_column   = "h2_d1_se",
-        meta_column = "h2_d1"
-      ) |> rename_with(~ paste0("h2_d1_", .))
+      #h2_d1_meta <- private$analysis$h2$run_meta(
+      #  results     = h2_d1,
+      #  se_column   = "h2_d1_se",
+      #  meta_column = "h2_d1"
+      #) |> rename_with(~ paste0("h2_d1_", .))
 
-      h2_d2_meta <- private$analysis$h2$run_meta(
-        results     = h2_d2,
-        se_column   = "h2_d2_se",
-        meta_column = "h2_d2"
-      ) |> rename_with(~ paste0("h2_d2_", .))
+      #h2_d2_meta <- private$analysis$h2$run_meta(
+      #  results     = h2_d2,
+      #  se_column   = "h2_d2_se",
+      #  meta_column = "h2_d2"
+      #) |> rename_with(~ paste0("h2_d2_", .))
 
       #gc_d1_d2_meta <- private$analysis$gc$run_meta(
       #  results     = gc_d1_d2,
       #  se_column   = "gc_d1_d2_se",
-      #  meta_column = "gc_d1_d2"
+      #  meta_column = "gc_d1_d2_rhh"
       #) |> rename_with(~ paste0("h2_d2_", .))
+      # meta <- rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta))
 
-      result$success(h2_d1, h2_d2, gc_d1_d2)
+      result$success(gc_d1_d2)
     }
   ),
   public = list(

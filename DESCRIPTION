@@ -39,6 +39,7 @@ RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)
 Collate:
     'Analysis-class.R'
+    'AnalysisResult-class.R'
     'ArgumentsValidator-class.R'
     'CumulativeIncidenceAnalysis-class.R'
     'GeneticCorrelationAnalysis-class.R'

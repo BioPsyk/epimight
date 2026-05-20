@@ -7,8 +7,8 @@
 #' @import tidyr
 #' @import stringr
 #' @export
-DrawResult <- R6::R6Class( #nolint
-  "DrawResult",
+AnalysisResult <- R6::R6Class( #nolint
+  "AnalysisResult",
   private = list(
     start_time = NULL,
     end_time   = NULL
@@ -31,15 +31,11 @@ DrawResult <- R6::R6Class( #nolint
       )
       return(self)
     },
-    success = function(h2_d1, h2_d2, gc_d1_d2) {
+    success = function(results) {
       private$end_time    = Sys.time()
       self$was_successful = TRUE
 
-      self$results = list(
-        h2_d1    = h2_d1,
-        h2_d2    = h2_d2,
-        gc_d1_d2 = gc_d1_d2
-      )
+      self$results = results
       return(self)
     },
     get_runtime_seconds = function() {
