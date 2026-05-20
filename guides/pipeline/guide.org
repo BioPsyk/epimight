@@ -217,7 +217,7 @@ Since the guide test data has:
 - 2 disorders (~SCZ~ = "schizophrenia", ~CAD~ = "coronary artery disease")
 - 2 relationship kinds (~PO~, ~FS~)
 
-Each individual gets 4 rows to cover all combinations of disorders x relationship kinds:
+Each individual gets 4 rows to cover all combinations of ~disorders x relationship_kinds~:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |> tail(4 * 4)
