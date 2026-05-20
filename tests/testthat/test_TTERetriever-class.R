@@ -3,7 +3,6 @@ library(data.table, quietly = TRUE, warn.conflicts = FALSE)
 library(parallel, quietly = TRUE, warn.conflicts = FALSE)
 
 source("../utils.R")
-source("../legacy.R")
 
 #=================================================================================
 # Preparation
