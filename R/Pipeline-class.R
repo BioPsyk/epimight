@@ -5,6 +5,7 @@
 #' @import dplyr
 #' @import dtplyr
 #' @import tidyr
+#' @import stringr
 #' @export
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
@@ -117,7 +118,8 @@ Pipeline <- R6::R6Class( #nolint
       re_d2_c3 <- private$run_cif(tte_c3, "d2", "c3", args$group_columns, args$disorder2$earliest_onset, args$disorder2$latest_onset)
       if (is.null(re_d2_c3)) rlang::abort(message = "re_d2_c3 was empty", class = "DrawError", category = "cif")
 
-      h2_d1 <- private$run_h2("d1", re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns)
+      h2_d1 <- private$run_h2("d1", re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns) |>
+        rename_with(~ paste0("re_d1_", .), .cols = starts_with(c("c1_", "c2_")))
       if (is.null(h2_d1)) rlang::abort(message = "h2_d1 was empty", class = "DrawError", category = "h2")
 
       h2_d2 <- private$run_h2(
@@ -126,12 +128,21 @@ Pipeline <- R6::R6Class( #nolint
         re_d2_c3 |> rename(c2_estimate = c3_estimate, c2_cases = c3_cases),
         args$relationship_kind,
         args$group_columns
-      )
+      ) |>
+        rename_with(~ paste0("re_d2_c3_", str_remove(.x, "^c2_")), starts_with("c2_")) |>
+        rename_with(~ paste0("re_d2_", .), .cols = starts_with(c("c1_")))
       if (is.null(h2_d2)) rlang::abort(message = "h2_d2 was empty", class = "DrawError", category = "h2")
 
       re_d1_c1 <- re_d1_c1 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c1_"))
       re_d1_c3 <- re_d1_c3 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c3_"))
       re_d2_c1 <- re_d2_c1 |> rename_with(~ paste0("re_d2_", .), .cols = starts_with("c1_"))
+
+      print("h2_d1")
+      print(h2_d1)
+      print("h2_d2")
+      print(h2_d2)
+
+      return(NULL)
 
       join_columns <- list("time")
 
@@ -141,15 +152,18 @@ Pipeline <- R6::R6Class( #nolint
 
       join_symbols <- rlang::syms(join_columns)
 
+
       combined <- re_d1_c1 |>
         inner_join(re_d1_c3, by = join_by(!!!join_columns)) |>
         inner_join(re_d2_c1, by = join_by(!!!join_columns)) |>
         inner_join(h2_d1, by = join_by(!!!join_columns)) |>
-        inner_join(h2_d2, by = join_by(!!!join_columns)) |>
-        group_by(!!!join_symbols) |>
-        arrange(desc(time)) |>
-        filter(row_number() == 1) |>
-        as.data.table()
+        inner_join(h2_d2, by = join_by(!!!join_columns)) #|>
+        #group_by(!!!join_symbols) |>
+        #arrange(desc(time)) |>
+        #filter(row_number() == 1) |>
+        #as.data.table()
+
+      print(combined)
 
       if (nrow(combined) == 0) rlang::abort(message = "all re and h2 combined was empty", class = "DrawError", category = "data")
 
