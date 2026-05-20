@@ -122,17 +122,6 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
         select(-id)
 
       return(results)
-    },
-    #' @description
-    #' Runs meta analysis on the given stratified heritabilities.
-    #'
-    #' @param results Data.table with heritabilities.
-    #' @returns Data.table meta analysis results for random and fixed model.
-    run_meta = function(results) {
-      super$run_meta(
-        results     = results,
-        meta_column = "h2"
-      )
     }
   )
 )

@@ -160,9 +160,29 @@ Pipeline <- R6::R6Class( #nolint
       gc_d1_d2 <- private$analysis$gc$run(
         relationship_kind = args$relationship_kind,
         estimates         = combined
-      )
+      ) |> rename_with(~ paste0("gc_d1_d2_", .), .cols = c(rhh, rhog, se, l95, u95, h2, h2_l95, h2_u95))
+
+      print(gc_d1_d2)
 
       if (nrow(gc_d1_d2) == 0) return(result$fail("gc_d1_d2", "gc", "empty"))
+
+      h2_d1_meta <- private$analysis$h2$run_meta(
+        results     = h2_d1,
+        se_column   = "h2_d1_se",
+        meta_column = "h2_d1"
+      ) |> rename_with(~ paste0("h2_d1_", .))
+
+      h2_d2_meta <- private$analysis$h2$run_meta(
+        results     = h2_d2,
+        se_column   = "h2_d2_se",
+        meta_column = "h2_d2"
+      ) |> rename_with(~ paste0("h2_d2_", .))
+
+      #gc_d1_d2_meta <- private$analysis$gc$run_meta(
+      #  results     = gc_d1_d2,
+      #  se_column   = "gc_d1_d2_se",
+      #  meta_column = "gc_d1_d2"
+      #) |> rename_with(~ paste0("h2_d2_", .))
 
       result$success(h2_d1, h2_d2, gc_d1_d2)
     }

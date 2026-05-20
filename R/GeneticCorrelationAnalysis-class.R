@@ -26,22 +26,22 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
     #' @param Ac number of cases used to calculate Kc.
     #' @param Arc number of cases used to calculate Krc.
     #' @param Af number of cases used to calculate Kf.
-    #' @param h2c heritability of disorder 1.
-    #' @param h2f heritability of disorder 2.
+    #' @param h2_d1 heritability of disorder 1.
+    #' @param h2_d2 heritability of disorder 2.
     #' @param rc Relationship coefficient.
     #' @returns Data.table with results
-    calculate_rhog = function(id, kc, krc, kf, ac, arc, af, h2c, h2f, rc) {
+    calculate_rhog = function(id, kc, krc, kf, ac, arc, af, h2_d1, h2_d2, rc) {
       if (is.character(rc)) {
         rc <- self$relationship_coefficient_from_kind(rc)
       }
 
-      tc  <- qnorm(kc, lower.tail = FALSE)
-      yc  <- dnorm(tc)
-      trc <- qnorm(krc, lower.tail = FALSE)
-      yrc <- dnorm(trc)
-      tf  <- qnorm(kf, lower.tail = FALSE)
-      yf  <- dnorm(tf)
-      h2   <- sqrt(h2f * h2c)
+      tc   <- qnorm(kc, lower.tail = FALSE)
+      yc   <- dnorm(tc)
+      trc  <- qnorm(krc, lower.tail = FALSE)
+      yrc  <- dnorm(trc)
+      tf   <- qnorm(kf, lower.tail = FALSE)
+      yf   <- dnorm(tf)
+      h2   <- sqrt(h2_d2 * h2_d1)
       i    <- yf / kf
       num  <- tc - trc * sqrt(1 - (1 - tf / i) * (tc ^ 2 - trc ^ 2))
       den  <- rc * (i + (i - tf) * trc ^ 2)
@@ -64,7 +64,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
         se      = se,
         l95     = l95,
         u95     = u95,
-        h2_comb = h2,
+        h2      = h2,
         h2_l95  = l95 / h2,
         h2_u95  = u95 / h2
       )
@@ -128,17 +128,6 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
         select(-id)
 
       return(results)
-    },
-    #' @description
-    #' Runs meta analysis on the given stratified genetic correlations.
-    #'
-    #' @param results Data.table with genetic correlations.
-    #' @returns Data.table meta analysis results for random and fixed model.
-    run_meta = function(results) {
-      super$run_meta(
-        results     = results,
-        meta_column = "rhh"
-      )
     }
   )
 )

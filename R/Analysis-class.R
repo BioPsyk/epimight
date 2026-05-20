@@ -35,10 +35,9 @@ Analysis <- R6::R6Class( #nolint
         results = list(
           required = TRUE,
           type     = "data.table",
-          columns  = list(
-            se = list(required = TRUE, type = "numeric")
-          )
+          columns  = list()
         ),
+        se_column   = list(required = TRUE, type = "string"),
         meta_column = list(required = TRUE, type = "string")
       )
 
@@ -46,6 +45,10 @@ Analysis <- R6::R6Class( #nolint
       # and that it has the right type.
       validator$add_post_validation(function(args, rules) {
         rule <- rules$results
+        rule$columns[[args$se_column]] <- list(
+          required = TRUE,
+          type     = "numeric"
+        )
         rule$columns[[args$meta_column]] <- list(
           required = TRUE,
           type     = "numeric"
@@ -58,12 +61,13 @@ Analysis <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
-      meta_results <- args$results |>
+      args$results |>
         filter_all(
           all_vars(!is.infinite(.) & !is.na(.))
         ) |>
         rename(
-          meta = !!as.name(args$meta_column)
+          meta = !!as.name(args$meta_column),
+          se   = !!as.name(args$se_column)
         ) |>
         mutate(
           fixed_se = 1 / (se ^ 2),
@@ -86,8 +90,6 @@ Analysis <- R6::R6Class( #nolint
         select(-fixed_se_sum, -rand_se_sum) |>
         relocate(rand_meta, .before = rand_se) |>
         as.data.table()
-
-      return(meta_results)
     }
   )
 )
