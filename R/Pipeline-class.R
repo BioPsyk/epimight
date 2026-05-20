@@ -10,7 +10,7 @@
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
-    tte = NULL,
+    tte_pool = NULL,
     analysis = NULL,
     #' @description
     #' Downsample relative counts to independent Bernoulli indicators.
@@ -24,8 +24,11 @@ Pipeline <- R6::R6Class( #nolint
 
       return(as.integer(rbinom(length(p), size = 1L, prob = p)))
     },
+    #' @description
+    #' Retrieves time-to-event data to use in a run based on the given disorders, relationship kind and group columns.
+    #' Makes sure that the retrieved data fulfills the requirements of carrying out a single pipeline run.
     get_tte = function(disorder1_id, disorder2_id, relkind, group_columns) {
-      tte <- private$tte |>
+      tte <- private$tte_pool |>
         filter(relationship_kind == relkind) |>
         select(-relationship_kind)
 
@@ -38,7 +41,7 @@ Pipeline <- R6::R6Class( #nolint
           d1_relatives_diagnosed = relatives_diagnosed
         )
 
-      tte_d2 <- private$tte |>
+      tte_d2 <- private$tte_pool |>
         filter(disorder == disorder2_id) |>
         select(-disorder) |>
         rename(
@@ -70,6 +73,8 @@ Pipeline <- R6::R6Class( #nolint
 
       return(combined)
     },
+    #' @description
+    #' Helper that runs cif on the given time-to-event data and handles all prefixes of columns.
     run_cif = function(tte, disorder_prefix, cohort_prefix, group_columns, earliest_onset, latest_onset) {
       status_col   <- paste0(disorder_prefix, "_failure_status")
       time_col     <- paste0(disorder_prefix, "_failure_time")
@@ -89,6 +94,8 @@ Pipeline <- R6::R6Class( #nolint
       ) |>
         rename_with(~ paste0(cohort_prefix, "_", .), .cols = c(estimate, cases, variance, l95, u95))
     },
+    #' @description
+    #' Helper that runs heritability on the given time-to-event data and handles all prefixes of columns.
     run_h2 = function(disorder_prefix, re_c1, re_c2, relationship_kind, group_columns) {
       private$analysis$h2$run(
         relationship_kind = relationship_kind,
@@ -98,6 +105,9 @@ Pipeline <- R6::R6Class( #nolint
         rename_with(~ paste0("h2_", disorder_prefix), .cols = c(h2)) |>
         select(starts_with("h2_"), time, !!!group_columns)
     },
+    #' @description
+    #' Runs a single draw which produces stratified genetic correlation for the 2 disorders specified in the
+    #' pipeline run function.
     run_draw = function(tte_c1, re_d1_c1, re_d2_c1, args) {
       result  <- AnalysisResult$new()
       tmp_tte <- copy(tte_c1)
@@ -166,6 +176,8 @@ Pipeline <- R6::R6Class( #nolint
 
       result$success(gc_d1_d2)
     },
+    #' @description
+    #' Meta analyzes all draw results grouped by draw.
     meta_analyze_draw_results = function(draw_results) {
       h2_d1_meta <- private$analysis$h2$run_meta(
         results       = draw_results,
@@ -190,10 +202,12 @@ Pipeline <- R6::R6Class( #nolint
 
       rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |> select(draw, source, everything())
     },
-    combine_meta_results = function(meta_results) {
-      K           <- nrow(meta_results)
-      theta       <- meta_results$fixed_meta
-      se          <- meta_results$fixed_se
+    #' @description
+    #' Combines meta values of each draw into a single meta for all draws.
+    combine_draw_meta = function(draw_meta) {
+      k           <- nrow(draw_meta)
+      theta       <- draw_meta$fixed_meta
+      se          <- draw_meta$fixed_se
       theta_bar   <- mean(theta)
       W           <- mean(se^2)
       B           <- var(theta)
@@ -260,7 +274,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args <- validator$run(...)
-      private$tte <- args$tte
+      private$tte_pool <- args$tte
       private$analysis <- list(
         h2  = HeritabilityAnalysis$new(),
         cif = CumulativeIncidenceAnalysis$new(),
