@@ -20,7 +20,7 @@ Pipeline <- R6::R6Class( #nolint
     #' at high prevalence, where nearly everyone has at least one affected
     #' relative and the genetic enrichment of c2/c3 vanishes.
     downsample_relatives_diagnosed = function(relatives_diagnosed, relatives) {
-      p = ifelse(relatives > 0, pmin(relatives_diagnosed / relatives, 1.0), 0.0)
+      p <- ifelse(relatives > 0, pmin(relatives_diagnosed / relatives, 1.0), 0.0)
 
       return(as.integer(rbinom(length(p), size = 1L, prob = p)))
     },
@@ -48,7 +48,8 @@ Pipeline <- R6::R6Class( #nolint
           d2_failure_status      = failure_status,
           d2_failure_time        = failure_time,
           d2_relatives_diagnosed = relatives_diagnosed
-        ) |> select(person_id, d2_failure_status, d2_failure_time, d2_relatives_diagnosed)
+        ) |>
+        select(person_id, d2_failure_status, d2_failure_time, d2_relatives_diagnosed)
 
       d1_nrow <- tte_d1 |> nrow()
       d2_nrow <- tte_d2 |> nrow()
@@ -111,8 +112,8 @@ Pipeline <- R6::R6Class( #nolint
       result  <- AnalysisResult$new()
       tmp_tte <- copy(tte_c1)
 
-      tmp_tte$d1_relatives_diagnosed = private$downsample_relatives_diagnosed(tmp_tte$d1_relatives_diagnosed, tmp_tte$d1_relatives)
-      tmp_tte$d2_relatives_diagnosed = private$downsample_relatives_diagnosed(tmp_tte$d2_relatives_diagnosed, tmp_tte$d2_relatives)
+      tmp_tte$d1_relatives_diagnosed <- private$downsample_relatives_diagnosed(tmp_tte$d1_relatives_diagnosed, tmp_tte$d1_relatives)
+      tmp_tte$d2_relatives_diagnosed <- private$downsample_relatives_diagnosed(tmp_tte$d2_relatives_diagnosed, tmp_tte$d2_relatives)
 
       tte_c2 <- tmp_tte[d1_relatives_diagnosed > 0]
       if (nrow(tte_c2) == 0) return(result$fail("tte_c2", "tte", "empty"))

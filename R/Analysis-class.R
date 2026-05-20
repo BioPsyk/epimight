@@ -115,7 +115,7 @@ Analysis <- R6::R6Class( #nolint
     run_rubin = function(...) {
       args          <- private$validator$run(...)
       group_symbols <- rlang::syms(args$group_columns)
-      K             <- nrow(args$estimates)
+      k_resamples   <- nrow(args$estimates)
 
       args$estimates |>
         filter_all(
@@ -132,8 +132,8 @@ Analysis <- R6::R6Class( #nolint
           between_var = var(estimate),  # B
         ) |>
         mutate(
-          k_resamples = K,
-          total_var   = within_var + (1 + 1 / K) * between_var, # T_var
+          k_resamples = k_resamples,
+          total_var   = within_var + (1 + 1 / k_resamples) * between_var, # T_var
           b_over_t    = between_var / total_var,
           fixed_se    = sqrt(total_var),
           fixed_l95   = fixed_meta - 1.96 * fixed_se,

@@ -18,12 +18,12 @@ AnalysisResult <- R6::R6Class( #nolint
     results = NULL,
     successful = NULL,
     initialize = function() {
-      private$start_time = Sys.time()
+      private$start_time <- Sys.time()
     },
     fail = function(id, category, problem) {
-      private$end_time = Sys.time()
+      private$end_time <- Sys.time()
 
-      self$error = list(
+      self$error <- list(
         id       = id,
         category = category,
         problem  = problem
@@ -31,9 +31,9 @@ AnalysisResult <- R6::R6Class( #nolint
       return(self)
     },
     success = function(results) {
-      private$end_time = Sys.time()
+      private$end_time <- Sys.time()
 
-      self$results = results
+      self$results <- results
       return(self)
     },
     get_runtime_seconds = function() {
