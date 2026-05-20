@@ -166,31 +166,27 @@ Pipeline <- R6::R6Class( #nolint
 
       result$success(gc_d1_d2)
     },
-    meta_analyze_draw = function(draw) {
-      if (!is.null(draw$error)) stop("Tried to meta analyze a draw with an error")
-
+    meta_analyze_draw_results = function(draw_results) {
       h2_d1_meta <- private$analysis$h2$run_meta(
-        results     = draw$result,
+        results     = draw_results,
         se_column   = "h2_d1_se",
         meta_column = "h2_d1"
       ) |> mutate(source = "h2_d1")
 
       h2_d2_meta <- private$analysis$h2$run_meta(
-        results     = draw$result,
+        results     = draw_results,
         se_column   = "h2_d2_se",
         meta_column = "h2_d2"
       ) |> mutate(source = "h2_d2")
 
       gc_d1_d2_meta <- private$analysis$gc$run_meta(
-        results     = draw$result,
+        results     = draw_results,
         se_column   = "gc_d1_d2_se",
         meta_column = "gc_d1_d2_rhh"
       ) |> mutate(source = "gc_d1_d2")
 
       rbindlist(list(h2_d1_meta, h2_d2_meta, gc_d1_d2_meta)) |>
         select(source, everything())
-    },
-    meta_analyze_draws = function(draws) {
     }
   ),
   public = list(
@@ -334,12 +330,14 @@ Pipeline <- R6::R6Class( #nolint
           mutate(draw = k) |>
           select(draw, everything())
 
-        if (is.null(all_results)) {
+        if (is.null(draw_results)) {
           draw_results <- res
         } else {
           draw_results <- rbind(draw_results, res)
         }
       }
+
+      if (nrow(draw_results) == 0) stop("All draws failed")
 
       print(draw_results)
 
