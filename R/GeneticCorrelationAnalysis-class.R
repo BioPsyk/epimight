@@ -64,7 +64,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
         se        = se,
         l95       = l95,
         u95       = u95,
-        gm_h2     = gn_h2,
+        gm_h2     = gm_h2,
         gm_h2_l95 = l95 / gm_h2,
         gm_h2_u95 = u95 / gm_h2
       )
