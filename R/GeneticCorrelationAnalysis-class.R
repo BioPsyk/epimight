@@ -60,7 +60,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
       results <- data.table(
         id        = id,
         rhh       = rhh,
-        rhog      = rhog,
+        estimate  = rhog,
         se        = se,
         l95       = l95,
         u95       = u95,
