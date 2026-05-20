@@ -186,8 +186,8 @@ Pipeline <- R6::R6Class( #nolint
       for (src in sources) {
         meta <- analysis$run_meta(
           estimates       = draw_results,
-          se_column       = paste0(src, "_se"),
           estimate_column = paste0(src, "_estimate"),
+          se_column       = paste0(src, "_se"),
           group_columns   = list("draw")
         ) |> mutate(source = src)
 
@@ -353,6 +353,16 @@ Pipeline <- R6::R6Class( #nolint
 
       draw_meta <- private$meta_analyze_draw_results(draw_results)
       print(draw_meta)
+
+      analysis <- Analysis$new()
+
+      combined_meta <- analysis$run_meta(
+        estimates       = draw_meta,
+        estimate_column = "fixed_meta",
+        se_column       = "fixed_se",
+        group_columns   = list("source")
+      )
+      print(combined_meta)
 
       #print("successful")
       #print(successful_draws)
