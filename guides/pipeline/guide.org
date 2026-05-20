@@ -174,15 +174,15 @@ First we need to be able to uniquely identify every individual in your sample po
 In the test data of this guide we use a unique number for each individual:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |> select(person_id) |> tail(4)
+tte |> distinct(person_id) |> tail(4)
 #+END_SRC
 
 #+RESULTS:
 | person_id |
 |-----------|
-|      9999 |
-|      9999 |
-|      9999 |
+|      9996 |
+|      9997 |
+|      9998 |
 |      9999 |
 
 Then we need to have the stratification data of each individual (in our case, birth year and gender):
@@ -207,12 +207,16 @@ of this guide, we have 2 relationship kinds (~PO~ = "parent offspring", ~FS~ = "
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
   distinct(person_id, born_at_year, gender, relationship_kind, relatives) |>
-  tail(4)
+  tail(4 * 2)
 #+END_SRC
 
 #+RESULTS:
 | person_id | born_at_year | gender | relationship_kind | relatives |
 |-----------+--------------+--------+-------------------+-----------|
+|      9996 |         2001 | m      | FS                |         3 |
+|      9996 |         2001 | m      | PO                |         3 |
+|      9997 |         1999 | m      | FS                |         5 |
+|      9997 |         1999 | m      | PO                |         5 |
 |      9998 |         2010 | m      | FS                |         0 |
 |      9998 |         2010 | m      | PO                |         0 |
 |      9999 |         1991 | f      | FS                |         1 |
@@ -223,7 +227,7 @@ Then for each disorder, we to know:
 - The individuals failure status/time
 - The relatives diagnosis status
 
-Since this test data has:
+Since the guide test data has:
 
 - 2 disorders (~SCZ~ = "schizophrenia", ~CAD~ = "coronary artery disease")
 - 2 relationship kinds (~PO~, ~FS~)
@@ -231,13 +235,24 @@ Since this test data has:
 Each individual gets 4 rows to cover all combinations of disorders x relationship kinds:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |>
-  tail(4)
+tte |> tail(4 * 4)
 #+END_SRC
 
 #+RESULTS:
 | person_id | born_at_year | gender | disorder | failure_status | failure_time | relationship_kind | relatives | relatives_diagnosed |
 |-----------+--------------+--------+----------+----------------+--------------+-------------------+-----------+---------------------|
+|      9996 |         2001 | m      | CAD      |              0 |           25 | FS                |         3 |                   0 |
+|      9996 |         2001 | m      | CAD      |              0 |           25 | PO                |         3 |                   0 |
+|      9996 |         2001 | m      | SCZ      |              0 |           25 | FS                |         3 |                   0 |
+|      9996 |         2001 | m      | SCZ      |              0 |           25 | PO                |         3 |                   0 |
+|      9997 |         1999 | m      | CAD      |              0 |           27 | FS                |         5 |                   0 |
+|      9997 |         1999 | m      | CAD      |              0 |           27 | PO                |         5 |                   0 |
+|      9997 |         1999 | m      | SCZ      |              0 |           27 | FS                |         5 |                   0 |
+|      9997 |         1999 | m      | SCZ      |              0 |           27 | PO                |         5 |                   0 |
+|      9998 |         2010 | m      | CAD      |              0 |           16 | FS                |         0 |                   0 |
+|      9998 |         2010 | m      | CAD      |              0 |           16 | PO                |         0 |                   0 |
+|      9998 |         2010 | m      | SCZ      |              0 |           16 | FS                |         0 |                   0 |
+|      9998 |         2010 | m      | SCZ      |              0 |           16 | PO                |         0 |                   0 |
 |      9999 |         1991 | f      | CAD      |              0 |           35 | FS                |         1 |                   0 |
 |      9999 |         1991 | f      | CAD      |              0 |           35 | PO                |         1 |                   0 |
 |      9999 |         1991 | f      | SCZ      |              0 |           35 | FS                |         1 |                   0 |
