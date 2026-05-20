@@ -116,7 +116,32 @@ The concept is pretty simple:
 
 1. Create a pool of time-to-event data
 2. Create a new pipeline instance from said pool
-3. Run trails by supplying which 2 disorders and relationship kind to test
+3. Run trails by supplying the disorders and relationship kind to test
+
+The idea here is that your "pool" contains time-to-event data for multiple disorders and relationship kinds.
+Then when you run a trail, you specify exactly which disorders and relationship kind to use.
+
+For example, say that your pool contains time-to-event data for the 10 most common mental disorders
+for siblings and cousins. Then your specify the details for each trail, here are 3 example trails:
+
+- Trail 1
+  - Disorder 1 :: Schizophrenia
+  - Disorder 2 :: MDD
+  - Relationship kind :: Siblings
+- Trail 2
+  - Disorder 1 :: Schizophrenia
+  - Disorder 2 :: MDD
+  - Relationship kind :: Cousins
+- Trail 3
+  - Disorder 1 :: Schizophrenia
+  - Disorder 2 :: ADHD
+  - Relationship kind :: Siblings
+
+By having all the time-to-event data in a big pool and letting the trails pull from this pool simplifies the
+setup.
+
+Besides controlling what disorder and relationship kind to use for each trail, you can specify which columns
+to stratify the results on and how many independent draws to perform.
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}

@@ -358,11 +358,6 @@ Pipeline <- R6::R6Class( #nolint
           type    = "integer",
           minimum = 1,
           default = 1
-        ),
-        rubin_level = list(
-          type    = "string",
-          enum    = list("meta", "per_year"),
-          default = "meta"
         )
       )
 
