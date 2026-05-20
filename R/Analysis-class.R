@@ -126,6 +126,7 @@ Analysis <- R6::R6Class( #nolint
           estimate = !!as.name(args$estimate_column), # theta
           se       = !!as.name(args$se_column)
         ) |>
+        group_by(!!!group_symbols) |>
         summarise(
           fixed_meta  = mean(estimate), # theta bar
           within_var  = mean(se ^ 2),   # W
