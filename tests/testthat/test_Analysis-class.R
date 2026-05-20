@@ -69,7 +69,7 @@ describe("run_meta", {
     )
   })
 
-  it("Fails when meta column is missing", {
+  it("Fails when estimate column is missing", {
     expect_error(
       analysis$run_meta(
         estimates = data.table(
@@ -78,6 +78,88 @@ describe("run_meta", {
         ),
         meta_column = "rhh"
       )
+    )
+  })
+
+  it("Succeeds with valid input", {
+    analysis$run_meta(
+      estimates = data.table(
+        h2 = c(0.5, 0.4),
+        se = c(0.2, 0.3)
+      ),
+      estimate_column = "h2",
+      se_column = "se"
+    )
+  })
+})
+
+describe("run_rubin", {
+  it("Fails when no arguments are given", {
+    expect_error(analysis$run_rubin())
+  })
+
+  it("Fails when incorrect types are given", {
+    expect_error(
+      analysis$run_rubin(
+        results     = "no data.table?",
+        meta_column = "h2"
+      )
+    )
+
+    expect_error(
+      analysis$run_rubin(
+        estimates = data.table(
+          se = c(0.2, 0.3),
+          h2 = c(0.5, 0.4)
+        ),
+        estimate_column = "h2",
+        meta_column = 2
+      )
+    )
+
+    expect_error(
+      analysis$run_rubin(
+        estimates = data.table(
+          se = c(0.2, 0.3),
+          h2 = c("data", "table")
+        ),
+        estimate_column = "h2",
+        meta_column = "h2"
+      )
+    )
+
+    expect_error(
+      analysis$run_rubin(
+        estimates = data.table(
+          se = c(TRUE, FALSE),
+          h2 = c(0.5, 0.4)
+        ),
+        estimate_column = "h2",
+        meta_column = "h2"
+      )
+    )
+  })
+
+  it("Fails when estimate column is missing", {
+    expect_error(
+      analysis$run_rubin(
+        estimates = data.table(
+          se = c(0.2, 0.3),
+          h2 = c(0.5, 0.4)
+        ),
+        meta_column = "rhh"
+      )
+    )
+  })
+
+  it("Succeeds with valid input", {
+    analysis$run_rubin(
+      estimates = data.table(
+        h2 = c(0.5, 0.4),
+        se = c(0.2, 0.3)
+      ),
+      estimate_column = "h2",
+      se_column = "se"
     )
   })
 })
