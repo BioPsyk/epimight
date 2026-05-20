@@ -71,7 +71,7 @@ source("./tests/utils.R")
 
 #+BEGIN_SRC R :exports results :results output :tangle no
 #set.seed(6)
-#n_count <- 100000
+#n_count <- 10000
 #
 #d1_tte <- generate_random_tte(n_count)
 #d1_tte <- generate_failure(d1_tte, 20, 10)
@@ -93,7 +93,27 @@ source("./tests/utils.R")
 #  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "FS") |>
 #  as.data.table()
 #
-#tte <- rbindlist(list(d1_tte, d2_tte)) |> select(-born_at, -dead_at_year) |>
+#d3_tte <- copy(d1_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
+#d3_tte <- generate_failure(d2_tte, 20, 10)
+#d3_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
+#  relocate(failure_time, .after = person_id) |>
+#  relocate(failure_status, .after = failure_time) |>
+#  relocate(relatives, .after = failure_status) |>
+#  relocate(relatives_diagnosed, .after = relatives) |>
+#  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
+#  as.data.table()
+#
+#d4_tte <- copy(d1_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
+#d4_tte <- generate_failure(d2_tte, 19, 11)
+#d4_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
+#  relocate(failure_time, .after = person_id) |>
+#  relocate(failure_status, .after = failure_time) |>
+#  relocate(relatives, .after = failure_status) |>
+#  relocate(relatives_diagnosed, .after = relatives) |>
+#  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
+#  as.data.table()
+#
+#tte <- rbindlist(list(d1_tte, d2_tte, d3_tte, d4_tte)) |> select(-born_at, -dead_at_year) |>
 #  arrange(person_id, disorder, relationship_kind) |>
 #  select(person_id, born_at_year, gender, disorder, failure_status, failure_time, relationship_kind, relatives, relatives_diagnosed)
 #
@@ -160,10 +180,10 @@ tte |> select(person_id) |> tail(4)
 #+RESULTS:
 | person_id |
 |-----------|
-|     99998 |
-|     99998 |
-|     99999 |
-|     99999 |
+|      9999 |
+|      9999 |
+|      9999 |
+|      9999 |
 
 Then we need to have the stratification data of each individual (in our case, birth year and gender):
 
@@ -176,13 +196,13 @@ tte |>
 #+RESULTS:
 | person_id | born_at_year | gender |
 |-----------+--------------+--------|
-|     99996 |         1966 | m      |
-|     99997 |         1967 | m      |
-|     99998 |         2001 | f      |
-|     99999 |         1958 | f      |
+|      9996 |         2001 | m      |
+|      9997 |         1999 | m      |
+|      9998 |         2010 | m      |
+|      9999 |         1991 | f      |
 
 Then for each relationship kind, we need to know how many relatives each individual has. In the test data
-of this guide, we only have one relationship kind (~FS~ = "full siblings"):
+of this guide, we have 2 relationship kinds (~PO~ = "parent offspring", ~FS~ = "full siblings"):
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
@@ -193,17 +213,22 @@ tte |>
 #+RESULTS:
 | person_id | born_at_year | gender | relationship_kind | relatives |
 |-----------+--------------+--------+-------------------+-----------|
-|     99996 |         1966 | m      | FS                |         0 |
-|     99997 |         1967 | m      | FS                |         0 |
-|     99998 |         2001 | f      | FS                |         3 |
-|     99999 |         1958 | f      | FS                |         0 |
+|      9998 |         2010 | m      | FS                |         0 |
+|      9998 |         2010 | m      | PO                |         0 |
+|      9999 |         1991 | f      | FS                |         1 |
+|      9999 |         1991 | f      | PO                |         1 |
 
 Then for each disorder, we to know:
 
 - The individuals failure status/time
 - The relatives diagnosis status
 
-In the test data of this guide, we have two disorders *schizophrenia* and *coronary artery disease*:
+Since this test data has:
+
+- 2 disorders (~SCZ~ = "schizophrenia", ~CAD~ = "coronary artery disease")
+- 2 relationship kinds (~PO~, ~FS~)
+
+Each individual gets 4 rows to cover all combinations of disorders x relationship kinds:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
@@ -213,10 +238,10 @@ tte |>
 #+RESULTS:
 | person_id | born_at_year | gender | disorder | failure_status | failure_time | relationship_kind | relatives | relatives_diagnosed |
 |-----------+--------------+--------+----------+----------------+--------------+-------------------+-----------+---------------------|
-|     99998 |         2001 | f      | CAD      |              0 |           25 | FS                |         3 |                   3 |
-|     99998 |         2001 | f      | SCZ      |              0 |           25 | FS                |         3 |                   0 |
-|     99999 |         1958 | f      | CAD      |              0 |           68 | FS                |         0 |                   0 |
-|     99999 |         1958 | f      | SCZ      |              0 |           68 | FS                |         0 |                   0 |
+|      9999 |         1991 | f      | CAD      |              0 |           35 | FS                |         1 |                   0 |
+|      9999 |         1991 | f      | CAD      |              0 |           35 | PO                |         1 |                   0 |
+|      9999 |         1991 | f      | SCZ      |              0 |           35 | FS                |         1 |                   0 |
+|      9999 |         1991 | f      | SCZ      |              0 |           35 | PO                |         1 |                   0 |
 
 * asd
 
