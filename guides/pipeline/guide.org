@@ -76,34 +76,34 @@ source("./tests/utils.R")
 #d1_tte <- generate_random_tte(n_count)
 #d1_tte <- generate_failure(d1_tte, 20, 10)
 #d1_tte <- generate_diagnosed_relatives(d1_tte, "relatives_diagnosed") |>
-#  select(-born_at, -dead_at_year) |>
 #  relocate(failure_time, .after = person_id) |>
 #  relocate(failure_status, .after = failure_time) |>
 #  relocate(relatives, .after = failure_status) |>
 #  relocate(relatives_diagnosed, .after = relatives) |>
 #  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
-#  as.data.frame()
+#  as.data.table()
 #
-#d1_tte_dt <- data.table(d1_tte)
-#
-#d2_tte <- generate_random_tte(n_count)
+#d2_tte <- copy(d1_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
 #d2_tte <- generate_failure(d2_tte, 19, 11)
 #d2_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
-#  select(-born_at, -dead_at_year) |>
 #  relocate(failure_time, .after = person_id) |>
 #  relocate(failure_status, .after = failure_time) |>
 #  relocate(relatives, .after = failure_status) |>
 #  relocate(relatives_diagnosed, .after = relatives) |>
 #  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
-#  as.data.frame()
+#  as.data.table()
 #
-#d2_tte_dt <- data.table(d2_tte)
+#tte <- rbindlist(list(d1_tte, d2_tte)) |> select(-born_at, -dead_at_year) |>
+#  arrange(person_id, disorder, relationship_kind) |>
+#  select(person_id, born_at_year, gender, relatives, disorder, failure_status, failure_time, relationship_kind, relatives_diagnosed)
 #
-#tte_dt <- rbindlist(list(d1_tte_dt, d2_tte_dt))
-#
-#write_csv(tte_dt, "./guides/data/tte-pool.csv")
+#write_csv(tte, "./guides/data/tte-pool.csv")
 
-tte_dt <- read_csv("./guides/data/tte-pool.csv", show_col_type = FALSE)
+tte <- read_csv(
+  "./guides/data/tte-pool.csv",
+  show_col_type = FALSE,
+  col_types=cols(person_id = col_character()),
+)
 #+END_SRC
 
 #+RESULTS:
@@ -145,45 +145,76 @@ By having all the time-to-event data in a big pool and letting the trails pull f
 data handling between trails.
 
 Besides controlling what disorder and relationship kind to use for each trail, you can specify which columns
-to stratify the results on and how many independent draws to perform. We'll get into the details what a trail
-does later, but for now just know that a trail produces a genetic correlation for the supplied disorders and
-relationship kind.
+to stratify the results on and how many independent draws to perform. We'll get into the details of how trails
+are carried out later. First we need to understand to just get the pipeline running.
 
 * Setting up the pool
 
-First you need to be able to uniquely identify every individual in your sample population.
-In the test data of this guide we use a unique integer for each individual:
+First we need to be able to uniquely identify every individual in your sample population.
+In the test data of this guide we use a unique number for each individual:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte_dt |> select(person_id) |> tail(5)
+tte |> select(person_id) |> tail(4)
 #+END_SRC
 
 #+RESULTS:
 | person_id |
 |-----------|
-|     99996 |
-|     99997 |
+|     99998 |
 |     99998 |
 |     99999 |
-|  100000.0 |
+|     99999 |
 
-You then add the stratification data to each individual, in our case, that means the year each individual
-was born and what their gender is:
+Then we need to have the stratification data of each individual (in our case, birth year and gender):
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte_dt |> select(person_id, born_at_year, gender) |> tail(5)
+tte |>
+  distinct(person_id, born_at_year, gender) |>
+  tail(4)
 #+END_SRC
 
 #+RESULTS:
 | person_id | born_at_year | gender |
 |-----------+--------------+--------|
-|     99996 |         1994 | m      |
-|     99997 |         1998 | m      |
-|     99998 |         1985 | f      |
-|     99999 |         2011 | m      |
-|    100000 |         1995 | m      |
+|     99996 |         1966 | m      |
+|     99997 |         1967 | m      |
+|     99998 |         2001 | f      |
+|     99999 |         1958 | f      |
+
+Then for each relationship kind, we need to know how many relatives each individual has. In the test data
+of this guide, we only have one relationship kind (~PO~ = "parent offspring").
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+tte |>
+  distinct(person_id, born_at_year, gender, relationship_kind, relatives) |>
+  tail(4)
+#+END_SRC
+
+#+RESULTS:
+| person_id | born_at_year | gender | relationship_kind | relatives |
+|-----------+--------------+--------+-------------------+-----------|
+|     99996 |         1966 | m      | PO                |         0 |
+|     99997 |         1967 | m      | PO                |         0 |
+|     99998 |         2001 | f      | PO                |         3 |
+|     99999 |         1958 | f      | PO                |         0 |
 
 
+Then we need to have the failure status/time of each disorder for each individual. In the test data of
+this guide, we have two disorders *schizophrenia* and *coronary artery disease*:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+tte |>
+  select(person_id, born_at_year, gender, disorder, failure_status, failure_time) |>
+  tail(4)
+#+END_SRC
+
+#+RESULTS:
+| person_id | born_at_year | gender | disorder | failure_status | failure_time |
+|-----------+--------------+--------+----------+----------------+--------------|
+|     99998 |         2001 | f      | CAD      |              0 |           25 |
+|     99998 |         2001 | f      | SCZ      |              0 |           25 |
+|     99999 |         1958 | f      | CAD      |              0 |           68 |
+|     99999 |         1958 | f      | SCZ      |              0 |           68 |
 
 * asd
 
