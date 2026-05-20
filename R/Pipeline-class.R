@@ -95,7 +95,8 @@ Pipeline <- R6::R6Class( #nolint
         estimates         = re_c1 |> inner_join(re_c2, by = join_by(time, !!!group_columns))
       ) |>
         rename_with(~ paste0("h2_", disorder_prefix, "_", .), .cols = c(se, l95, u95)) |>
-        rename_with(~ paste0("h2_", disorder_prefix), .cols = c(h2))
+        rename_with(~ paste0("h2_", disorder_prefix), .cols = c(h2)) |>
+        select(starts_with("h2_"), time, !!!group_columns)
     },
     run_draw = function(tte_c1, re_d1_c1, re_d2_c1, args) {
       tmp_tte <- copy(tte_c1)
@@ -145,15 +146,13 @@ Pipeline <- R6::R6Class( #nolint
       combined <- re_d1_c1 |>
         inner_join(re_d1_c3, by = join_by(!!!join_columns)) |>
         inner_join(re_d2_c1, by = join_by(!!!join_columns)) |>
-        inner_join(h2_d1 |> select(starts_with("h2_"), !!!join_columns), by = join_by(!!!join_columns)) |>
-        inner_join(h2_d2 |> select(starts_with("h2_"), !!!join_columns), by = join_by(!!!join_columns)) #|>
-        #group_by(!!!join_symbols) |>
-        #arrange(desc(time)) |>
-        #filter(row_number() == 1) |>
-        #as.data.table()
-
-      print(combined)
-      return(NULL)
+        inner_join(h2_d1, by = join_by(!!!join_columns)) |>
+        inner_join(h2_d2, by = join_by(!!!join_columns)) |>
+        select(all_of(unlist(join_columns)), everything()) |>
+        group_by(!!!join_symbols) |>
+        arrange(desc(time)) |>
+        filter(row_number() == 1) |>
+        as.data.table()
 
       if (nrow(combined) == 0) rlang::abort(message = "all re and h2 combined was empty", class = "DrawError", category = "data")
 
