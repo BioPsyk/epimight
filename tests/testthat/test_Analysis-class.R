@@ -37,30 +37,33 @@ describe("run_meta", {
 
     expect_error(
       analysis$run_meta(
-        results = data.table(
+        estimates = data.table(
           se = c(0.2, 0.3),
           h2 = c(0.5, 0.4)
         ),
+        estimate_column = "h2",
         meta_column = 2
       )
     )
 
     expect_error(
       analysis$run_meta(
-        results = data.table(
+        estimates = data.table(
           se = c(0.2, 0.3),
           h2 = c("data", "table")
         ),
+        estimate_column = "h2",
         meta_column = "h2"
       )
     )
 
     expect_error(
       analysis$run_meta(
-        results = data.table(
+        estimates = data.table(
           se = c(TRUE, FALSE),
           h2 = c(0.5, 0.4)
         ),
+        estimate_column = "h2",
         meta_column = "h2"
       )
     )
@@ -69,7 +72,7 @@ describe("run_meta", {
   it("Fails when meta column is missing", {
     expect_error(
       analysis$run_meta(
-        results = data.table(
+        estimates = data.table(
           se = c(0.2, 0.3),
           h2 = c(0.5, 0.4)
         ),
