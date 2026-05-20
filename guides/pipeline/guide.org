@@ -311,6 +311,8 @@ trail1 <- pipeline$run_trail(
 
 #+RESULTS:
 
+* Using trail results
+
 Each trail contains:
 
 - The arguments passed to it
@@ -318,10 +320,12 @@ Each trail contains:
 - The stratified analysis results
 - The meta analyzed results
 
-The stratified analysis results contains a row each stratification that produced had the highest risk estimate
+** Stratified analysis results
+
+The stratified analysis results contains a row for each stratification that produced had the highest risk estimate
 per draw.
 
-In our example, we can see that of the stratification combinations for birth year 1950, the female gender produced
+In our example, we can see that the stratification combinations birth year 1950 and female gender produced
 the highest risk estimate in both draw 1 and draw 2:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
@@ -348,8 +352,12 @@ prefixed after this naming convention:
  - ~h2_d2~ = Heritability of disorder 2 (cohort 1 vs cohort 3)
  - ~gc_d1_d2~ = Genetic correlation (disorder 1 vs disorder 2)
 
-Therefor, if we want to look at the statistical values produced by the cumulative incidence analysis
-for disorder 1 and cohort 1, we can simply select the columns starting with ~re_d1_c1~:
+Below are some examples of how you access the columns for the different analyses.
+
+*** Cumulative incidence
+
+If we want to look at the statistical values produced by the cumulative incidence analysis
+for disorder 1 and cohort 1, we select the columns starting with ~re_d1_c1~:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 trail1$draw_results |>
@@ -363,3 +371,65 @@ trail1$draw_results |>
 |------+--------------+--------+-------------------+---------------------+--------------------+-------------------+----------------|
 |    1 |         1950 | f      | 0.163934426229508 | 0.00228753842377639 | 0.0701928417768622 | 0.257676010682154 |             10 |
 |    2 |         1950 | f      | 0.163934426229508 | 0.00228753842377639 | 0.0701928417768622 | 0.257676010682154 |             10 |
+
+Cumulative incidence analysis produces the following statistical values:
+
+- Risk estimate (~re_d1_c1_estimate~)
+- Variance (~re_d1_c1_variance~)
+- Lower bound of a 95% confidence interval (~h2_d1_l95~)
+- Upper bound of a 95% confidence interval (~h2_d1_u95~)
+- Cumulative number of individuals who have experienced the event of interest (~re_d1_c1_cases~)
+
+*** Heritability
+
+If we want to look at the statistical values produced by the heritability analysis
+for disorder 1 and cohort 1 vs cohort 2, we select the columns starting with ~h2_d1~:
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+trail1$draw_results |>
+  select(draw, born_at_year, gender, starts_with("h2_d1")) |>
+  filter(born_at_year == 1950) |>
+  tail(5)
+#+END_SRC
+
+#+RESULTS:
+| draw | born_at_year | gender |    h2_d1_estimate |          h2_d1_se |          h2_d1_l95 |       h2_d1_u95 |
+|------+--------------+--------+-------------------+-------------------+--------------------+-----------------|
+|    1 |         1950 | f      | 0.418925839216628 | 0.673186046514729 | -0.900518811952241 | 1.7383704903855 |
+|    2 |         1950 | f      | 0.418925839216628 | 0.673186046514729 | -0.900518811952241 | 1.7383704903855 |
+
+Heritability analysis produces the following statistical values:
+
+- Heritability/h2 (~h2_d1_estimate~)
+- Standard error (~h2_d1_se~)
+- Lower bound of a 95% confidence interval (~h2_d1_l95~)
+- Upper bound of a 95% confidence interval (~h2_d1_u95~)
+
+*** Genetic correlation
+
+If we want to look at the statistical values produced by the genetic correlation analysis,
+we select the columns starting with ~gc_d1_d2~:
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+trail1$draw_results |>
+  select(draw, born_at_year, gender, starts_with("gc_d1_d2")) |>
+  filter(born_at_year == 1950) |>
+  tail(5)
+#+END_SRC
+
+#+RESULTS:
+| draw | born_at_year | gender |       gc_d1_d2_rhh |  gc_d1_d2_estimate |       gc_d1_d2_se |      gc_d1_d2_l95 |     gc_d1_d2_u95 |   gc_d1_d2_gm_h2 | gc_d1_d2_gm_h2_l95 | gc_d1_d2_gm_h2_u95 |
+|------+--------------+--------+--------------------+--------------------+-------------------+-------------------+------------------+------------------+--------------------+--------------------|
+|    1 |         1950 | f      | 0.0146093824136338 | 0.0230424067885918 | 0.594292451762384 | -1.15020382304064 | 1.17942258786791 | 0.63402154764783 |   -1.8141399567693 |   1.86022477034648 |
+|    2 |         1950 | f      | 0.0146093824136338 | 0.0230424067885918 | 0.594292451762384 | -1.15020382304064 | 1.17942258786791 | 0.63402154764783 |   -1.8141399567693 |   1.86022477034648 |
+
+Heritability analysis produces the following statistical values:
+
+- Genetic correlation/rhog (~gc_d1_d2_estimate~)
+- Genetic correlation/rhog (~gc_d1_d2_estimate~)
+- Standard error (~gc_d1_d2_se~)
+- Lower bound of a 95% confidence interval (~gc_d1_d2_l95~)
+- Upper bound of a 95% confidence interval (~gc_d1_d2_u95~)
+- H2 geometric mean of ~h2_d1_estimate~ and ~h2_d2_estimate~ (~gc_d1_d2_gm_h2~)
+- Lower bound of a 95% confidence interval of h2 geometric mean (~gc_d1_d2_gm_l95~)
+- Upper bound of a 95% confidence interval of h2 geometric mean (~gc_d1_d2_gm_u95~)
