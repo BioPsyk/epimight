@@ -352,8 +352,6 @@ prefixed after this naming convention:
  - ~h2_d2~ = Heritability of disorder 2 (cohort 1 vs cohort 3)
  - ~gc_d1_d2~ = Genetic correlation (disorder 1 vs disorder 2)
 
-Below are some examples of how you access the columns for the different analyses.
-
 *** Cumulative incidence
 
 If we want to look at the statistical values produced by the cumulative incidence analysis
