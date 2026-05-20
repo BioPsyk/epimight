@@ -70,36 +70,40 @@ source("./tests/utils.R")
 #+END_SRC
 
 #+BEGIN_SRC R :exports results :results output :tangle no
-set.seed(6)
-n_count <- 100000
+#set.seed(6)
+#n_count <- 100000
+#
+#d1_tte <- generate_random_tte(n_count)
+#d1_tte <- generate_failure(d1_tte, 20, 10)
+#d1_tte <- generate_diagnosed_relatives(d1_tte, "relatives_diagnosed") |>
+#  select(-born_at, -dead_at_year) |>
+#  relocate(failure_time, .after = person_id) |>
+#  relocate(failure_status, .after = failure_time) |>
+#  relocate(relatives, .after = failure_status) |>
+#  relocate(relatives_diagnosed, .after = relatives) |>
+#  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
+#  as.data.frame()
+#
+#d1_tte_dt <- data.table(d1_tte)
+#
+#d2_tte <- generate_random_tte(n_count)
+#d2_tte <- generate_failure(d2_tte, 19, 11)
+#d2_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
+#  select(-born_at, -dead_at_year) |>
+#  relocate(failure_time, .after = person_id) |>
+#  relocate(failure_status, .after = failure_time) |>
+#  relocate(relatives, .after = failure_status) |>
+#  relocate(relatives_diagnosed, .after = relatives) |>
+#  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
+#  as.data.frame()
+#
+#d2_tte_dt <- data.table(d2_tte)
+#
+#tte_dt <- rbindlist(list(d1_tte_dt, d2_tte_dt))
+#
+#write_csv(tte_dt, "./guides/data/tte-pool.csv")
 
-d1_tte <- generate_random_tte(n_count)
-d1_tte <- generate_failure(d1_tte, 20, 10)
-d1_tte <- generate_diagnosed_relatives(d1_tte, "relatives_diagnosed") |>
-  select(-born_at, -dead_at_year) |>
-  relocate(failure_time, .after = person_id) |>
-  relocate(failure_status, .after = failure_time) |>
-  relocate(relatives, .after = failure_status) |>
-  relocate(relatives_diagnosed, .after = relatives) |>
-  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
-  as.data.frame()
-
-d1_tte_dt <- data.table(d1_tte)
-
-d2_tte <- generate_random_tte(n_count)
-d2_tte <- generate_failure(d2_tte, 19, 11)
-d2_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
-  select(-born_at, -dead_at_year) |>
-  relocate(failure_time, .after = person_id) |>
-  relocate(failure_status, .after = failure_time) |>
-  relocate(relatives, .after = failure_status) |>
-  relocate(relatives_diagnosed, .after = relatives) |>
-  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
-  as.data.frame()
-
-d2_tte_dt <- data.table(d2_tte)
-
-tte_dt <- rbindlist(list(d1_tte_dt, d2_tte_dt))
+tte_dt <- read_csv("./guides/data/tte-pool.csv", show_col_type = FALSE)
 #+END_SRC
 
 #+RESULTS:
@@ -122,7 +126,7 @@ The idea here is that your "pool" contains time-to-event data for multiple disor
 Then when you run a trail, you specify exactly which disorders and relationship kind to use.
 
 For example, say that your pool contains time-to-event data for the 10 most common mental disorders
-for siblings and cousins. Then your specify the details for each trail, here are 3 example trails:
+for siblings and cousins. Here's what 3 trails could look like that uses this pool of data:
 
 - Trail 1
   - Disorder 1 :: Schizophrenia
@@ -137,79 +141,18 @@ for siblings and cousins. Then your specify the details for each trail, here are
   - Disorder 2 :: ADHD
   - Relationship kind :: Siblings
 
-By having all the time-to-event data in a big pool and letting the trails pull from this pool simplifies the
-setup.
+By having all the time-to-event data in a big pool and letting the trails pull from this pool minimizes
+data handling between trails.
 
 Besides controlling what disorder and relationship kind to use for each trail, you can specify which columns
-to stratify the results on and how many independent draws to perform.
+to stratify the results on and how many independent draws to perform. We'll get into the details what a trail
+does later, but for now just know that a trail produces a genetic correlation for the supplied disorders and
+relationship kind.
 
-#+LATEX: \vspace{0.5cm}
-#+LATEX: \begin{center}
-#+NAME: fig:pipeline-component-diagram
-#+ATTR_HTML: :style max-width: 100%;
-#+BEGIN_SRC plantuml :file ../diagrams/pipeline-component-diagram.png :exports results
-@startuml
-!include <material/account>
-!include <material/account_search>
-!include <material/chart_line>
-!include <material/data>
-!include <material/database>
-!include <material/matrix>
-!include ../diagrams/ibp.puml
+* Setting up the pool
 
-' file tte [
-' <color:#255ba7><$ma_account{scale=0.35}></color>  **Time-to-event**
-'
-' | **person_id**  | **disorder** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** |
-' | ...            | ...          | ...                | ...              | ...                   | ...                  | ...                     |
-' <#76b354>| 99962 | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
-' | 99962          | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
-' <#76b354>| 99962 | CAD          | 2                  | 34               | PO                    | 2                    | 0                       |
-' | 99962          | CAD          | 2                  | 34               | FS                    | 1                    | 0                       |
-' ]
-
-database "TTE pool" as tte
-
-rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
-rectangle "**Disorder 2**\nCAD" as disorder2 #76b354
-rectangle "**Relationship kind**\nPO" as relkind #76b354
-
-file results [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
-
-| **fixed_meta** | **fixed_se**   | **fixee_l95** | **fixed_u95** | **rand_meta** | **rand_se**   | **rand_l95**  | **rand_u95** |
-| 0.01868003     | 0.03380838     | -0.04758439   | 0.08494446    | 0.01756866    | 0.0425034     | -0.065738     | 0.1008753    |
-]
-
-Boundary1(scope, "Epimight") {
-  Process(preproc, "**Pre-processing**")
-  Process(cif, "**Cumulative incidence**")
-  Process(h2, "**Heritability**")
-  Process(gc, "**Genetic correlation**")
-  Process(meta, "**Meta analysis**")
-}
-
-tte ..> preproc
-disorder1 ..> preproc
-disorder2 ..> preproc
-relkind ..> preproc
-
-Arrow_Down(preproc, cif)
-Arrow_Right(cif, h2)
-Arrow_Right(h2, gc)
-Arrow_Down(gc, meta)
-
-meta ..> results
-@enduml
-#+END_SRC
-
-#+ATTR_LATEX: :placement [H]
-#+CAPTION: Pipeline component diagram
-#+RESULTS: fig:pipeline-component-diagram
-[[file:../diagrams/pipeline-component-diagram.png]]
-
-you start of with a dataset of identifiers for each individual in your
-sample population (last 5 individuals in the guide test data):
+First you need to be able to uniquely identify every individual in your sample population.
+In the test data of this guide we use a unique integer for each individual:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte_dt |> select(person_id) |> tail(5)
@@ -222,7 +165,7 @@ tte_dt |> select(person_id) |> tail(5)
 |     99997 |
 |     99998 |
 |     99999 |
-|    100000 |
+|  100000.0 |
 
 You then add the stratification data to each individual, in our case, that means the year each individual
 was born and what their gender is:
