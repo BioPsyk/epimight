@@ -114,9 +114,8 @@ Analysis <- R6::R6Class( #nolint
         as.data.table()
     },
     run_rubin = function(...) {
-      args <- self$validator$run(...)
-
-      K <- nrow(args$estimates)
+      args <- private$validator$run(...)
+      K    <- nrow(args$estimates)
 
       args$estimates |>
         filter_all(

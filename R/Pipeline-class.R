@@ -376,8 +376,8 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(draw_results) == 0) stop("All draws failed")
 
-      draw_meta  <- private$meta_analyze_draw_results(draw_results)
-      draw_rubin <- private$rubin_combine_draw_results(draw_results, args$group_columns)
+      draw_meta  <- private$run_draw_results_meta(draw_results)
+      draw_rubin <- private$run_draw_results_rubin(draw_results, args$group_columns)
 
       print(draw_meta)
       print(draw_rubin)
