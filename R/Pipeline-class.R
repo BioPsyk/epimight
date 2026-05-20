@@ -300,21 +300,8 @@ Pipeline <- R6::R6Class( #nolint
               private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
             )
           },
-          DataError = function(cnd) {
-            print("had cif error")
-            print(cnd$message)
-          },
-          CifError = function(cnd) {
-            print("had cif error")
-            print(cnd$message)
-          },
-          H2Error = function(cnd) {
-            print("had h2 error")
-            print(cnd$message)
-          },
-          GcError = function(cnd) {
-            print("had gc error")
-            print(cnd$message)
+          DrawError = function(cnd) {
+            failed_draws <- append(failed_draws, cnd)
           }
         )
       }
