@@ -143,7 +143,44 @@ The concept is pretty simple:
 
 1. Create a "pool" of time-to-event data
 2. Create a new pipeline instance from said "pool"
-3. Run "trails" by supplying the which two disorders and relationship kind to test
+3. Run "trails" by supplying:
+   - Which 2 disorders to use
+   - Which relationship kind to use
+   - How many draws to perform
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:pipeline-conceptual-model
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/pipeline-conceptual-model.png :exports results
+@startuml
+!include <material7.4.47/Database/DatabaseClock>
+!include <material7.4.47/Science/Flask>
+!include <material/account>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ../diagrams/ibp.puml
+skinparam defaultTextAlignment center
+
+skinparam nodesep 80
+skinparam ranksep 80
+
+rectangle "Pipeline" as pipeline
+database "Pool" as tte_pool
+database "Trail" as trail
+database "Draw" as draw
+database "Draw" as draw
+
+pipeline --> tte_pool : " Pulls data from"
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Pipeline conceptual model
+#+RESULTS: fig:pipeline-conceptual-model
+[[file:../diagrams/pipeline-conceptual-model.png]]
 
 The idea here is that our "pool" can contain time-to-event data for multiple disorders and relationship kinds.
 Whereas a "trail" is operating on two disorders and one realtionship kind at a time.
@@ -232,6 +269,8 @@ Arrow_Down(run_trail, results)
 #+CAPTION: Pipeline component diagram
 #+RESULTS: fig:pipeline-component-diagram
 [[file:../diagrams/pipeline-component-diagram.png]]
+
+
 
 * Setting up the pool
 
