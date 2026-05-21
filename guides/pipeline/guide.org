@@ -163,6 +163,9 @@ our data once and then let the pipeline handle the rest.
 !include <material/matrix>
 !include ../diagrams/ibp.puml
 
+skinparam nodesep 50
+skinparam ranksep 10
+
 file tte [
 <color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
 
