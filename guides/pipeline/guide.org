@@ -289,6 +289,15 @@ It then produces the following risk estimates (cumulative incidence):
 It then copies over the time-to-event cohorts and the first risk estimates to a separate
 analysis process that is repeated ~K~ amount of times (this is called a "draw").
 
+It then meta analyzes all draw results and returns:
+
+- The arguments the trail was run with
+- Each independant draw result
+- Any draw errors encountered
+- The meta analyzed draw results
+
+The sub-chapters below describes how draws and meta analysis is performed.
+
 *** Performing draws
 
 Each draw performs the following steps:
@@ -347,16 +356,19 @@ trial1$draw_results |>
 
 You get a row for each stratification combination which had data from all analyses (combinations with missing data are discarded).
 
-*** Meta-analyzing draw results
+*** Meta analysis
+  :PROPERTIES:
+  :CUSTOM_ID: meta_analysis
+  :END:
+
+There are 3 different meta analyses performed:
+
+-
 
 *** Downsampling of diagnosed relatives
   :PROPERTIES:
   :CUSTOM_ID: downsampling
   :END:
-
-*** Stratification
-
-*** Combining the results
 
 * Using it
 ** Setting up the pool

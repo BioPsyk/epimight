@@ -203,7 +203,7 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' @description
     #' Meta analyzes all draw results grouped by draw.
-    run_draw_results_meta = function(draw_results) {
+    meta_analyze_draw_results = function(draw_results) {
       sources <- list("h2_d1", "h2_d2", "gc_d1_d2")
       result  <- NULL
 
@@ -226,12 +226,12 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' @description
     #' Meta analyzes all draw results grouped by draw.
-    run_draw_results_rubin = function(draw_results, group_columns) {
+    rubins_combine_draw_results = function(draw_results, group_columns) {
       sources <- list("h2_d1", "h2_d2", "gc_d1_d2")
       result  <- NULL
 
       for (src in sources) {
-        rubin <- private$analysis$core$run_rubin(
+        rubin <- private$analysis$core$run_rubins_combine(
           estimates       = draw_results,
           estimate_column = paste0(src, "_estimate"),
           se_column       = paste0(src, "_se"),
@@ -404,8 +404,8 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(draw_results) == 0) stop("All draws failed")
 
-      draw_meta  <- private$run_draw_results_meta(draw_results)
-      draw_rubin <- private$run_draw_results_rubin(draw_results, args$group_columns)
+      draw_meta  <- private$meta_analyze_draw_results(draw_results)
+      draw_rubin <- private$rubins_combine_draw_results(draw_results, args$group_columns)
       rubin_meta <- private$analysis$core$run_meta(
         estimates       = draw_rubin,
         estimate_column = "fixed_meta",
