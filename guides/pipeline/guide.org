@@ -130,23 +130,29 @@ tte <- read_csv(
 
 #+RESULTS:
 
-This is a guide that explains how you run the epimight pipeline to estimates genetic
-correlation between 2 disorders stratified by birth year and gender using TTE (time-to-event) data.
+This is a guide that explains how to run the epimight pipeline to estimates genetic
+correlation between 2 disorders for parent/offspring and fullsiblings stratified by birth
+year and gender.
 
 All code shown in this guide have been written to [[./guide.R][this R file]], so that we don't have
-to copy all code snippets manually.
+to copy all code snippets manually when setting up the pipeline in our own project.
 
 * How it works
 
 The concept is pretty simple:
 
-1. Create a pool of time-to-event data
-2. Create a new pipeline instance from said pool
-3. Run trails by supplying the specific disorders and relationship kind to use
+1. Create a "pool" of time-to-event data
+2. Create a new pipeline instance from said "pool"
+3. Run "trails" by supplying the which two disorders and relationship kind to test
 
-The idea here is that our "pool" contains time-to-event data for multiple disorders and relationship kinds.
+The idea here is that our "pool" can contain time-to-event data for multiple disorders and relationship kinds.
+Whereas a "trail" is a
+
+And when we run a "trail", we tell the pipeline which two disorders and relationship kind we want to test.
+This way, we don't have to do any data manipulation when running
+
 Then when we run a trail, we specify exactly which disorders and relationship kind to use. This way, we prepare
-our data once and then let the pipeline handle the rest.
+our data once and let the pipeline handle getting the right time-to-event data for the trail that is being carried out.
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
