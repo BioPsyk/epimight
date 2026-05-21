@@ -195,7 +195,7 @@ Pipeline <- R6::R6Class( #nolint
         relationship_kind = args$relationship_kind,
         estimates         = combined
       ) |>
-        rename_with(~ paste0("gc_d1_d2_", .), .cols = c(rhh, estimate, se, l95, u95, gm_h2, gm_h2_l95, gm_h2_u95))
+        rename_with(~ paste0("gc_d1_d2_", .), .cols = c(rhh, se, l95, u95, rg, h2_l95, h2_u95))
 
       if (nrow(gc_d1_d2) == 0) return(result$fail("gc_d1_d2", "gc", "empty"))
 

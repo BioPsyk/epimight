@@ -18,7 +18,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
       super$initialize()
     },
     #' @description
-    #' Calulates genetic correlation (rhog/rhh) along with standard error and confidence intervals.
+    #' Calulates genetic correlation (rg/rhh) along with standard error and confidence intervals.
     #'
     #' @param id Id of row, when providing stratified results.
     #' @param Kc lifetime prevalence disorder 1 in the general population.
@@ -31,23 +31,23 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
     #' @param h2_d2 heritability of disorder 2.
     #' @param rc Relationship coefficient.
     #' @returns Data.table with results
-    calculate_rhog = function(id, kc, krc, kf, ac, arc, af, h2_d1, h2_d2, rc) {
+    calculate_rg = function(id, kc, krc, kf, ac, arc, af, h2_d1, h2_d2, rc) {
       if (is.character(rc)) {
         rc <- self$relationship_coefficient_from_kind(rc)
       }
 
-      tc    <- qnorm(kc, lower.tail = FALSE)
-      yc    <- dnorm(tc)
-      trc   <- qnorm(krc, lower.tail = FALSE)
-      yrc   <- dnorm(trc)
-      tf    <- qnorm(kf, lower.tail = FALSE)
-      yf    <- dnorm(tf)
-      gm_h2 <- sqrt(h2_d2 * h2_d1)
-      i     <- yf / kf
-      num   <- tc - trc * sqrt(1 - (1 - tf / i) * (tc ^ 2 - trc ^ 2))
-      den   <- rc * (i + (i - tf) * trc ^ 2)
-      rhh   <- num / den
-      rhog  <- rhh / gm_h2
+      tc  <- qnorm(kc, lower.tail = FALSE)
+      yc  <- dnorm(tc)
+      trc <- qnorm(krc, lower.tail = FALSE)
+      yrc <- dnorm(trc)
+      tf  <- qnorm(kf, lower.tail = FALSE)
+      yf  <- dnorm(tf)
+      h2  <- sqrt(h2_d2 * h2_d1)
+      i   <- yf / kf
+      num <- tc - trc * sqrt(1 - (1 - tf / i) * (tc ^ 2 - trc ^ 2))
+      den <- rc * (i + (i - tf) * trc ^ 2)
+      rhh <- num / den
+      rg  <- rhh / h2
 
       # se estimation
       wg  <- kf ^ 2 / yf ^ 2 * (1 - kf) / af
@@ -59,15 +59,14 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
       u95 <- rhh + 1.96 * se
 
       results <- data.table(
-        id        = id,
-        rhh       = rhh,
-        estimate  = rhog,
-        se        = se,
-        l95       = l95,
-        u95       = u95,
-        gm_h2     = gm_h2,
-        gm_h2_l95 = l95 / gm_h2,
-        gm_h2_u95 = u95 / gm_h2
+        id     = id,
+        rhh    = rhh,
+        se     = se,
+        l95    = l95,
+        u95    = u95,
+        rg     = rg,
+        h2_l95 = l95 / h2,
+        h2_u95 = u95 / h2
       )
 
       return(results)
@@ -107,7 +106,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
         mutate(id = row_number())
 
       suppressWarnings({
-        results <- self$calculate_rhog(
+        results <- self$calculate_rg(
           estimates$id,
           estimates$re_d1_c1_estimate,
           estimates$re_d1_c3_estimate,
