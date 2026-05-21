@@ -188,20 +188,20 @@ file cif [
 Boundary1(epimight, "Epimight") {
   Database(pool, "**TTE pool**")
   Process(new, "**new**")
-  Process(run_analysis, "**run_analysis**")
+  Process(run, "**run**")
 }
 
 relkind --> args
 disorder2 --> args
 disorder1 --> args
 
-args --> run_analysis : " Given to"
+args --> run : " Given to"
 
 tte -RIGHT-> new : " Given to"
 new -RIGHT-> pool : " Stores data in"
-run_analysis -LEFT-> pool : " Reads data from"
+run -LEFT-> pool : " Reads data from"
 
-run_analysis --> results : " Outputs"
+run --> results : " Outputs"
 
 results --> cif
 results --> h2
@@ -339,7 +339,7 @@ It accepts any additional columns used for stratification.
 
 * Running the pipeline
 
-After creating the pipeline instance, you run analyses by supplying the ~run_analysis~ function with:
+After creating the pipeline instance, you run analyses by supplying the ~run~ function with:
 
 - Disorder 1
   - Identifier

@@ -189,6 +189,8 @@ Pipeline <- R6::R6Class( #nolint
         filter(row_number() == 1) |>
         as.data.table()
 
+      print(combined)
+
       if (nrow(combined) == 0) return(result$fail("re_h2_combined", "tte", "empty"))
 
       gc_d1_d2 <- private$analysis$gc$run(
@@ -305,7 +307,7 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' @description
     #' Runs a single experiment using the given disorders and relationship_kind.
-    run_trial = function(...) {
+    run = function(...) {
       validator <- ArgumentsValidator$new(
         disorder1 = list(
           required   = TRUE,
