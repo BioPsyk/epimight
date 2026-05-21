@@ -3,7 +3,7 @@ library(epimight)
 
 pipeline <- Pipeline$new(pool = tte)
 
-trail1 <- pipeline$run_trail(
+trial1 <- pipeline$run_trial(
   disorder1 = list(
     id             = "SCZ",
     earliest_onset = 1,

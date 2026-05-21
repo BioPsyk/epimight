@@ -305,7 +305,7 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' @description
     #' Runs a single experiment using the given disorders and relationship_kind.
-    run_trail = function(...) {
+    run_trial = function(...) {
       validator <- ArgumentsValidator$new(
         disorder1 = list(
           required   = TRUE,

@@ -134,16 +134,18 @@ This is a guide that explains how to run the epimight pipeline to estimates gene
 correlation between 2 disorders for parent/offspring and fullsiblings stratified by birth
 year and gender.
 
-All code shown in this guide have been written to [[./guide.R][this R file]], so that we don't have
+All code shown in this guide have been written to [[./guide.R][this R file]], so that you don't have
 to copy all code snippets manually when setting up the pipeline in our own project.
 
 * How it works
 
-The concept is pretty simple:
+You have a set of disorders you want to produce genetic correlation between and time-to-event data for a sample population you want to produce it from.
+
+The pipeline allows you to perform
 
 1. Create a "pool" that contains all time-to-event data
 2. Create a new pipeline instance from said "pool"
-3. Run "trails" that produces risk estimates, heritability and genetic correlation for:
+3. Run "trials" that produces risk estimates, heritability and genetic correlation for:
    - 2 specific disorders
    - A specific type of relatives
 
@@ -168,7 +170,7 @@ skinparam ranksep 80
 
 rectangle "Pipeline" as pipeline
 database "Pool" as tte_pool
-process "Trail" as trail
+process "Trial" as trial
 rectangle "Draw" as draw
 rectangle "Kind" as relkind
 rectangle "Relationship" as rel
@@ -197,10 +199,10 @@ rel --> relkind : " Is a specific"
 [[file:../diagrams/pipeline-conceptual-model.png]]
 
 The idea here is that our "pool" can contain time-to-event data for multiple disorders and relationship kinds.
-Whereas a "trail" is operating on two disorders and one realtionship kind at a time.
+Whereas a "trial" is operating on two disorders and one realtionship kind at a time.
 
 As an example, say that our pool contains time-to-event data for 3 different disorders and 2 different relationship
-kinds. Then we would run 6 separate trails:
+kinds. Then we would run 6 separate trials:
 
 1. ~d1~ vs ~d2~, relkind ~a~
 2. ~d1~ vs ~d2~, relkind ~b~
@@ -210,10 +212,10 @@ kinds. Then we would run 6 separate trails:
 6. ~d2~ vs ~d3~, relkind ~b~
 
 By having the time-to-event data for all disorders and relationship kinds in a pool, we don't have to
-manipulate the data between running trails, we can let the pipeline handle that for us.
+manipulate the data between running trials, we can let the pipeline handle that for us.
 
-Below is a diagram showingl how the different components interact when a trail is being run. We can
-see that the time-to-event pool contains multiple disorders and relationship kind. But when a trail
+Below is a diagram showingl how the different components interact when a trial is being run. We can
+see that the time-to-event pool contains multiple disorders and relationship kind. But when a trial
 is run, only the relevant rows are pulled out by the pipeline.
 
 #+LATEX: \vspace{0.5cm}
@@ -248,9 +250,9 @@ file tte [
 rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
 rectangle "**Disorder 2**\nCAD" as disorder2 #76b354
 rectangle "**Relationship kind**\nPO" as relkind #76b354
-rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Trail arguments**" as args
+rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Trial arguments**" as args
 
-rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Trail results**" as results
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Trial results**" as results
 
 ' file results [
 ' <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
@@ -262,20 +264,20 @@ rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Trail results**" a
 Boundary1(epimight, "Epimight") {
   Database(pool, "**pool**")
   Process(new, "**new**")
-  Process(run_trail, "**run_trail**")
+  Process(run_trial, "**run_trial**")
 }
 
 
 Arrow_Down(relkind, args)
 Arrow_Down(disorder2, args)
 Arrow_Down(disorder1, args)
-Arrow_Down(args, run_trail)
+Arrow_Down(args, run_trial)
 
 Arrow_Right(tte, new)
 Arrow_Right(new, pool)
-Arrow_Left(run_trail, pool)
+Arrow_Left(run_trial, pool)
 
-Arrow_Down(run_trail, results)
+Arrow_Down(run_trial, results)
 @enduml
 #+END_SRC
 
@@ -410,9 +412,9 @@ The supplied pool must be a ~data.table~ with the following required columns:
 
 It accepts any additional columns, so you can safely supply the extra columns needed for stratification.
 
-* Running trails
+* Running trials
 
-After creating the pipeline instance, you run trails by supplying the ~run_trail~ function with:
+After creating the pipeline instance, you run trials by supplying the ~run_trial~ function with:
 
 - Disorder 1
   - Identifier
@@ -425,11 +427,11 @@ After creating the pipeline instance, you run trails by supplying the ~run_trail
 - Relationship kind
 - How many draws to perform
 
-For example, if you want to run a trail between schizophrenia and coronary artery disease of full siblings,
+For example, if you want to run a trial between schizophrenia and coronary artery disease of full siblings,
 using 2 draws, you would run:
 
 #+BEGIN_SRC R :exports code :results output
-trail1 <- pipeline$run_trail(
+trial1 <- pipeline$run_trial(
   disorder1 = list(
     id             = "SCZ",
     earliest_onset = 1,
@@ -448,9 +450,9 @@ trail1 <- pipeline$run_trail(
 
 #+RESULTS:
 
-* Using trail results
+* Using trial results
 
-Each trail contains:
+Each trial contains:
 
 - The arguments passed to it
 - Any errors encountered
@@ -466,7 +468,7 @@ In our example, we can see that the stratification combinations birth year 1950 
 the highest risk estimate in both draw 1 and draw 2:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trail1$draw_results |>
+trial1$draw_results |>
   select(draw, born_at_year, gender) |>
   filter(born_at_year == 1950)
 #+END_SRC
@@ -495,7 +497,7 @@ If we want to look at the statistical values produced by the cumulative incidenc
 for disorder 1 and cohort 1, we select the columns starting with ~re_d1_c1~:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trail1$draw_results |>
+trial1$draw_results |>
   select(draw, born_at_year, gender, starts_with("re_d1_c1")) |>
   filter(born_at_year == 1950) |>
   tail(5)
@@ -521,7 +523,7 @@ If we want to look at the statistical values produced by the heritability analys
 for disorder 1 and cohort 1 vs cohort 2, we select the columns starting with ~h2_d1~:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trail1$draw_results |>
+trial1$draw_results |>
   select(draw, born_at_year, gender, starts_with("h2_d1")) |>
   filter(born_at_year == 1950) |>
   tail(5)
@@ -546,7 +548,7 @@ If we want to look at the statistical values produced by the genetic correlation
 we select the columns starting with ~gc_d1_d2~:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trail1$draw_results |>
+trial1$draw_results |>
   select(draw, born_at_year, gender, starts_with("gc_d1_d2")) |>
   filter(born_at_year == 1950) |>
   tail(5)
