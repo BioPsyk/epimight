@@ -177,9 +177,9 @@ correlation for, you run a "trial". Here are 3 examples of what that could look 
 - ADHD vs. ASD in parent/offspring
 - ADHD vs. Bipolar type 2 in first cousins
 
-By having a "pool" of all time-to-event data and have the "trials" select the specific data,
-you only need to prepare your data once and let the pipeline handle all data preparation
-before running the "trials".
+By having a pool of all time-to-event data and have the trials select the specific data,
+you only have to prepare your time-to-event once. Adapting the time-to-event data before
+each trial is handled by the pipeline.
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
