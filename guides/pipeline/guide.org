@@ -127,10 +127,7 @@ tte <- read_csv(
   col_types=cols(person_id = col_character()),
 ) |> as.data.table()
 
-library(epimight)
-
 pipeline <- Pipeline$new(pool = tte)
-results  <- pipeline
 trial1   <- pipeline$run_trial(
   disorder1 = list(
     id             = "SCZ",
@@ -269,7 +266,7 @@ Arrow_Down(run_trial, results)
 #+RESULTS: fig:pipeline-component-diagram
 [[file:../diagrams/pipeline-component-diagram.png]]
 
-** The method
+** The process
 
 As mentioned before, a trial produces genetic correlations for a distinct pair of disorders and a type
 of relatives. It does this in multiple interdependant steps. First it pulls out the time-to-event data for
@@ -287,16 +284,17 @@ It then produces the following risk estimates (cumulative incidence):
 - ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
 
 It then copies over the time-to-event cohorts and the first risk estimates to a separate
-analysis process that is repeated ~K~ amount of times (this is called a "draw").
+analysis process (called a "draw") that is repeated ~K~ amount of times.
 
 It then meta analyzes all draw results and returns:
 
 - The arguments the trail was run with
 - Each independant draw result
 - Any draw errors encountered
-- The meta analyzed draw results
+- The aggregated draw results
 
-The sub-chapters below describes how draws and meta analysis is performed.
+The sub-chapters below describes how draws are performed, how draw results are aggregated and
+how downsampling of relatives are performed.
 
 *** Performing draws
 
@@ -356,20 +354,25 @@ trial1$draw_results |>
 
 You get a row for each stratification combination which had data from all analyses (combinations with missing data are discarded).
 
-*** Meta analysis
+*** Aggregating draw results
   :PROPERTIES:
   :CUSTOM_ID: meta_analysis
   :END:
 
-There are 3 different meta analyses performed:
+The results of all draws are aggregated in 3 steps:
 
--
+- Meta analyze across stratification within draws
+  - When stratification was used, each draw will have multiple rows
+  -
 
 *** Downsampling of diagnosed relatives
   :PROPERTIES:
   :CUSTOM_ID: downsampling
   :END:
 
+** The mathematics
+
+TBD
 * Using it
 ** Setting up the pool
 
@@ -535,34 +538,30 @@ trial1 <- pipeline$run_trial(
 
 ** Using trial results
 
-Each trial contains:
+The ~run_trail~ function returns a list with the following members:
 
-- The arguments passed to it
-- Any errors encountered
-- The stratified analysis results
-- The meta analyzed results
+- ~args~ :: The arguments the trail was run with
+- ~errors~ :: Any draw errors encountered
+- ~results~ :: Each independant draw result
+- ~meta~ :: Draw results meta analyzed accross stratification within draws
+- ~rubin~ :: Draw results rubin combined across draws within stratification
+- ~rubin_meta~ :: Rubin combines meta analyzed
 
-*** Stratified analysis results
+*** args
 
-The stratified analysis results contains a row for each stratification that produced had the highest risk estimate
-per draw.
+The member ~args~ is just a copy of the arguments supplied to the ~run_trial~ function.
+It's output for debugging and reproducibility purposes.
 
-In our example, we can see that the stratification combinations birth year 1950 and female gender produced
-the highest risk estimate in both draw 1 and draw 2:
+*** errors
 
-#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trial1$draw_results |>
-  select(draw, born_at_year, gender) |>
-  filter(born_at_year == 1950)
-#+END_SRC
+The member ~errors~ is list a unnamed list of each draw that had an error. It's output for debugging purposes.
 
-#+RESULTS:
-| draw | born_at_year | gender |
-|------+--------------+--------|
-|    1 |         1950 | f      |
-|    2 |         1950 | f      |
+*** results
 
-Each of these rows contains all statistical values produced by the analyses run. Each analysis has it's columns
+The member ~results~ is a ~data.table~ containing resulting rows of each draw performed, with the column
+~draw~ added, that contain the index of the draw that produced the rows.
+
+Each row contains all statistical values produced by the analyses run. Each analysis has it's columns
 prefixed after this naming convention:
 
  - ~re_d1_c1~ = Risk estimates of disorder 1, cohort 1
@@ -580,25 +579,27 @@ If we want to look at the statistical values produced by the cumulative incidenc
 for disorder 1 and cohort 1, we select the columns starting with ~re_d1_c1~:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trial1$draw_results |>
+trial1$results |>
   select(draw, born_at_year, gender, starts_with("re_d1_c1")) |>
-  filter(born_at_year == 1950) |>
   tail(5)
 #+END_SRC
 
 #+RESULTS:
-| draw | born_at_year | gender | re_d1_c1_estimate |   re_d1_c1_variance |       re_d1_c1_l95 |      re_d1_c1_u95 | re_d1_c1_cases |
-|------+--------------+--------+-------------------+---------------------+--------------------+-------------------+----------------|
-|    1 |         1950 | f      | 0.163934426229508 | 0.00228753842377639 | 0.0701928417768622 | 0.257676010682154 |             10 |
-|    2 |         1950 | f      | 0.163934426229508 | 0.00228753842377639 | 0.0701928417768622 | 0.257676010682154 |             10 |
+| draw | born_at_year | gender |  re_d1_c1_estimate |    re_d1_c1_variance |        re_d1_c1_l95 |       re_d1_c1_u95 | re_d1_c1_cases |
+|------+--------------+--------+--------------------+----------------------+---------------------+--------------------+----------------|
+|    2 |         2006 | f      | 0.0547945205479452 | 0.000719551678743569 | 0.00221954414990248 |  0.107369496945988 |              8 |
+|    2 |         2010 | m      | 0.0481927710843373 | 0.000559522565597191 | 0.00183133349887483 | 0.0945542086697999 |              7 |
+|    2 |         2014 | f      | 0.0481927710843374 | 0.000559502030334855 | 0.00183218427154885 | 0.0945533578971259 |             13 |
+|    2 |         2015 | m      | 0.0338983050847458 | 0.000564641551674608 | -0.0126747264808592 | 0.0804713366503508 |              7 |
+|    2 |         2016 | f      | 0.0163934426229508 | 0.000268744961031981 | -0.0157371145006566 | 0.0485239997465583 |              4 |
 
 Cumulative incidence analysis produces the following statistical values:
 
-- Risk estimate (~re_d1_c1_estimate~)
-- Variance (~re_d1_c1_variance~)
-- Lower bound of a 95% confidence interval (~h2_d1_l95~)
-- Upper bound of a 95% confidence interval (~h2_d1_u95~)
-- Cumulative number of individuals who have experienced the event of interest (~re_d1_c1_cases~)
+- ~re_d1_c1_estimate~ :: Risk estimate
+- ~re_d1_c1_variance~ :: Variance
+- ~h2_d1_l95~ :: Lower bound of a 95% confidence interval
+- ~h2_d1_u95~ :: Upper bound of a 95% confidence interval
+- ~re_d1_c1_cases~ :: Cumulative number of individuals who have experienced the event of interest
 
 **** Heritability
 
@@ -606,24 +607,26 @@ If we want to look at the statistical values produced by the heritability analys
 for disorder 1 and cohort 1 vs cohort 2, we select the columns starting with ~h2_d1~:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trial1$draw_results |>
+trial1$results |>
   select(draw, born_at_year, gender, starts_with("h2_d1")) |>
-  filter(born_at_year == 1950) |>
   tail(5)
 #+END_SRC
 
 #+RESULTS:
-| draw | born_at_year | gender |    h2_d1_estimate |          h2_d1_se |          h2_d1_l95 |       h2_d1_u95 |
-|------+--------------+--------+-------------------+-------------------+--------------------+-----------------|
-|    1 |         1950 | f      | 0.418925839216628 | 0.673186046514729 | -0.900518811952241 | 1.7383704903855 |
-|    2 |         1950 | f      | 0.418925839216628 | 0.673186046514729 | -0.900518811952241 | 1.7383704903855 |
+| draw | born_at_year | gender |     h2_d1_estimate |          h2_d1_se |           h2_d1_l95 |         h2_d1_u95 |
+|------+--------------+--------+--------------------+-------------------+---------------------+-------------------|
+|    2 |         2006 | f      | 0.0658407554026909 | 0.324615424267537 |  -0.570405476161682 | 0.702086986967064 |
+|    2 |         2010 | m      |  0.723226322648776 | 0.287220007715378 |   0.160275107526635 |  1.28617753777092 |
+|    2 |         2014 | f      |  0.418040022457864 | 0.256701840629227 | -0.0850955851754205 | 0.921175630091149 |
+|    2 |         2015 | m      |   0.90342591677891 | 0.294946436728867 |    0.32533090079033 |  1.48152093276749 |
+|    2 |         2016 | f      |  0.491585108050739 | 0.409717429540702 |  -0.311461053849037 |  1.29463126995052 |
 
 Heritability analysis produces the following statistical values:
 
-- Heritability/h2 (~h2_d1_estimate~)
-- Standard error (~h2_d1_se~)
-- Lower bound of a 95% confidence interval (~h2_d1_l95~)
-- Upper bound of a 95% confidence interval (~h2_d1_u95~)
+- ~h2_d1_estimate~ :: Heritability/h2
+- ~h2_d1_se~ :: Standard error
+- ~h2_d1_l95~ :: Lower bound of a 95% confidence interval
+- ~h2_d1_u95~ :: Upper bound of a 95% confidence interval
 
 **** Genetic correlation
 
@@ -631,29 +634,33 @@ If we want to look at the statistical values produced by the genetic correlation
 we select the columns starting with ~gc_d1_d2~:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trial1$draw_results |>
+trial1$results |>
   select(draw, born_at_year, gender, starts_with("gc_d1_d2")) |>
-  filter(born_at_year == 1950) |>
   tail(5)
 #+END_SRC
 
 #+RESULTS:
-| draw | born_at_year | gender |       gc_d1_d2_rhh |  gc_d1_d2_estimate |       gc_d1_d2_se |      gc_d1_d2_l95 |     gc_d1_d2_u95 |   gc_d1_d2_gm_h2 | gc_d1_d2_gm_h2_l95 | gc_d1_d2_gm_h2_u95 |
-|------+--------------+--------+--------------------+--------------------+-------------------+-------------------+------------------+------------------+--------------------+--------------------|
-|    1 |         1950 | f      | 0.0146093824136338 | 0.0230424067885918 | 0.594292451762384 | -1.15020382304064 | 1.17942258786791 | 0.63402154764783 |   -1.8141399567693 |   1.86022477034648 |
-|    2 |         1950 | f      | 0.0146093824136338 | 0.0230424067885918 | 0.594292451762384 | -1.15020382304064 | 1.17942258786791 | 0.63402154764783 |   -1.8141399567693 |   1.86022477034648 |
+| draw | born_at_year | gender |        gc_d1_d2_rhh |   gc_d1_d2_estimate |       gc_d1_d2_se |       gc_d1_d2_l95 |      gc_d1_d2_u95 |    gc_d1_d2_gm_h2 | gc_d1_d2_gm_h2_l95 | gc_d1_d2_gm_h2_u95 |
+|------+--------------+--------+---------------------+---------------------+-------------------+--------------------+-------------------+-------------------+--------------------+--------------------|
+|    2 |         2006 | f      |   0.162216343032147 |   0.861090463340052 | 0.640303921023537 |  -1.09277934217399 |  1.41721202823828 | 0.188384786428748 |   -5.8007834013035 |    7.5229643279836 |
+|    2 |         2010 | m      | -0.0280737811190609 | -0.0472440240133014 | 0.521815704830504 |  -1.05083256258685 | 0.994685000348726 | 0.594229253442866 |  -1.76839587835587 |   1.67390783032927 |
+|    2 |         2014 | f      |   0.264456376768054 |   0.646995682269281 | 0.271089117232714 | -0.266878293008066 | 0.795791046544173 | 0.408745195702846 | -0.652920929258049 |   1.94691229379661 |
+|    2 |         2015 | m      |   0.298730147103843 |   0.986760910254737 | 0.398781352972026 | -0.482881304721327 |  1.08034159892901 | 0.302738124300773 |  -1.59504623290055 |   3.56856805341003 |
+|    2 |         2016 | f      |   0.529320805526821 |    1.57248895630592 | 0.480361110169171 | -0.412186970404753 |   1.4708285814584 | 0.336613369145878 |  -1.22451158565281 |   4.36948949826465 |
 
-Heritability analysis produces the following statistical values:
+Genetic correlation analysis produces the following statistical values:
 
-- Genetic correlation/rhog (~gc_d1_d2_estimate~)
-- Genetic correlation/rhog (~gc_d1_d2_estimate~)
-- Standard error (~gc_d1_d2_se~)
-- Lower bound of a 95% confidence interval (~gc_d1_d2_l95~)
-- Upper bound of a 95% confidence interval (~gc_d1_d2_u95~)
-- H2 geometric mean of ~h2_d1_estimate~ and ~h2_d2_estimate~ (~gc_d1_d2_gm_h2~)
-- Lower bound of a 95% confidence interval of h2 geometric mean (~gc_d1_d2_gm_l95~)
-- Upper bound of a 95% confidence interval of h2 geometric mean (~gc_d1_d2_gm_u95~)
+- ~gc_d1_d2_estimate~ :: Genetic correlation/rhog
+- ~gc_d1_d2_estimate~ :: Genetic correlation/rhog
+- ~gc_d1_d2_se~ :: Standard error
+- ~gc_d1_d2_l95~ :: Lower bound of a 95% confidence interval
+- ~gc_d1_d2_u95~ :: Upper bound of a 95% confidence interval
+- ~gc_d1_d2_gm_h2~ :: H2 geometric mean of ~h2_d1_estimate~ and ~h2_d2_estimate~
+- ~gc_d1_d2_gm_l95~ :: Lower bound of a 95% confidence interval of h2 geometric mean
+- ~gc_d1_d2_gm_u95~ :: Upper bound of a 95% confidence interval of h2 geometric mean
 
-*** Meta analyzed results
+*** meta
 
 TBD
+
+*** run
