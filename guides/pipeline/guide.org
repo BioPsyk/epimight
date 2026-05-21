@@ -141,12 +141,11 @@ to copy all code snippets manually when setting up the pipeline in our own proje
 
 The concept is pretty simple:
 
-1. Create a "pool" of time-to-event data
+1. Create a "pool" that contains all time-to-event data
 2. Create a new pipeline instance from said "pool"
-3. Run "trails" by supplying:
-   - Which 2 disorders to use
-   - Which relationship kind to use
-   - How many draws to perform
+3. Run "trails" that produces risk estimates, heritability and genetic correlation for:
+   - 2 specific disorders
+   - A specific type of relatives
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -169,11 +168,26 @@ skinparam ranksep 80
 
 rectangle "Pipeline" as pipeline
 database "Pool" as tte_pool
-database "Trail" as trail
-database "Draw" as draw
-database "Draw" as draw
+process "Trail" as trail
+rectangle "Draw" as draw
+rectangle "Kind" as relkind
+rectangle "Relationship" as rel
+rectangle "Relationship" as rel
+actor "Relative" as relative
+actor "Individual" as ind
+storage "**PO**\nParent/offspring" as relkind_po
+storage "**FS**\nFull sublings" as relkind_fs
+storage "**...**\n28 more" as relkind_rest
 
 pipeline --> tte_pool : " Pulls data from"
+
+relkind_po -UP-|> relkind
+relkind_fs -UP-|> relkind
+relkind_rest -UP-|> relkind
+
+ind -RIGHT- rel
+rel -RIGHT-> relative
+rel -- relkind
 @enduml
 #+END_SRC
 

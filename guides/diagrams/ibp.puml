@@ -24,10 +24,6 @@ hide stereotype
     RoundCorner 15
   }
 
-  storage {
-    LineThickness 0
-  }
-
   file {
     TextAlignment left
   }
