@@ -139,84 +139,39 @@ to copy all code snippets manually when setting up the pipeline in our own proje
 
 * How it works
 
-You have a set of disorders you want to produce genetic correlation between and time-to-event data for a sample population you want to produce it from.
+You have a set of disorders you want to produce genetic correlation between and time-to-event data
+of a sample population you want to produce it from.
 
-The pipeline allows you to perform
+Each time-to-event entity represents:
 
-1. Create a "pool" that contains all time-to-event data
-2. Create a new pipeline instance from said "pool"
-3. Run "trials" that produces risk estimates, heritability and genetic correlation for:
-   - 2 specific disorders
-   - A specific type of relatives
+1. A distinct individual
+2. A distinct disorder
+3. A distinct type of relative
+4. The disorder failure status/time of the individual
+5. The amount of relatives the individual have
+6. The amount of relatives diagnosed with the disorder the individual have
 
-#+LATEX: \vspace{0.5cm}
-#+LATEX: \begin{center}
-#+NAME: fig:pipeline-conceptual-model
-#+ATTR_HTML: :style max-width: 100%;
-#+BEGIN_SRC plantuml :file ../diagrams/pipeline-conceptual-model.png :exports results
-@startuml
-!include <material7.4.47/Database/DatabaseClock>
-!include <material7.4.47/Science/Flask>
-!include <material/account>
-!include <material/chart_line>
-!include <material/data>
-!include <material/database>
-!include <material/matrix>
-!include ../diagrams/ibp.puml
-skinparam defaultTextAlignment center
+Here are 3 examples of what that could look like:
 
-skinparam nodesep 80
-skinparam ranksep 80
+- Individual 897
+  - Diagnosed with schizophrenia at age 19
+  - Has 2 full siblings
+  - 1 of the siblings also has a schizophrenia diagnosis
+- Individual 345
+  - No schizophrenia diagnosis, was alive at end of study
+  - Has 3 full siblings
+  - None of the siblings has a schizophrenia diagnosis
+- Individual 193
+  - No schizophrenia diagnosis, died at age 30
+  - Has no full siblings
+  - None of the siblings has a schizophrenia diagnosis
 
-rectangle "Pipeline" as pipeline
-database "Pool" as tte_pool
-process "Trial" as trial
-rectangle "Draw" as draw
-rectangle "Kind" as relkind
-rectangle "Relationship" as rel
-rectangle "Coefficiant" as rel
-actor "Relative" as relative
-actor "Individual" as ind
-storage "**PO**\nParent/offspring" as relkind_po
-storage "**FS**\nFull sublings" as relkind_fs
-storage "**...**\n28 more" as relkind_rest
+You collect this kind of time-to-event data for all disorders and types of relatives you
+want to produce genetic correlations for and feed it into the pipeline. This is called
+the pipelines time-to-event "pool".
 
-pipeline --> tte_pool : " Pulls data from"
-
-relkind_po -UP-|> relkind
-relkind_fs -UP-|> relkind
-relkind_rest -UP-|> relkind
-
-ind -RIGHT- rel : " Has one for every relative"
-rel -RIGHT-> relative
-rel --> relkind : " Is a specific"
-@enduml
-#+END_SRC
-
-#+ATTR_LATEX: :placement [H]
-#+CAPTION: Pipeline conceptual model
-#+RESULTS: fig:pipeline-conceptual-model
-[[file:../diagrams/pipeline-conceptual-model.png]]
-
-The idea here is that our "pool" can contain time-to-event data for multiple disorders and relationship kinds.
-Whereas a "trial" is operating on two disorders and one realtionship kind at a time.
-
-As an example, say that our pool contains time-to-event data for 3 different disorders and 2 different relationship
-kinds. Then we would run 6 separate trials:
-
-1. ~d1~ vs ~d2~, relkind ~a~
-2. ~d1~ vs ~d2~, relkind ~b~
-3. ~d1~ vs ~d2~, relkind ~a~
-4. ~d1~ vs ~d2~, relkind ~b~
-5. ~d2~ vs ~d3~, relkind ~a~
-6. ~d2~ vs ~d3~, relkind ~b~
-
-By having the time-to-event data for all disorders and relationship kinds in a pool, we don't have to
-manipulate the data between running trials, we can let the pipeline handle that for us.
-
-Below is a diagram showingl how the different components interact when a trial is being run. We can
-see that the time-to-event pool contains multiple disorders and relationship kind. But when a trial
-is run, only the relevant rows are pulled out by the pipeline.
+Then for each pair of disorders and type of relative you want to produce a genetic
+correlation for, you run a "trial".
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -285,6 +240,27 @@ Arrow_Down(run_trial, results)
 #+CAPTION: Pipeline component diagram
 #+RESULTS: fig:pipeline-component-diagram
 [[file:../diagrams/pipeline-component-diagram.png]]
+
+The idea here is that our "pool" can contain time-to-event data for multiple disorders and relationship kinds.
+Whereas a "trial" is operating on two disorders and one realtionship kind at a time.
+
+As an example, say that our pool contains time-to-event data for 3 different disorders and 2 different relationship
+kinds. Then we would run 6 separate trials:
+
+1. ~d1~ vs ~d2~, relkind ~a~
+2. ~d1~ vs ~d2~, relkind ~b~
+3. ~d1~ vs ~d2~, relkind ~a~
+4. ~d1~ vs ~d2~, relkind ~b~
+5. ~d2~ vs ~d3~, relkind ~a~
+6. ~d2~ vs ~d3~, relkind ~b~
+
+By having the time-to-event data for all disorders and relationship kinds in a pool, we don't have to
+manipulate the data between running trials, we can let the pipeline handle that for us.
+
+Below is a diagram showingl how the different components interact when a trial is being run. We can
+see that the time-to-event pool contains multiple disorders and relationship kind. But when a trial
+is run, only the relevant rows are pulled out by the pipeline.
+
 
 
 
