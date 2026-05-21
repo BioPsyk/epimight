@@ -117,86 +117,27 @@ source("./tests/utils.R")
 #
 #tte <- rbindlist(list(d1_tte, d2_tte, d3_tte, d4_tte)) |> select(-born_at, -dead_at_year) |>
 #  arrange(person_id, disorder, relationship_kind) |>
-#  select(person_id, born_at_year, gender, disorder, failure_status, failure_time, relationship_kind, relatives, relatives_diagnosed)
+#  select(person_id, born_at_year, disorder, failure_status, failure_time, relationship_kind, relatives, relatives_diagnosed)
 #
-#write_csv(tte, "./guides/data/tte-pool.csv")
+#write_csv(tte, "./guides/data/pipeline-tte.csv")
 
 tte <- read_csv(
-  "./guides/data/tte-pool.csv",
+  "./guides/data/pipeline-tte.csv",
   show_col_type = FALSE,
   col_types=cols(person_id = col_character()),
 ) |> as.data.table()
-
-pipeline <- Pipeline$new(pool = tte)
-trial1   <- pipeline$run_trial(
-  disorder1 = list(
-    id             = "SCZ",
-    earliest_onset = 1,
-    latest_onset   = 100
-  ),
-  disorder2 = list(
-    id             = "CAD",
-    earliest_onset = 1,
-    latest_onset   = 100
-  ),
-  relationship_kind = "FS",
-  draws = 2,
-  group_columns = list("born_at_year", "gender")
-)
 #+END_SRC
 
 #+RESULTS:
 
 This is a guide that explains how to run the epimight pipeline to estimates genetic
-correlation between 2 disorders for parent/offspring and fullsiblings stratified by birth
-year and gender.
+correlation between two disorders stratified by birth year.
 
-All code shown in this guide have been written to [[./guide.R][this R file]], so that you don't have
-to copy all code snippets manually when setting up the pipeline in our own project.
-
-* How it works
-
-You have a set of disorder pairs you want to produce genetic correlations between and time-to-event data
-of a sample population you want to produce it from.
-
-Each time-to-event entity represents:
-
-1. A distinct individual
-2. A distinct disorder
-3. A distinct type of relatives
-4. The disorder failure status/time of the individual
-5. The amount of relatives the individual have
-6. The amount of relatives diagnosed with the disorder the individual have
-
-Here are 3 examples of what that could look like for the disorder schizophrenia and for the relatives type "full siblings":
-
-- Individual 897
-  - Diagnosed with schizophrenia at age 19
-  - Has 2 full siblings
-  - 1 of the siblings also has a schizophrenia diagnosis
-- Individual 345
-  - No schizophrenia diagnosis, was alive at end of study
-  - Has 3 full siblings
-  - None of the siblings has a schizophrenia diagnosis
-- Individual 193
-  - No schizophrenia diagnosis, died at age 30
-  - Has no full siblings
-  - None of the siblings has a schizophrenia diagnosis
-
-You collect this kind of time-to-event data for all disorders and types of relatives you
-want to produce genetic correlations for and feed it into the pipeline. This is called
-the pipelines time-to-event "pool".
-
-Then for each pair of disorders and type of relatives you want to produce a genetic
-correlation for, you run a "trial". Here are 3 examples of what that could look like:
-
-- ADHD vs. MDD in full siblings
-- ADHD vs. ASD in parent/offspring
-- ADHD vs. Bipolar type 2 in first cousins
-
-By having a pool of all time-to-event data and have the trials select the specific data,
-you only have to prepare your time-to-event once. Adapting the time-to-event data before
-each trial is handled by the pipeline.
+- Any data shown in this guide comes from [[../data/pipeline-tte.csv][this randomly generated time-to-event dataset]]
+  - 10 000 individuals
+  - 2 disorders (schizophrenia and coronary artery disease)
+  - 2 types of relatives (parent/offspring and full siblings)
+- All code shown in this guide have been written to [[./guide.R][this R file]]
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -230,9 +171,8 @@ file tte [
 rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
 rectangle "**Disorder 2**\nCAD" as disorder2 #76b354
 rectangle "**Relationship kind**\nPO" as relkind #76b354
-rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Trial arguments**" as args
-
-rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Trial results**" as results
+rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Analysis arguments**" as args
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**" as results
 
 ' file results [
 ' <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
@@ -242,22 +182,21 @@ rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Trial results**" a
 ' ]
 
 Boundary1(epimight, "Epimight") {
-  Database(pool, "**pool**")
+  Database(pool, "**time-to-event**")
   Process(new, "**new**")
-  Process(run_trial, "**run_trial**")
+  Process(run_analysis, "**run_analysis**")
 }
-
 
 Arrow_Down(relkind, args)
 Arrow_Down(disorder2, args)
 Arrow_Down(disorder1, args)
-Arrow_Down(args, run_trial)
+Arrow_Down(args, run_analysis)
 
 Arrow_Right(tte, new)
 Arrow_Right(new, pool)
-Arrow_Left(run_trial, pool)
+Arrow_Left(run_analysis, pool)
 
-Arrow_Down(run_trial, results)
+Arrow_Down(run_analysis, results)
 @enduml
 #+END_SRC
 
@@ -266,116 +205,12 @@ Arrow_Down(run_trial, results)
 #+RESULTS: fig:pipeline-component-diagram
 [[file:../diagrams/pipeline-component-diagram.png]]
 
-** The process
+* Creating the time-to-event data
 
-As mentioned before, a trial produces genetic correlations for a distinct pair of disorders and a type
-of relatives. It does this in multiple interdependant steps. First it pulls out the time-to-event data for
-the selected pair of disorders and type of relatives from its time-to-event pool.
+To start using the pipeline, we first need to setup our time-to-event data in a format
+that the pipeline expects.
 
-It then separates the time-to-event data into 3 cohorts:
-
-- ~c1~ = Target cohort
-- ~c2~ = Individuals with at least 1 diagnosed relative of disorder 1
-- ~c3~ = Individuals with at least 1 diagnosed relative of disorder 2
-
-It then produces the following risk estimates (cumulative incidence):
-
-- ~re_d1_c1~ = Risk estimates of disorder 1, cohort 1
-- ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
-
-It then copies over the time-to-event cohorts and the first risk estimates to a separate
-analysis process (called a "draw") that is repeated ~K~ amount of times.
-
-It then aggregates all draw results and returns:
-
-- The arguments the trial was run with
-- Each independant draw result
-- Any draw errors encountered
-- The aggregated draw results
-
-The sub-chapters below describes how draws are performed, how draw results are aggregated and
-how downsampling of relatives are performed.
-
-*** Performing draws
-
-Each draw performs the following steps:
-
-- [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c2~
-- [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c3~
-- Produce risk estimates
-  - ~re_d1_c2~ = Risk estimates of disorder 1, cohort 2
-  - ~re_d1_c3~ = Risk estimates of disorder 1, cohort 3
-  - ~re_d2_c3~ = Risk estimates of disorder 2, cohort 3
-- Produce heritabilities
-  - ~h2_d1~ = Heritability of disorder 1 (~re_d1_c1~ vs ~re_d1_c2~)
-  - ~h2_d2~ = Heritability of disorder 2 (~re_d2_c1~ vs ~re_d2_c3~)
-- Produce genetic correlation ~gc_d1_d2~ from risk estimates and heritabilities
-- Return all results joined together as a single dataset
-  - ~re_d1_c1~
-  - ~re_d1_c3~
-  - ~re_d2_c1~
-  - ~h2_d1~
-  - ~h2_d2~
-  - ~gc_d1_d2~
-
-If no stratification was used, then the resulting data of a single draw would look something like this:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-trial1$draw_results |>
-  filter(draw == 1) |>
-  select(draw, re_d1_c1_estimate, re_d1_c3_estimate, re_d2_c1_estimate, h2_d1_estimate, h2_d2_estimate, gc_d1_d2_estimate) |>
-  tail(1)
-#+END_SRC
-
-#+RESULTS:
-| draw |  re_d1_c1_estimate |  re_d1_c3_estimate |  re_d2_c1_estimate |    h2_d1_estimate |    h2_d2_estimate | gc_d1_d2_estimate |
-|------+--------------------+--------------------+--------------------+-------------------+-------------------+-------------------|
-|    1 | 0.0163934426229508 | 0.0555555555555556 | 0.0327868852459016 | 0.491585108050739 | 0.230496323896053 |  1.57248895630592 |
-
-You get a single row with statistical values from each analysis carried out (only the estimate column for each analysis is shown for brevity).
-
-If stratification was used, then the resulting data would look something like this (stratification on birth year and gender shown, limited to 5 rows):
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-trial1$draw_results |>
-  filter(draw == 1) |>
-  select(draw, born_at_year, gender, re_d1_c1_estimate, re_d1_c3_estimate, re_d2_c1_estimate, h2_d1_estimate, h2_d2_estimate, gc_d1_d2_estimate) |>
-  tail(5)
-#+END_SRC
-
-#+RESULTS:
-| draw | born_at_year | gender |  re_d1_c1_estimate |  re_d1_c3_estimate |  re_d2_c1_estimate |     h2_d1_estimate |    h2_d2_estimate |   gc_d1_d2_estimate |
-|------+--------------+--------+--------------------+--------------------+--------------------+--------------------+-------------------+---------------------|
-|    1 |         2006 | f      | 0.0547945205479452 | 0.0714285714285714 |   0.10958904109589 | 0.0658407554026909 | 0.539010033234742 |   0.861090463340052 |
-|    1 |         2010 | m      | 0.0481927710843373 | 0.0454545454545455 | 0.0602409638554217 |  0.723226322648776 | 0.488240533549755 | -0.0472440240133014 |
-|    1 |         2014 | f      | 0.0481927710843374 | 0.0833333333333333 |  0.036144578313253 |  0.418040022457864 | 0.399657032902868 |   0.646995682269281 |
-|    1 |         2015 | m      | 0.0338983050847458 |             0.0625 | 0.0508474576271186 |   0.90342591677891 | 0.101447578825193 |   0.986760910254737 |
-|    1 |         2016 | f      | 0.0163934426229508 | 0.0555555555555556 | 0.0327868852459016 |  0.491585108050739 | 0.230496323896053 |    1.57248895630592 |
-
-You get a row for each stratification combination which had data from all analyses (combinations with missing data are discarded).
-
-*** Aggregating draw results
-  :PROPERTIES:
-  :CUSTOM_ID: meta_analysis
-  :END:
-
-The results of all draws are aggregated in 3 steps:
-
-- Meta analyze across stratification within draws
-- Rubin combine across draws, within stratification
-- Meta analyze rubin combine across all
-
-*** Downsampling of diagnosed relatives
-  :PROPERTIES:
-  :CUSTOM_ID: downsampling
-  :END:
-
-TBD
-
-* Using it
-** Setting up the pool
-
-First we need to be able to uniquely identify every individual in your sample population.
+We need to be able to uniquely identify every individual in our sample population.
 In the test data of this guide we use a unique number for each individual:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
@@ -390,86 +225,77 @@ tte |> distinct(person_id) |> tail(4)
 |      9998 |
 |      9999 |
 
-Then we need to have the stratification data of each individual (in our case, birth year and gender):
+Then we need to have the stratification data of each individual (in our case, we stratify on birth year):
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
-  distinct(person_id, born_at_year, gender) |>
+  distinct(person_id, born_at_year) |>
   tail(4)
 #+END_SRC
 
 #+RESULTS:
-| person_id | born_at_year | gender |
-|-----------+--------------+--------|
-|      9996 |         2001 | m      |
-|      9997 |         1999 | m      |
-|      9998 |         2010 | m      |
-|      9999 |         1991 | f      |
+| person_id | born_at_year |
+|-----------+--------------|
+|      9996 |         2001 |
+|      9997 |         1999 |
+|      9998 |         2010 |
+|      9999 |         1991 |
 
 Then for each relationship kind, we need to know how many relatives each individual has. In the test data
 of this guide, we have 2 relationship kinds (~PO~ = "parent offspring", ~FS~ = "full siblings"):
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
-  distinct(person_id, born_at_year, gender, relationship_kind, relatives) |>
+  distinct(person_id, born_at_year, relationship_kind, relatives) |>
   tail(4 * 2)
 #+END_SRC
 
 #+RESULTS:
-| person_id | born_at_year | gender | relationship_kind | relatives |
-|-----------+--------------+--------+-------------------+-----------|
-|      9996 |         2001 | m      | FS                |         3 |
-|      9996 |         2001 | m      | PO                |         3 |
-|      9997 |         1999 | m      | FS                |         5 |
-|      9997 |         1999 | m      | PO                |         5 |
-|      9998 |         2010 | m      | FS                |         0 |
-|      9998 |         2010 | m      | PO                |         0 |
-|      9999 |         1991 | f      | FS                |         1 |
-|      9999 |         1991 | f      | PO                |         1 |
+| person_id | born_at_year | relationship_kind | relatives |
+|-----------+--------------+-------------------+-----------|
+|      9996 |         2001 | FS                |         3 |
+|      9996 |         2001 | PO                |         3 |
+|      9997 |         1999 | FS                |         5 |
+|      9997 |         1999 | PO                |         5 |
+|      9998 |         2010 | FS                |         0 |
+|      9998 |         2010 | PO                |         0 |
+|      9999 |         1991 | FS                |         1 |
+|      9999 |         1991 | PO                |         1 |
 
 Then for each disorder, we need to know:
 
+- The identifier of each distinct disorder
 - The individuals failure status/time
 - The relatives diagnosis status
 
-Since the guide test data has:
-
-- 2 disorders
-  - ~SCZ~ :: schizophrenia
-  - ~CAD~ :: coronary artery disease
-- 2 relationship kinds
-  - ~PO~ :: parent/offspring
-  - ~FS~ :: full siblings
-
-Each individual gets 4 rows to cover all combinations of ~disorders x relationship_kinds~:
+Since there are 2 disorders and 2 types of relatives, each individual gets 4 rows:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |> tail(4 * 4)
 #+END_SRC
 
 #+RESULTS:
-| person_id | born_at_year | gender | disorder | failure_status | failure_time | relationship_kind | relatives | relatives_diagnosed |
-|-----------+--------------+--------+----------+----------------+--------------+-------------------+-----------+---------------------|
-|      9996 |         2001 | m      | CAD      |              0 |           25 | FS                |         3 |                   0 |
-|      9996 |         2001 | m      | CAD      |              0 |           25 | PO                |         3 |                   0 |
-|      9996 |         2001 | m      | SCZ      |              0 |           25 | FS                |         3 |                   0 |
-|      9996 |         2001 | m      | SCZ      |              0 |           25 | PO                |         3 |                   0 |
-|      9997 |         1999 | m      | CAD      |              0 |           27 | FS                |         5 |                   0 |
-|      9997 |         1999 | m      | CAD      |              0 |           27 | PO                |         5 |                   0 |
-|      9997 |         1999 | m      | SCZ      |              0 |           27 | FS                |         5 |                   0 |
-|      9997 |         1999 | m      | SCZ      |              0 |           27 | PO                |         5 |                   0 |
-|      9998 |         2010 | m      | CAD      |              0 |           16 | FS                |         0 |                   0 |
-|      9998 |         2010 | m      | CAD      |              0 |           16 | PO                |         0 |                   0 |
-|      9998 |         2010 | m      | SCZ      |              0 |           16 | FS                |         0 |                   0 |
-|      9998 |         2010 | m      | SCZ      |              0 |           16 | PO                |         0 |                   0 |
-|      9999 |         1991 | f      | CAD      |              0 |           35 | FS                |         1 |                   0 |
-|      9999 |         1991 | f      | CAD      |              0 |           35 | PO                |         1 |                   0 |
-|      9999 |         1991 | f      | SCZ      |              0 |           35 | FS                |         1 |                   0 |
-|      9999 |         1991 | f      | SCZ      |              0 |           35 | PO                |         1 |                   0 |
+| person_id | born_at_year | disorder | failure_status | failure_time | relationship_kind | relatives | relatives_diagnosed |
+|-----------+--------------+----------+----------------+--------------+-------------------+-----------+---------------------|
+|      9996 |         2001 | CAD      |              0 |           25 | FS                |         3 |                   0 |
+|      9996 |         2001 | CAD      |              0 |           25 | PO                |         3 |                   0 |
+|      9996 |         2001 | SCZ      |              0 |           25 | FS                |         3 |                   0 |
+|      9996 |         2001 | SCZ      |              0 |           25 | PO                |         3 |                   0 |
+|      9997 |         1999 | CAD      |              0 |           27 | FS                |         5 |                   0 |
+|      9997 |         1999 | CAD      |              0 |           27 | PO                |         5 |                   0 |
+|      9997 |         1999 | SCZ      |              0 |           27 | FS                |         5 |                   0 |
+|      9997 |         1999 | SCZ      |              0 |           27 | PO                |         5 |                   0 |
+|      9998 |         2010 | CAD      |              0 |           16 | FS                |         0 |                   0 |
+|      9998 |         2010 | CAD      |              0 |           16 | PO                |         0 |                   0 |
+|      9998 |         2010 | SCZ      |              0 |           16 | FS                |         0 |                   0 |
+|      9998 |         2010 | SCZ      |              0 |           16 | PO                |         0 |                   0 |
+|      9999 |         1991 | CAD      |              0 |           35 | FS                |         1 |                   0 |
+|      9999 |         1991 | CAD      |              0 |           35 | PO                |         1 |                   0 |
+|      9999 |         1991 | SCZ      |              0 |           35 | FS                |         1 |                   0 |
+|      9999 |         1991 | SCZ      |              0 |           35 | PO                |         1 |                   0 |
 
-That's all you need in order to create the pipeline instance.
 
-** Setting up the pipeline
+* Setting up the pipeline
 
 To setup the pipeline, we start by importing the epimight library:
 
@@ -495,9 +321,9 @@ The supplied pool must be a ~data.table~ with the following required columns:
 - ~relatives~
 - ~relatives_diagnosed~
 
-It accepts any additional columns, so you can safely supply the extra columns needed for stratification.
+It accepts any additional columns used for stratification.
 
-** Running trials
+* Running trials
 
 After creating the pipeline instance, you run trials by supplying the ~run_trial~ function with:
 
@@ -667,5 +493,154 @@ TBD
 TBD
 
 *** rubin_meta
+
+TBD
+* How it works :noexport:
+
+You have a set of disorder pairs you want to produce genetic correlations between and time-to-event data
+of a sample population you want to produce it from.
+
+Each time-to-event entity represents:
+
+1. A distinct individual
+2. A distinct disorder
+3. A distinct type of relatives
+4. The disorder failure status/time of the individual
+5. The amount of relatives the individual have
+6. The amount of relatives diagnosed with the disorder the individual have
+
+Here are 3 examples of what that could look like for the disorder schizophrenia and for the relatives type "full siblings":
+
+- Individual 897
+  - Diagnosed with schizophrenia at age 19
+  - Has 2 full siblings
+  - 1 of the siblings also has a schizophrenia diagnosis
+- Individual 345
+  - No schizophrenia diagnosis, was alive at end of study
+  - Has 3 full siblings
+  - None of the siblings has a schizophrenia diagnosis
+- Individual 193
+  - No schizophrenia diagnosis, died at age 30
+  - Has no full siblings
+  - None of the siblings has a schizophrenia diagnosis
+
+You collect this kind of time-to-event data for all disorders and types of relatives you
+want to produce genetic correlations for and feed it into the pipeline. This is called
+the pipelines time-to-event "pool".
+
+Then for each pair of disorders and type of relatives you want to produce a genetic
+correlation for, you run a "trial". Here are 3 examples of what that could look like:
+
+- ADHD vs. MDD in full siblings
+- ADHD vs. ASD in parent/offspring
+- ADHD vs. Bipolar type 2 in first cousins
+
+By having a pool of all time-to-event data and have the trials select the specific data,
+you only have to prepare your time-to-event once. Adapting the time-to-event data before
+each trial is handled by the pipeline.
+
+** The process
+
+As mentioned before, a trial produces genetic correlations for a distinct pair of disorders and a type
+of relatives. It does this in multiple interdependant steps. First it pulls out the time-to-event data for
+the selected pair of disorders and type of relatives from its time-to-event pool.
+
+It then separates the time-to-event data into 3 cohorts:
+
+- ~c1~ = Target cohort
+- ~c2~ = Individuals with at least 1 diagnosed relative of disorder 1
+- ~c3~ = Individuals with at least 1 diagnosed relative of disorder 2
+
+It then produces the following risk estimates (cumulative incidence):
+
+- ~re_d1_c1~ = Risk estimates of disorder 1, cohort 1
+- ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
+
+It then copies over the time-to-event cohorts and the first risk estimates to a separate
+analysis process (called a "draw") that is repeated ~K~ amount of times.
+
+It then aggregates all draw results and returns:
+
+- The arguments the trial was run with
+- Each independant draw result
+- Any draw errors encountered
+- The aggregated draw results
+
+The sub-chapters below describes how draws are performed, how draw results are aggregated and
+how downsampling of relatives are performed.
+
+*** Performing draws
+
+Each draw performs the following steps:
+
+- [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c2~
+- [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c3~
+- Produce risk estimates
+  - ~re_d1_c2~ = Risk estimates of disorder 1, cohort 2
+  - ~re_d1_c3~ = Risk estimates of disorder 1, cohort 3
+  - ~re_d2_c3~ = Risk estimates of disorder 2, cohort 3
+- Produce heritabilities
+  - ~h2_d1~ = Heritability of disorder 1 (~re_d1_c1~ vs ~re_d1_c2~)
+  - ~h2_d2~ = Heritability of disorder 2 (~re_d2_c1~ vs ~re_d2_c3~)
+- Produce genetic correlation ~gc_d1_d2~ from risk estimates and heritabilities
+- Return all results joined together as a single dataset
+  - ~re_d1_c1~
+  - ~re_d1_c3~
+  - ~re_d2_c1~
+  - ~h2_d1~
+  - ~h2_d2~
+  - ~gc_d1_d2~
+
+If no stratification was used, then the resulting data of a single draw would look something like this:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+trial1$draw_results |>
+  filter(draw == 1) |>
+  select(draw, re_d1_c1_estimate, re_d1_c3_estimate, re_d2_c1_estimate, h2_d1_estimate, h2_d2_estimate, gc_d1_d2_estimate) |>
+  tail(1)
+#+END_SRC
+
+#+RESULTS:
+| draw |  re_d1_c1_estimate |  re_d1_c3_estimate |  re_d2_c1_estimate |    h2_d1_estimate |    h2_d2_estimate | gc_d1_d2_estimate |
+|------+--------------------+--------------------+--------------------+-------------------+-------------------+-------------------|
+|    1 | 0.0163934426229508 | 0.0555555555555556 | 0.0327868852459016 | 0.491585108050739 | 0.230496323896053 |  1.57248895630592 |
+
+You get a single row with statistical values from each analysis carried out (only the estimate column for each analysis is shown for brevity).
+
+If stratification was used, then the resulting data would look something like this (stratification on birth year and gender shown, limited to 5 rows):
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+trial1$draw_results |>
+  filter(draw == 1) |>
+  select(draw, born_at_year, gender, re_d1_c1_estimate, re_d1_c3_estimate, re_d2_c1_estimate, h2_d1_estimate, h2_d2_estimate, gc_d1_d2_estimate) |>
+  tail(5)
+#+END_SRC
+
+#+RESULTS:
+| draw | born_at_year | gender |  re_d1_c1_estimate |  re_d1_c3_estimate |  re_d2_c1_estimate |     h2_d1_estimate |    h2_d2_estimate |   gc_d1_d2_estimate |
+|------+--------------+--------+--------------------+--------------------+--------------------+--------------------+-------------------+---------------------|
+|    1 |         2006 | f      | 0.0547945205479452 | 0.0714285714285714 |   0.10958904109589 | 0.0658407554026909 | 0.539010033234742 |   0.861090463340052 |
+|    1 |         2010 | m      | 0.0481927710843373 | 0.0454545454545455 | 0.0602409638554217 |  0.723226322648776 | 0.488240533549755 | -0.0472440240133014 |
+|    1 |         2014 | f      | 0.0481927710843374 | 0.0833333333333333 |  0.036144578313253 |  0.418040022457864 | 0.399657032902868 |   0.646995682269281 |
+|    1 |         2015 | m      | 0.0338983050847458 |             0.0625 | 0.0508474576271186 |   0.90342591677891 | 0.101447578825193 |   0.986760910254737 |
+|    1 |         2016 | f      | 0.0163934426229508 | 0.0555555555555556 | 0.0327868852459016 |  0.491585108050739 | 0.230496323896053 |    1.57248895630592 |
+
+You get a row for each stratification combination which had data from all analyses (combinations with missing data are discarded).
+
+*** Aggregating draw results
+  :PROPERTIES:
+  :CUSTOM_ID: meta_analysis
+  :END:
+
+The results of all draws are aggregated in 3 steps:
+
+- Meta analyze across stratification within draws
+- Rubin combine across draws, within stratification
+- Meta analyze rubin combine across all
+
+*** Downsampling of diagnosed relatives
+  :PROPERTIES:
+  :CUSTOM_ID: downsampling
+  :END:
 
 TBD
