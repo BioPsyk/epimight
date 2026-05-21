@@ -139,6 +139,15 @@ correlation between two disorders stratified by birth year.
   - 2 types of relatives (parent/offspring and full siblings)
 - All code shown in this guide have been written to [[./guide.R][this R file]]
 
+The basic concept of the pipeline is pretty simple, you create a dataset that contains
+time-to-event for all disorders and types of relatives you want to analyse. Then you
+tell the pipeline which pair of disorders and type of relatives you want to analyse and
+it will output cumulative incidences, heritabilities and genetic correlations.
+
+The most work you have to do is to format the data in a way that the pipeline expects.
+
+The diagram below gives you an overview of how the pipeline works.
+
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
 #+NAME: fig:pipeline-component-diagram
