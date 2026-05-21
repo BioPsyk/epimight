@@ -146,12 +146,12 @@ Each time-to-event entity represents:
 
 1. A distinct individual
 2. A distinct disorder
-3. A distinct type of relative
+3. A distinct type of relatives
 4. The disorder failure status/time of the individual
 5. The amount of relatives the individual have
 6. The amount of relatives diagnosed with the disorder the individual have
 
-Here are 3 examples of what that could look like:
+Here are 3 examples of what that could look like for the disorder schizophrenia and for the relatives type "full siblings":
 
 - Individual 897
   - Diagnosed with schizophrenia at age 19
