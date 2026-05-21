@@ -207,15 +207,19 @@ tte |>
 |      9999 |         1991 | f      | FS                |         1 |
 |      9999 |         1991 | f      | PO                |         1 |
 
-Then for each disorder, we to know:
+Then for each disorder, we need to know:
 
 - The individuals failure status/time
 - The relatives diagnosis status
 
 Since the guide test data has:
 
-- 2 disorders (~SCZ~ = "schizophrenia", ~CAD~ = "coronary artery disease")
-- 2 relationship kinds (~PO~, ~FS~)
+- 2 disorders
+  - ~SCZ~ :: schizophrenia
+  - ~CAD~ :: coronary artery disease
+- 2 relationship kinds
+  - ~PO~ :: parent/offspring
+  - ~FS~ :: full siblings
 
 Each individual gets 4 rows to cover all combinations of ~disorders x relationship_kinds~:
 
@@ -243,11 +247,11 @@ tte |> tail(4 * 4)
 |      9999 |         1991 | f      | SCZ      |              0 |           35 | FS                |         1 |                   0 |
 |      9999 |         1991 | f      | SCZ      |              0 |           35 | PO                |         1 |                   0 |
 
-For our example, that is a complete TTE data pool that can be passed to the pipeline.
+That's a
 
 * Setting up the pipeline
 
-To setup the pipeline, we just need to import it:
+To setup the pipeline, we start by importing the epimight library:
 
 #+BEGIN_SRC R :exports code :eval no
 library(epimight)
