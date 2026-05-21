@@ -126,6 +126,26 @@ tte <- read_csv(
   show_col_type = FALSE,
   col_types=cols(person_id = col_character()),
 ) |> as.data.table()
+
+library(epimight)
+
+pipeline <- Pipeline$new(pool = tte)
+results  <- pipeline
+trial1   <- pipeline$run_trial(
+  disorder1 = list(
+    id             = "SCZ",
+    earliest_onset = 1,
+    latest_onset   = 100
+  ),
+  disorder2 = list(
+    id             = "CAD",
+    earliest_onset = 1,
+    latest_onset   = 100
+  ),
+  relationship_kind = "FS",
+  draws = 2,
+  group_columns = list("born_at_year", "gender")
+)
 #+END_SRC
 
 #+RESULTS:
@@ -281,7 +301,7 @@ Each draw performs the following steps:
   - ~h2_d1~ = Heritability of disorder 1 (~re_d1_c1~ vs ~re_d1_c2~)
   - ~h2_d2~ = Heritability of disorder 2 (~re_d2_c1~ vs ~re_d2_c3~)
 - Produce genetic correlation ~gc_d1_d2~ from risk estimates and heritabilities
-- Return all results as a single dataset
+- Return all results joined together as a single dataset
   - ~re_d1_c1~
   - ~re_d1_c3~
   - ~re_d2_c1~
@@ -289,7 +309,39 @@ Each draw performs the following steps:
   - ~h2_d2~
   - ~gc_d1_d2~
 
+If no stratification was used, then the resulting data of a single draw would look something like this:
 
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+trial1$draw_results |>
+  filter(draw == 1) |>
+  select(draw, re_d1_c1_estimate, re_d1_c3_estimate, re_d2_c1_estimate, h2_d1_estimate, h2_d2_estimate, gc_d1_d2_estimate) |>
+  tail(1)
+#+END_SRC
+
+#+RESULTS:
+| draw |  re_d1_c1_estimate |  re_d1_c3_estimate |  re_d2_c1_estimate |    h2_d1_estimate |    h2_d2_estimate | gc_d1_d2_estimate |
+|------+--------------------+--------------------+--------------------+-------------------+-------------------+-------------------|
+|    1 | 0.0163934426229508 | 0.0555555555555556 | 0.0327868852459016 | 0.491585108050739 | 0.230496323896053 |  1.57248895630592 |
+
+You get a single row with statistical values from each analysis carried out (only the estimate column for each analysis is shown for brevity).
+
+If stratification was used, then the resulting data would look something like this (stratification on birth year and gender shown):
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+trial1$draw_results |>
+  filter(draw == 1) |>
+  select(draw, born_at_year, gender, re_d1_c1_estimate, re_d1_c3_estimate, re_d2_c1_estimate, h2_d1_estimate, h2_d2_estimate, gc_d1_d2_estimate) |>
+  tail(5)
+#+END_SRC
+
+#+RESULTS:
+| draw | born_at_year | gender |  re_d1_c1_estimate |  re_d1_c3_estimate |  re_d2_c1_estimate |     h2_d1_estimate |    h2_d2_estimate |   gc_d1_d2_estimate |
+|------+--------------+--------+--------------------+--------------------+--------------------+--------------------+-------------------+---------------------|
+|    1 |         2006 | f      | 0.0547945205479452 | 0.0714285714285714 |   0.10958904109589 | 0.0658407554026909 | 0.539010033234742 |   0.861090463340052 |
+|    1 |         2010 | m      | 0.0481927710843373 | 0.0454545454545455 | 0.0602409638554217 |  0.723226322648776 | 0.488240533549755 | -0.0472440240133014 |
+|    1 |         2014 | f      | 0.0481927710843374 | 0.0833333333333333 |  0.036144578313253 |  0.418040022457864 | 0.399657032902868 |   0.646995682269281 |
+|    1 |         2015 | m      | 0.0338983050847458 |             0.0625 | 0.0508474576271186 |   0.90342591677891 | 0.101447578825193 |   0.986760910254737 |
+|    1 |         2016 | f      | 0.0163934426229508 | 0.0555555555555556 | 0.0327868852459016 |  0.491585108050739 | 0.230496323896053 |    1.57248895630592 |
 
 *** Downsampling of diagnosed relatives
   :PROPERTIES:
@@ -407,7 +459,7 @@ library(epimight)
 
 And then create a new instance with our TTE pool (the variable ~tte~ is the data table shown in the previous chapter):
 
-#+BEGIN_SRC R :exports code :results output
+#+BEGIN_SRC R :exports code :eval no
 pipeline <- Pipeline$new(pool = tte)
 #+END_SRC
 
@@ -443,7 +495,7 @@ After creating the pipeline instance, you run trials by supplying the ~run_trial
 For example, if you want to run a trial between schizophrenia and coronary artery disease of full siblings,
 using 2 draws, you would run:
 
-#+BEGIN_SRC R :exports code :results output
+#+BEGIN_SRC R :exports code :eval no
 trial1 <- pipeline$run_trial(
   disorder1 = list(
     id             = "SCZ",
