@@ -289,6 +289,8 @@ It then produces the following risk estimates (cumulative incidence):
 It then copies over the time-to-event cohorts and the first risk estimates to a separate
 analysis process that is repeated ~K~ amount of times (this is called a "draw").
 
+*** Performing draws
+
 Each draw performs the following steps:
 
 - [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c2~
@@ -325,7 +327,7 @@ trial1$draw_results |>
 
 You get a single row with statistical values from each analysis carried out (only the estimate column for each analysis is shown for brevity).
 
-If stratification was used, then the resulting data would look something like this (stratification on birth year and gender shown):
+If stratification was used, then the resulting data would look something like this (stratification on birth year and gender shown, limited to 5 rows):
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 trial1$draw_results |>
@@ -342,6 +344,10 @@ trial1$draw_results |>
 |    1 |         2014 | f      | 0.0481927710843374 | 0.0833333333333333 |  0.036144578313253 |  0.418040022457864 | 0.399657032902868 |   0.646995682269281 |
 |    1 |         2015 | m      | 0.0338983050847458 |             0.0625 | 0.0508474576271186 |   0.90342591677891 | 0.101447578825193 |   0.986760910254737 |
 |    1 |         2016 | f      | 0.0163934426229508 | 0.0555555555555556 | 0.0327868852459016 |  0.491585108050739 | 0.230496323896053 |    1.57248895630592 |
+
+You get a row for each stratification combination which had data from all analyses (combinations with missing data are discarded).
+
+*** Meta-analyzing draw results
 
 *** Downsampling of diagnosed relatives
   :PROPERTIES:
