@@ -380,14 +380,14 @@ Pipeline <- R6::R6Class( #nolint
       )
       if (is.null(re_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
-      draw_errors  <- list()
-      draw_results <- NULL
+      errors  <- list()
+      results <- NULL
 
       for (k in seq_len(args$draws)) {
         draw <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
 
         if (!is.null(draw$error)) {
-          draw_errors <- append(draw_errors, draw)
+          errors <- append(errors, draw)
           next
         }
 
@@ -395,30 +395,29 @@ Pipeline <- R6::R6Class( #nolint
           mutate(draw = k) |>
           select(draw, everything())
 
-        if (is.null(draw_results)) {
-          draw_results <- res
+        if (is.null(results)) {
+          results <- res
         } else {
-          draw_results <- rbind(draw_results, res)
+          results <- rbind(results, res)
         }
       }
 
-      if (nrow(draw_results) == 0) stop("All draws failed")
+      if (nrow(results) == 0) stop("All draws failed")
 
-      draw_meta  <- private$meta_analyze_draw_results(draw_results)
-      draw_rubin <- private$rubins_combine_draw_results(draw_results, args$group_columns)
-      rubin_meta <- private$analysis$core$run_meta(
-        estimates       = draw_rubin,
-        estimate_column = "fixed_meta",
-        se_column       = "fixed_se"
-      )
+      meta  <- private$meta_analyze_draw_results(results)
+      rubin <- private$rubins_combine_draw_results(results, args$group_columns)
 
       list(
-        args         = args,
-        draw_errors  = draw_errors,
-        draw_results = draw_results,
-        draw_meta    = draw_meta,
-        draw_rubin   = draw_rubin,
-        rubin_meta   = rubin_meta
+        args       = args,
+        errors     = errors,
+        results    = results,
+        meta       = meta,
+        rubin      = rubin,
+        rubin_meta = private$analysis$core$run_meta(
+          estimates       = rubin,
+          estimate_column = "fixed_meta",
+          se_column       = "fixed_se"
+        )
       )
     }
   )
