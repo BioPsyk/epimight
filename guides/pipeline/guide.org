@@ -146,13 +146,24 @@ The concept is pretty simple:
 3. Run "trails" by supplying the which two disorders and relationship kind to test
 
 The idea here is that our "pool" can contain time-to-event data for multiple disorders and relationship kinds.
-Whereas a "trail" is a
+Whereas a "trail" is operating on two disorders and one realtionship kind at a time.
 
-And when we run a "trail", we tell the pipeline which two disorders and relationship kind we want to test.
-This way, we don't have to do any data manipulation when running
+As an example, say that our pool contains time-to-event data for 3 different disorders and 2 different relationship
+kinds. Then we would run 6 separate trails:
 
-Then when we run a trail, we specify exactly which disorders and relationship kind to use. This way, we prepare
-our data once and let the pipeline handle getting the right time-to-event data for the trail that is being carried out.
+1. ~d1~ vs ~d2~, relkind ~a~
+2. ~d1~ vs ~d2~, relkind ~b~
+3. ~d1~ vs ~d2~, relkind ~a~
+4. ~d1~ vs ~d2~, relkind ~b~
+5. ~d2~ vs ~d3~, relkind ~a~
+6. ~d2~ vs ~d3~, relkind ~b~
+
+By having the time-to-event data for all disorders and relationship kinds in a pool, we don't have to
+manipulate the data between running trails, we can let the pipeline handle that for us.
+
+Below is a diagram showingl how the different components interact when a trail is being run. We can
+see that the time-to-event pool contains multiple disorders and relationship kind. But when a trail
+is run, only the relevant rows are pulled out by the pipeline.
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
