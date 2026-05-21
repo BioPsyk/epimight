@@ -286,9 +286,9 @@ It then produces the following risk estimates (cumulative incidence):
 It then copies over the time-to-event cohorts and the first risk estimates to a separate
 analysis process (called a "draw") that is repeated ~K~ amount of times.
 
-It then meta analyzes all draw results and returns:
+It then aggregates all draw results and returns:
 
-- The arguments the trail was run with
+- The arguments the trial was run with
 - Each independant draw result
 - Any draw errors encountered
 - The aggregated draw results
