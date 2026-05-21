@@ -174,12 +174,16 @@ rectangle "**Relationship kind**\nPO" as relkind #76b354
 rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Analysis arguments**" as args
 rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**" as results
 
-' file results [
-' <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
-'
-' | **fixed_meta** | **fixed_se**   | **fixee_l95** | **fixed_u95** | **rand_meta** | **rand_se**   | **rand_l95**  | **rand_u95** |
-' | 0.01868003     | 0.03380838     | -0.04758439   | 0.08494446    | 0.01756866    | 0.0425034     | -0.065738     | 0.1008753    |
-' ]
+file "Cumulative incidence\n" as cif
+file "Heritability" as h2
+file "Genetic correlation" as rg
+
+file cif [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
+
+| **disorder** | **cohort** | **time** | **estimate**   | **variance** | **cases** |
+| SCZ          | c1         |
+]
 
 Boundary1(epimight, "Epimight") {
   Database(pool, "**TTE pool**")
@@ -187,9 +191,9 @@ Boundary1(epimight, "Epimight") {
   Process(run_analysis, "**run_analysis**")
 }
 
-Arrow_Down(relkind, args)
-Arrow_Down(disorder2, args)
-Arrow_Down(disorder1, args)
+relkind --> args
+disorder2 --> args
+disorder1 --> args
 
 args --> run_analysis : " Given to"
 
@@ -198,6 +202,10 @@ new -RIGHT-> pool : " Stores data in"
 run_analysis -LEFT-> pool : " Reads data from"
 
 run_analysis --> results : " Outputs"
+
+results --> cif
+results --> h2
+results --> rg
 @enduml
 #+END_SRC
 
@@ -311,7 +319,7 @@ library(epimight)
 
 And then create a new instance with our TTE pool (the variable ~tte~ is the data table shown in the previous chapter):
 
-#+BEGIN_SRC R :exports code :eval no
+#+BEGIN_SRC R :exports both
 pipeline <- Pipeline$new(pool = tte)
 #+END_SRC
 
@@ -329,9 +337,9 @@ The supplied pool must be a ~data.table~ with the following required columns:
 
 It accepts any additional columns used for stratification.
 
-* Running trials
+* Running the pipeline
 
-After creating the pipeline instance, you run trials by supplying the ~run_trial~ function with:
+After creating the pipeline instance, you run analyses by supplying the ~run_analysis~ function with:
 
 - Disorder 1
   - Identifier
@@ -344,10 +352,10 @@ After creating the pipeline instance, you run trials by supplying the ~run_trial
 - Relationship kind
 - How many draws to perform
 
-For example, if you want to run a trial between schizophrenia and coronary artery disease of full siblings,
+For example, if you want to run an analysis between schizophrenia and coronary artery disease of full siblings,
 using 2 draws, you would run:
 
-#+BEGIN_SRC R :exports code :eval no
+#+BEGIN_SRC R :exports both
 trial1 <- pipeline$run_trial(
   disorder1 = list(
     id             = "SCZ",
@@ -361,11 +369,20 @@ trial1 <- pipeline$run_trial(
   ),
   relationship_kind = "FS",
   draws = 2,
-  group_columns = list("born_at_year", "gender")
+  group_columns = list("born_at_year")
 )
 #+END_SRC
 
-#+RESULTS:
+The function will output a named list with the following members:
+
+- ~stratified~ :: The stratified analysis results
+  - ~cif~ :: Cumulative incidence
+  - ~h2~ :: Heritability
+  - ~rg~ :: Genetic correlation
+- ~meta~ :: The meta analyzed results
+  - ~cif~ :: Cumulative incidence
+  - ~h2~ :: Heritability
+  - ~rg~ :: Genetic correlation
 
 ** Using trial results
 
