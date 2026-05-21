@@ -133,7 +133,7 @@ tte <- read_csv(
 This is a guide that explains how you run the epimight pipeline to estimates genetic
 correlation between 2 disorders stratified by birth year and gender using TTE (time-to-event) data.
 
-All code shown in this guide have been written to [[./guide.R][this R file]], so that you don't have
+All code shown in this guide have been written to [[./guide.R][this R file]], so that we don't have
 to copy all code snippets manually.
 
 * How it works
@@ -142,16 +142,76 @@ The concept is pretty simple:
 
 1. Create a pool of time-to-event data
 2. Create a new pipeline instance from said pool
-3. Run trails by supplying the disorders and relationship kind to test
+3. Run trails by supplying the specific disorders and relationship kind to use
 
-The idea here is that your "pool" contains time-to-event data for multiple disorders and relationship kinds.
-Then when you run a trail, you specify exactly which disorders and relationship kind to use.
-By having all the time-to-event data in a big pool and letting the trails pull from this pool minimizes
-data handling between trails.
+The idea here is that our "pool" contains time-to-event data for multiple disorders and relationship kinds.
+Then when we run a trail, we specify exactly which disorders and relationship kind to use. This way, we prepare
+our data once and then let the pipeline handle the rest.
 
-Besides controlling what disorder and relationship kind to use for each trail, you can specify which columns
-to stratify the results on and how many independent draws to perform. We'll get into the details of how trails
-are carried out later. First we need to understand to just get the pipeline running.
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:pipeline-component-diagram
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/pipeline-component-diagram.png :exports results
+@startuml
+!include <material7.4.47/Database/DatabaseClock>
+!include <material7.4.47/Science/Flask>
+!include <material/account>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ../diagrams/ibp.puml
+
+file tte [
+<color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
+
+| **person_id**  | **disorder** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** |
+| ...            | ...          | ...                | ...              | ...                   | ...                  | ...                     |
+<#76b354>| 99962 | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
+| 99962          | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
+<#76b354>| 99962 | CAD          | 2                  | 34               | PO                    | 2                    | 0                       |
+| 99962          | CAD          | 2                  | 34               | FS                    | 1                    | 0                       |
+]
+
+rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
+rectangle "**Disorder 2**\nCAD" as disorder2 #76b354
+rectangle "**Relationship kind**\nPO" as relkind #76b354
+rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Trail arguments**" as args
+
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Trail results**" as results
+
+' file results [
+' <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
+'
+' | **fixed_meta** | **fixed_se**   | **fixee_l95** | **fixed_u95** | **rand_meta** | **rand_se**   | **rand_l95**  | **rand_u95** |
+' | 0.01868003     | 0.03380838     | -0.04758439   | 0.08494446    | 0.01756866    | 0.0425034     | -0.065738     | 0.1008753    |
+' ]
+
+Boundary1(epimight, "Epimight") {
+  Database(pool, "**pool**")
+  Process(new, "**new**")
+  Process(run_trail, "**run_trail**")
+}
+
+
+Arrow_Down(relkind, args)
+Arrow_Down(disorder2, args)
+Arrow_Down(disorder1, args)
+Arrow_Down(args, run_trail)
+
+Arrow_Right(tte, new)
+Arrow_Right(new, pool)
+Arrow_Left(run_trail, pool)
+
+Arrow_Down(run_trail, results)
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Pipeline component diagram
+#+RESULTS: fig:pipeline-component-diagram
+[[file:../diagrams/pipeline-component-diagram.png]]
 
 * Setting up the pool
 
@@ -247,7 +307,7 @@ tte |> tail(4 * 4)
 |      9999 |         1991 | f      | SCZ      |              0 |           35 | FS                |         1 |                   0 |
 |      9999 |         1991 | f      | SCZ      |              0 |           35 | PO                |         1 |                   0 |
 
-That's a
+That's all you need in order to create the pipeline instance.
 
 * Setting up the pipeline
 
@@ -275,7 +335,7 @@ The supplied pool must be a ~data.table~ with the following required columns:
 - ~relatives~
 - ~relatives_diagnosed~
 
-It accepts any additional columns.
+It accepts any additional columns, so you can safely supply the extra columns needed for stratification.
 
 * Running trails
 

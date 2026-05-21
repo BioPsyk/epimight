@@ -56,13 +56,6 @@ skinparam rectangle<<boundary2>> {
   FontStyle          normal
 }
 
-skinparam Arrow {
-  Color     #181818
-  FontSize  11
-  FontStyle normal
-  Thickness 1.5
-}
-
 skinparam rectangle<<boundary3>> {
   FontSize           15
   StereotypeFontSize 0
@@ -71,6 +64,13 @@ skinparam rectangle<<boundary3>> {
   LineThickness      2
   LineStyle          dashed
   FontStyle          normal
+}
+
+skinparam Arrow {
+  Color     #181818
+  FontSize  11
+  FontStyle normal
+  Thickness 1.5
 }
 
 !define Rectangle(e_alias, e_label) rectangle "e_label" as e_alias
