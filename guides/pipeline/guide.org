@@ -172,7 +172,7 @@ process "Trail" as trail
 rectangle "Draw" as draw
 rectangle "Kind" as relkind
 rectangle "Relationship" as rel
-rectangle "Relationship" as rel
+rectangle "Coefficiant" as rel
 actor "Relative" as relative
 actor "Individual" as ind
 storage "**PO**\nParent/offspring" as relkind_po
@@ -185,9 +185,9 @@ relkind_po -UP-|> relkind
 relkind_fs -UP-|> relkind
 relkind_rest -UP-|> relkind
 
-ind -RIGHT- rel
+ind -RIGHT- rel : " Has one for every relative"
 rel -RIGHT-> relative
-rel -- relkind
+rel --> relkind : " Is a specific"
 @enduml
 #+END_SRC
 
