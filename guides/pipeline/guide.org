@@ -249,7 +249,42 @@ Arrow_Down(run_trial, results)
 #+RESULTS: fig:pipeline-component-diagram
 [[file:../diagrams/pipeline-component-diagram.png]]
 
-* Setting up the pool
+** The method
+
+As mentioned before, a trial produces genetic correlations for a distinct pair of disorders and a type
+of relatives. It does this in multiple interdependant steps. First it pulls out the time-to-event data for
+the selected pair of disorders and type of relatives from its time-to-event pool.
+
+It then separates the time-to-event data into 3 cohorts:
+
+- ~c1~ = Target cohort
+- ~c2~ = Individuals with at least 1 diagnosed relative of disorder 1
+- ~c3~ = Individuals with at least 1 diagnosed relative of disorder 2
+
+It then produces the following risk estimates (cumulative incidence):
+
+- ~re_d1_c1~ = Risk estimates of disorder 1, cohort 1
+- ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
+
+It then copies over the time-to-event cohorts and the first risk estimates to a separate
+analysis step that is repeated ~K~ amount of times (each step is called a "draw").
+
+Each draw performs the following sub-steps:
+
+- [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c2~
+- [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c3~
+- Produce risk estimates
+  - ~re_d1_c2~ = Risk estimates of disorder 1, cohort 2
+  - ~re_d1_c3~ = Risk estimates of disorder 1, cohort 3
+  - ~re_d2_c3~ = Risk estimates of disorder 2, cohort 3
+
+*** Downsampling of diagnosed relatives
+  :PROPERTIES:
+  :CUSTOM_ID: downsampling
+  :END:
+
+* Using it
+** Setting up the pool
 
 First we need to be able to uniquely identify every individual in your sample population.
 In the test data of this guide we use a unique number for each individual:
@@ -345,7 +380,7 @@ tte |> tail(4 * 4)
 
 That's all you need in order to create the pipeline instance.
 
-* Setting up the pipeline
+** Setting up the pipeline
 
 To setup the pipeline, we start by importing the epimight library:
 
@@ -373,7 +408,7 @@ The supplied pool must be a ~data.table~ with the following required columns:
 
 It accepts any additional columns, so you can safely supply the extra columns needed for stratification.
 
-* Running trials
+** Running trials
 
 After creating the pipeline instance, you run trials by supplying the ~run_trial~ function with:
 
@@ -411,7 +446,7 @@ trial1 <- pipeline$run_trial(
 
 #+RESULTS:
 
-* Using trial results
+** Using trial results
 
 Each trial contains:
 
@@ -420,7 +455,7 @@ Each trial contains:
 - The stratified analysis results
 - The meta analyzed results
 
-** Stratified analysis results
+*** Stratified analysis results
 
 The stratified analysis results contains a row for each stratification that produced had the highest risk estimate
 per draw.
@@ -452,7 +487,7 @@ prefixed after this naming convention:
  - ~h2_d2~ = Heritability of disorder 2 (cohort 1 vs cohort 3)
  - ~gc_d1_d2~ = Genetic correlation (disorder 1 vs disorder 2)
 
-*** Cumulative incidence
+**** Cumulative incidence
 
 If we want to look at the statistical values produced by the cumulative incidence analysis
 for disorder 1 and cohort 1, we select the columns starting with ~re_d1_c1~:
@@ -478,7 +513,7 @@ Cumulative incidence analysis produces the following statistical values:
 - Upper bound of a 95% confidence interval (~h2_d1_u95~)
 - Cumulative number of individuals who have experienced the event of interest (~re_d1_c1_cases~)
 
-*** Heritability
+**** Heritability
 
 If we want to look at the statistical values produced by the heritability analysis
 for disorder 1 and cohort 1 vs cohort 2, we select the columns starting with ~h2_d1~:
@@ -503,7 +538,7 @@ Heritability analysis produces the following statistical values:
 - Lower bound of a 95% confidence interval (~h2_d1_l95~)
 - Upper bound of a 95% confidence interval (~h2_d1_u95~)
 
-*** Genetic correlation
+**** Genetic correlation
 
 If we want to look at the statistical values produced by the genetic correlation analysis,
 we select the columns starting with ~gc_d1_d2~:
@@ -532,6 +567,6 @@ Heritability analysis produces the following statistical values:
 - Lower bound of a 95% confidence interval of h2 geometric mean (~gc_d1_d2_gm_l95~)
 - Upper bound of a 95% confidence interval of h2 geometric mean (~gc_d1_d2_gm_u95~)
 
-** Meta analyzed results
+*** Meta analyzed results
 
 TBD
