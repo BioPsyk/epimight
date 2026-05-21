@@ -126,11 +126,11 @@ describe("initialize", {
 
 describe("run_experiment", {
   it("doesn't allow empty arguments", {
-    expect_error(pipeline$run_trial())
+    expect_error(pipeline$run_analysis())
   })
 
   it("fails when disorder 1 is not found", {
-    expect_error(pipeline$run_trial(
+    expect_error(pipeline$run_analysis(
       disorder1 = list(
         id             = "unknown",
         earliest_onset = 1,
@@ -146,7 +146,7 @@ describe("run_experiment", {
   })
 
   it("fails when disorder 2 is not found", {
-    expect_error(pipeline$run_trial(
+    expect_error(pipeline$run_analysis(
       disorder1 = list(
         id             = "SCZ",
         earliest_onset = 1,
@@ -162,7 +162,7 @@ describe("run_experiment", {
   })
 
   it("fails when relationship_kind is not found", {
-    expect_error(pipeline$run_trial(
+    expect_error(pipeline$run_analysis(
       disorder1 = list(
         id             = "SCZ",
         earliest_onset = 1,
@@ -178,7 +178,7 @@ describe("run_experiment", {
   })
 
   it("fails when group column cannot be found in TTE dataset", {
-    expect_error(pipeline$run_trial(
+    expect_error(pipeline$run_analysis(
       disorder1 = list(
         id = "SCZ"
       ),
@@ -192,7 +192,7 @@ describe("run_experiment", {
   })
 
   it("allows valid experiment selection", {
-    results <- pipeline$run_trial(
+    results <- pipeline$run_analysis(
       disorder1 = list(
         id = "SCZ"
       ),

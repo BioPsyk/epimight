@@ -154,18 +154,22 @@ correlation between two disorders stratified by birth year.
 !include <material/matrix>
 !include ../diagrams/ibp.puml
 
-skinparam nodesep 50
-skinparam ranksep 10
+skinparam nodesep 80
+skinparam ranksep 80
 
 file tte [
 <color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **disorder** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** |
-| ...            | ...          | ...                | ...              | ...                   | ...                  | ...                     |
-<#76b354>| 99962 | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
-| 99962          | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
-<#76b354>| 99962 | CAD          | 2                  | 34               | PO                    | 2                    | 0                       |
-| 99962          | CAD          | 2                  | 34               | FS                    | 1                    | 0                       |
+| **person_id**  | **born_at_year** | **disorder** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** |
+| ...            | ...              | ...          | ...                | ...              | ...                   | ...                  | ...                     |
+<#76b354>| 99962 | 1999             | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
+| 99962          | 1999             | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
+<#76b354>| 99962 | 1999             | CAD          | 2                  | 34               | PO                    | 2                    | 0                       |
+| 99962          | 1999             | CAD          | 2                  | 34               | FS                    | 1                    | 0                       |
+<#76b354>| 99963 | 2000             | SCZ          | 1                  | 28               | PO                    | 3                    | 1                       |
+| 99963          | 2000             | SCZ          | 1                  | 28               | FS                    | 2                    | 1                       |
+<#76b354>| 99963 | 2000             | CAD          | 0                  | 33               | PO                    | 3                    | 0                       |
+| 99963          | 2000             | CAD          | 0                  | 33               | FS                    | 2                    | 0                       |
 ]
 
 rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
@@ -174,15 +178,58 @@ rectangle "**Relationship kind**\nPO" as relkind #76b354
 rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Analysis arguments**" as args
 rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**" as results
 
-file "Cumulative incidence\n" as cif
-file "Heritability" as h2
-file "Genetic correlation" as rg
+rectangle "Stratified" as stratified
+rectangle "Meta-analyzed" as meta
 
-file cif [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results**
+file stratified_cif [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence** (disorder × cohort × born_at_year × time)
 
-| **disorder** | **cohort** | **time** | **estimate**   | **variance** | **cases** |
-| SCZ          | c1         |
+| **disorder** | **cohort** | **born_at_year** | **time**  | **estimate** | **variance**  | **cases** |
+| SCZ          | c1         | 1999             | 25        | 0.054        | 0.00071       | 8         |
+| SCZ          | c1         | 1999             | 26        | 0.048        | 0.00055       | 7         |
+| SCZ          | c1         | 2000             | 25        | 0.048        | 0.00055       | 7         |
+| SCZ          | c1         | 2000             | 26        | 0.048        | 0.00055       | 7         |
+| ...          | ...        | ...              | ...       | ...          | ...           | ...       |
+| CAD          | c1         | 1999             | 25        | 0.054        | 0.00071       | 8         |
+| CAD          | c1         | 1999             | 26        | 0.048        | 0.00055       | 7         |
+| CAD          | c1         | 2000             | 25        | 0.048        | 0.00055       | 7         |
+| CAD          | c1         | 2000             | 26        | 0.048        | 0.00055       | 7         |
+| ...          | ...        | ...              | ...       | ...          | ...           | ...       |
+]
+
+file stratified_h2 [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability** (disorder × born_at_year)
+
+| **disorder** | **born_at_year** | **h2** |
+| SCZ          | 1999             | 0.054  |
+| SCZ          | 2000             | 0.048  |
+| ...          | ...              | ...    |
+| CAD          | 1999             | 0.053  |
+| CAD          | 2000             | 0.049  |
+| ...          | ...              | ...    |
+]
+
+file stratified_rg [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation** (born_at_year)
+
+| **born_at_year** | **rhh** | **rg** |
+| 1999             | 0.054   | 0.054  |
+| 2000             | 0.054   | 0.054  |
+]
+
+file meta_h2 [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability** (disorder)
+
+| **disorder** | **h2** |
+| SCZ          | 0.054  |
+| CAD          | 0.053  |
+]
+
+file meta_rg [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**
+
+| **rhh** | *rg*  |
+| 0.054   | 0.054 |
 ]
 
 Boundary1(epimight, "Epimight") {
@@ -203,9 +250,15 @@ run -LEFT-> pool : " Reads data from"
 
 run --> results : " Outputs"
 
-results --> cif
-results --> h2
-results --> rg
+results --> stratified
+results --> meta
+
+stratified --> stratified_cif
+stratified --> stratified_h2
+stratified --> stratified_rg
+
+meta --> meta_h2
+meta --> meta_rg
 @enduml
 #+END_SRC
 
