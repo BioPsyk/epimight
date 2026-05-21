@@ -207,9 +207,10 @@ run_analysis --> results : " Outputs"
 [[file:../diagrams/pipeline-component-diagram.png]]
 
 The basic concept of the pipeline is pretty simple, you create a dataset that contains
-time-to-event for all disorders and types of relatives you want to analyse. Then you
-tell the pipeline which pair of disorders and type of relatives you want to analyse and
-it will output cumulative incidences, heritabilities and genetic correlations.
+time-to-event for all disorders and types of relatives you want to analyse. You feed this
+dataset to the pipeline when you create it. Then you tell the pipeline which pair of disorders
+and type of relatives you want to analyse and it will output cumulative incidences, heritabilities
+and genetic correlations.
 
 The most work you have to do is to format the data in a way that the pipeline expects.
 
