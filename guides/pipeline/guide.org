@@ -182,7 +182,8 @@ rectangle "Stratified" as stratified
 rectangle "Meta-analyzed" as meta
 
 file stratified_cif [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence** (disorder × cohort × born_at_year × time)
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**
+(disorder × cohort × born_at_year × time)
 
 | **disorder** | **cohort** | **born_at_year** | **time**  | **estimate** | **variance**  | **cases** |
 | SCZ          | c1         | 1999             | 25        | 0.054        | 0.00071       | 8         |
@@ -198,7 +199,8 @@ file stratified_cif [
 ]
 
 file stratified_h2 [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability** (disorder × born_at_year)
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**
+(disorder × born_at_year)
 
 | **disorder** | **born_at_year** | **h2** |
 | SCZ          | 1999             | 0.054  |
@@ -210,7 +212,8 @@ file stratified_h2 [
 ]
 
 file stratified_rg [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation** (born_at_year)
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**
+(born_at_year)
 
 | **born_at_year** | **rhh** | **rg** |
 | 1999             | 0.054   | 0.054  |
@@ -218,7 +221,8 @@ file stratified_rg [
 ]
 
 file meta_h2 [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability** (disorder)
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**
+(disorder)
 
 | **disorder** | **h2** |
 | SCZ          | 0.054  |
