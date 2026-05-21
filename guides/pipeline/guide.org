@@ -173,6 +173,16 @@ the pipelines time-to-event "pool".
 Then for each pair of disorders and type of relative you want to produce a genetic
 correlation for, you run a "trial".
 
+Here are 3 examples of what that could look like:
+
+- ADHD vs. MDD in full siblings
+- ADHD vs. ASD in parent/offspring
+- ADHD vs. Bipolar type 2 in first cousins
+
+By having a "pool" of all time-to-event data and have the "trials" select the specific data,
+you only need to prepare your data once and let the pipeline handle all data preparation
+before running the "trials".
+
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
 #+NAME: fig:pipeline-component-diagram
@@ -240,29 +250,6 @@ Arrow_Down(run_trial, results)
 #+CAPTION: Pipeline component diagram
 #+RESULTS: fig:pipeline-component-diagram
 [[file:../diagrams/pipeline-component-diagram.png]]
-
-The idea here is that our "pool" can contain time-to-event data for multiple disorders and relationship kinds.
-Whereas a "trial" is operating on two disorders and one realtionship kind at a time.
-
-As an example, say that our pool contains time-to-event data for 3 different disorders and 2 different relationship
-kinds. Then we would run 6 separate trials:
-
-1. ~d1~ vs ~d2~, relkind ~a~
-2. ~d1~ vs ~d2~, relkind ~b~
-3. ~d1~ vs ~d2~, relkind ~a~
-4. ~d1~ vs ~d2~, relkind ~b~
-5. ~d2~ vs ~d3~, relkind ~a~
-6. ~d2~ vs ~d3~, relkind ~b~
-
-By having the time-to-event data for all disorders and relationship kinds in a pool, we don't have to
-manipulate the data between running trials, we can let the pipeline handle that for us.
-
-Below is a diagram showingl how the different components interact when a trial is being run. We can
-see that the time-to-event pool contains multiple disorders and relationship kind. But when a trial
-is run, only the relevant rows are pulled out by the pipeline.
-
-
-
 
 * Setting up the pool
 
