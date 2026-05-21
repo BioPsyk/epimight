@@ -139,8 +139,6 @@ correlation between two disorders stratified by birth year.
   - 2 types of relatives (parent/offspring and full siblings)
 - All code shown in this guide have been written to [[./guide.R][this R file]]
 
-The diagram below gives you an overview of how the pipeline works.
-
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
 #+NAME: fig:pipeline-component-diagram
