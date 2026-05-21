@@ -139,7 +139,7 @@ to copy all code snippets manually when setting up the pipeline in our own proje
 
 * How it works
 
-You have a set of disorders you want to produce genetic correlation between and time-to-event data
+You have a set of disorder pairs you want to produce genetic correlations between and time-to-event data
 of a sample population you want to produce it from.
 
 Each time-to-event entity represents:
