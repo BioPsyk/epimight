@@ -191,7 +191,7 @@ rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**
 ' ]
 
 Boundary1(epimight, "Epimight") {
-  Database(pool, "**time-to-event**")
+  Database(pool, "**TTE pool**")
   Process(new, "**new**")
   Process(run_analysis, "**run_analysis**")
 }
@@ -199,13 +199,14 @@ Boundary1(epimight, "Epimight") {
 Arrow_Down(relkind, args)
 Arrow_Down(disorder2, args)
 Arrow_Down(disorder1, args)
-Arrow_Down(args, run_analysis)
 
-Arrow_Right(tte, new)
-Arrow_Right(new, pool)
-Arrow_Left(run_analysis, pool)
+args --> run_analysis : " Given to"
 
-Arrow_Down(run_analysis, results)
+tte -RIGHT-> new : " Given to"
+new -RIGHT-> pool : " Stores data in"
+run_analysis -LEFT-> pool : " Reads data from"
+
+run_analysis --> results : " Outputs"
 @enduml
 #+END_SRC
 
@@ -215,9 +216,6 @@ Arrow_Down(run_analysis, results)
 [[file:../diagrams/pipeline-component-diagram.png]]
 
 * Creating the time-to-event data
-
-To start using the pipeline, we first need to setup our time-to-event data in a format
-that the pipeline expects.
 
 We need to be able to uniquely identify every individual in our sample population.
 In the test data of this guide we use a unique number for each individual:
