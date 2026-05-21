@@ -370,9 +370,8 @@ The results of all draws are aggregated in 3 steps:
   :CUSTOM_ID: downsampling
   :END:
 
-** The mathematics
-
 TBD
+
 * Using it
 ** Setting up the pool
 
@@ -663,4 +662,10 @@ Genetic correlation analysis produces the following statistical values:
 
 TBD
 
-*** run
+*** rubin
+
+TBD
+
+*** rubin_meta
+
+TBD
