@@ -170,10 +170,8 @@ You collect this kind of time-to-event data for all disorders and types of relat
 want to produce genetic correlations for and feed it into the pipeline. This is called
 the pipelines time-to-event "pool".
 
-Then for each pair of disorders and type of relative you want to produce a genetic
-correlation for, you run a "trial".
-
-Here are 3 examples of what that could look like:
+Then for each pair of disorders and type of relatives you want to produce a genetic
+correlation for, you run a "trial". Here are 3 examples of what that could look like:
 
 - ADHD vs. MDD in full siblings
 - ADHD vs. ASD in parent/offspring
