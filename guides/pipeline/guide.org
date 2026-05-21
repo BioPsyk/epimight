@@ -362,8 +362,8 @@ You get a row for each stratification combination which had data from all analys
 The results of all draws are aggregated in 3 steps:
 
 - Meta analyze across stratification within draws
-  - When stratification was used, each draw will have multiple rows
-  -
+- Rubin combine across draws, within stratification
+- Meta analyze rubin combine across all
 
 *** Downsampling of diagnosed relatives
   :PROPERTIES:
