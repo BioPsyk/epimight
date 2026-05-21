@@ -267,9 +267,9 @@ It then produces the following risk estimates (cumulative incidence):
 - ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
 
 It then copies over the time-to-event cohorts and the first risk estimates to a separate
-analysis step that is repeated ~K~ amount of times (each step is called a "draw").
+analysis process that is repeated ~K~ amount of times (this is called a "draw").
 
-Each draw performs the following sub-steps:
+Each draw performs the following steps:
 
 - [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c2~
 - [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c3~
@@ -277,11 +277,28 @@ Each draw performs the following sub-steps:
   - ~re_d1_c2~ = Risk estimates of disorder 1, cohort 2
   - ~re_d1_c3~ = Risk estimates of disorder 1, cohort 3
   - ~re_d2_c3~ = Risk estimates of disorder 2, cohort 3
+- Produce heritabilities
+  - ~h2_d1~ = Heritability of disorder 1 (~re_d1_c1~ vs ~re_d1_c2~)
+  - ~h2_d2~ = Heritability of disorder 2 (~re_d2_c1~ vs ~re_d2_c3~)
+- Produce genetic correlation ~gc_d1_d2~ from risk estimates and heritabilities
+- Return all results as a single dataset
+  - ~re_d1_c1~
+  - ~re_d1_c3~
+  - ~re_d2_c1~
+  - ~h2_d1~
+  - ~h2_d2~
+  - ~gc_d1_d2~
+
+
 
 *** Downsampling of diagnosed relatives
   :PROPERTIES:
   :CUSTOM_ID: downsampling
   :END:
+
+*** Stratification
+
+*** Combining the results
 
 * Using it
 ** Setting up the pool
