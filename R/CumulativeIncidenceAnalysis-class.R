@@ -110,7 +110,8 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         .(
           time, cif, var,
           l95 = cif - qnorm(0.975) * sqrt(var),
-          u95 = cif + qnorm(0.975) * sqrt(var)
+          u95 = cif + qnorm(0.975) * sqrt(var),
+          se  = sqrt(var)
         )
       ]
 

@@ -422,19 +422,37 @@ Pipeline <- R6::R6Class( #nolint
 
       if (is.null(rg_results) || nrow(rg_results) == 0) stop("All draws failed")
 
+      cif_stratify_columns <- c(list("disorder", "cohort"), args$stratify_columns, list("time"))
       cif_results <- private$sub_analyses$core$run_rubins_combine(
         estimates        = cif_results,
         estimate_column  = "cif",
-        se_column        = "cif_se",
-        stratify_columns = c(list("time", "disorder", "cohort"), args$stratify_columns)
+        se_column        = "cif_var",
+        stratify_columns = cif_stratify_columns
       ) |> select(!!!cif_stratify_columns, everything())
 
-      print(cif_results)
+      h2_stratify_columns <- c(list("disorder"), args$stratify_columns)
+      print(h2_results)
+      h2_results <- private$sub_analyses$core$run_rubins_combine(
+        estimates        = h2_results,
+        estimate_column  = "h2",
+        se_column        = "h2_se",
+        stratify_columns = h2_stratify_columns
+      ) |> select(!!!h2_stratify_columns, everything())
 
-      return(NULL)
+      rg_results <- private$sub_analyses$core$run_rubins_combine(
+        estimates        = rg_results,
+        estimate_column  = "rg",
+        se_column        = "rg_se",
+        stratify_columns = args$stratify_columns
+      ) |> select(!!!args$stratify_columns, everything())
 
-      #meta  <- self$meta_analyze_draw_results(results)
-      #rubin <- self$rubins_combine_draw_results(results, args$stratify_columns)
+      return(list(
+        stratified = list(
+          cif = cif_results,
+          h2  = h2_results,
+          rg  = rg_results
+        )
+      ))
     }
   )
 )
