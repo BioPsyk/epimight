@@ -174,8 +174,8 @@ Pipeline <- R6::R6Class( #nolint
 
       dt |>
         mutate(disorder = disorder, cohort = cohort) |>
-        rename_with(~
-          str_remove(., paste0("^", prefix)),
+        rename_with(
+          ~ str_remove(., paste0("^", prefix)),
           .cols = starts_with(prefix)
         ) |>
         select(disorder, cohort, !!!stratify_columns, everything())
@@ -185,8 +185,8 @@ Pipeline <- R6::R6Class( #nolint
 
       dt |>
         mutate(disorder = disorder) |>
-        rename_with(~
-          str_remove(., paste0("^", prefix)),
+        rename_with(
+          ~ str_remove(., paste0("^", prefix)),
           .cols = starts_with(prefix)
         ) |>
         select(disorder, !!!stratify_columns, everything())
@@ -406,6 +406,26 @@ Pipeline <- R6::R6Class( #nolint
       ) |>
         select(!!!cif_stratify_columns, fixed_meta, fixed_se, fixed_l95, fixed_u95) |>
         rename(cif = fixed_meta, se = fixed_se, l95 = fixed_l95, u95 = fixed_u95)
+
+      cif_combined <- rbind(
+        cif_d1_c1 |>
+          mutate(disorder = "d1", cohort = "c1") |>
+          rename_with(
+            ~ str_remove(., "^c1_"),
+            .cols = starts_with("c1_")
+          ) |>
+          select(disorder, cohort, !!!args$stratify_columns, everything())
+      )
+
+      cif_combined <- rbind(
+        cif_d2_c1 |>
+          mutate(disorder = "d2", cohort = "c1") |>
+          rename_with(
+            ~ str_remove(., "^c1_"),
+            .cols = starts_with("c1_")
+          ) |>
+          select(disorder, cohort, !!!args$stratify_columns, everything())
+      )
 
       h2_stratify_columns <- c(list("disorder"), args$stratify_columns)
       h2_combined <- private$sub_analyses$core$run_rubins_combine(
