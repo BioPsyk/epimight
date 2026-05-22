@@ -72,57 +72,8 @@ source("./tests/utils.R")
 #+RESULTS:
 
 #+BEGIN_SRC R :exports results :results output :tangle no
-#set.seed(6)
-#n_count <- 10000
-#
-#d1_tte <- generate_random_tte(n_count)
-#d1_tte <- generate_failure(d1_tte, 20, 10)
-#d1_tte <- generate_diagnosed_relatives(d1_tte, "relatives_diagnosed") |>
-#  relocate(failure_time, .after = person_id) |>
-#  relocate(failure_status, .after = failure_time) |>
-#  relocate(relatives, .after = failure_status) |>
-#  relocate(relatives_diagnosed, .after = relatives) |>
-#  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "FS") |>
-#  as.data.table()
-#
-#d2_tte <- copy(d1_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
-#d2_tte <- generate_failure(d2_tte, 19, 11)
-#d2_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
-#  relocate(failure_time, .after = person_id) |>
-#  relocate(failure_status, .after = failure_time) |>
-#  relocate(relatives, .after = failure_status) |>
-#  relocate(relatives_diagnosed, .after = relatives) |>
-#  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "FS") |>
-#  as.data.table()
-#
-#d3_tte <- copy(d1_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
-#d3_tte <- generate_failure(d2_tte, 20, 10)
-#d3_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
-#  relocate(failure_time, .after = person_id) |>
-#  relocate(failure_status, .after = failure_time) |>
-#  relocate(relatives, .after = failure_status) |>
-#  relocate(relatives_diagnosed, .after = relatives) |>
-#  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
-#  as.data.table()
-#
-#d4_tte <- copy(d1_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
-#d4_tte <- generate_failure(d2_tte, 19, 11)
-#d4_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
-#  relocate(failure_time, .after = person_id) |>
-#  relocate(failure_status, .after = failure_time) |>
-#  relocate(relatives, .after = failure_status) |>
-#  relocate(relatives_diagnosed, .after = relatives) |>
-#  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
-#  as.data.table()
-#
-#tte <- rbindlist(list(d1_tte, d2_tte, d3_tte, d4_tte)) |> select(-born_at, -dead_at_year) |>
-#  arrange(person_id, disorder, relationship_kind) |>
-#  select(person_id, born_at_year, disorder, failure_status, failure_time, relationship_kind, relatives, relatives_diagnosed)
-#
-#write_csv(tte, "./guides/data/pipeline-tte.csv")
-
 tte <- read_csv(
-  "./guides/data/pipeline-tte.csv",
+  "./tests/data/pipeline-tte.csv",
   show_col_type = FALSE,
   col_types=cols(person_id = col_character()),
 ) |> as.data.table()
