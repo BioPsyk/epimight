@@ -244,10 +244,10 @@ tte |> distinct(person_id) |> tail(4)
 #+RESULTS:
 | person_id |
 |-----------|
-|      9996 |
-|      9997 |
-|      9998 |
-|      9999 |
+|     99996 |
+|     99997 |
+|     99998 |
+|     99999 |
 
 Then we need to have the stratification data of each individual (in our case, we stratify on birth year):
 
@@ -260,10 +260,10 @@ tte |>
 #+RESULTS:
 | person_id | born_at_year |
 |-----------+--------------|
-|      9996 |         2001 |
-|      9997 |         1999 |
-|      9998 |         2010 |
-|      9999 |         1991 |
+|     99996 |         1981 |
+|     99997 |         2003 |
+|     99998 |         1982 |
+|     99999 |         1951 |
 
 Then for each relationship kind, we need to know how many relatives each individual has. In the test data
 of this guide, we have 2 relationship kinds (~PO~ = "parent offspring", ~FS~ = "full siblings"):
@@ -277,14 +277,14 @@ tte |>
 #+RESULTS:
 | person_id | born_at_year | relationship_kind | relatives |
 |-----------+--------------+-------------------+-----------|
-|      9996 |         2001 | FS                |         3 |
-|      9996 |         2001 | PO                |         3 |
-|      9997 |         1999 | FS                |         5 |
-|      9997 |         1999 | PO                |         5 |
-|      9998 |         2010 | FS                |         0 |
-|      9998 |         2010 | PO                |         0 |
-|      9999 |         1991 | FS                |         1 |
-|      9999 |         1991 | PO                |         1 |
+|     99996 |         1981 | FS                |         3 |
+|     99996 |         1981 | PO                |         3 |
+|     99997 |         2003 | FS                |         5 |
+|     99997 |         2003 | PO                |         5 |
+|     99998 |         1982 | FS                |         1 |
+|     99998 |         1982 | PO                |         1 |
+|     99999 |         1951 | FS                |         5 |
+|     99999 |         1951 | PO                |         5 |
 
 Then for each disorder, we need to know:
 
@@ -301,23 +301,22 @@ tte |> tail(4 * 4)
 #+RESULTS:
 | person_id | born_at_year | disorder | failure_status | failure_time | relationship_kind | relatives | relatives_diagnosed |
 |-----------+--------------+----------+----------------+--------------+-------------------+-----------+---------------------|
-|      9996 |         2001 | CAD      |              0 |           25 | FS                |         3 |                   0 |
-|      9996 |         2001 | CAD      |              0 |           25 | PO                |         3 |                   0 |
-|      9996 |         2001 | SCZ      |              0 |           25 | FS                |         3 |                   0 |
-|      9996 |         2001 | SCZ      |              0 |           25 | PO                |         3 |                   0 |
-|      9997 |         1999 | CAD      |              0 |           27 | FS                |         5 |                   0 |
-|      9997 |         1999 | CAD      |              0 |           27 | PO                |         5 |                   0 |
-|      9997 |         1999 | SCZ      |              0 |           27 | FS                |         5 |                   0 |
-|      9997 |         1999 | SCZ      |              0 |           27 | PO                |         5 |                   0 |
-|      9998 |         2010 | CAD      |              0 |           16 | FS                |         0 |                   0 |
-|      9998 |         2010 | CAD      |              0 |           16 | PO                |         0 |                   0 |
-|      9998 |         2010 | SCZ      |              0 |           16 | FS                |         0 |                   0 |
-|      9998 |         2010 | SCZ      |              0 |           16 | PO                |         0 |                   0 |
-|      9999 |         1991 | CAD      |              0 |           35 | FS                |         1 |                   0 |
-|      9999 |         1991 | CAD      |              0 |           35 | PO                |         1 |                   0 |
-|      9999 |         1991 | SCZ      |              0 |           35 | FS                |         1 |                   0 |
-|      9999 |         1991 | SCZ      |              0 |           35 | PO                |         1 |                   0 |
-
+|     99996 |         1981 | CAD      |              0 |           45 | FS                |         3 |                   0 |
+|     99996 |         1981 | CAD      |              0 |           45 | PO                |         3 |                   0 |
+|     99996 |         1981 | SCZ      |              0 |           45 | FS                |         3 |                   3 |
+|     99996 |         1981 | SCZ      |              0 |           45 | PO                |         3 |                   0 |
+|     99997 |         2003 | CAD      |              0 |           23 | FS                |         5 |                   0 |
+|     99997 |         2003 | CAD      |              0 |           23 | PO                |         5 |                   0 |
+|     99997 |         2003 | SCZ      |              0 |           23 | FS                |         5 |                   0 |
+|     99997 |         2003 | SCZ      |              0 |           23 | PO                |         5 |                   4 |
+|     99998 |         1982 | CAD      |              0 |           44 | FS                |         1 |                   1 |
+|     99998 |         1982 | CAD      |              0 |           44 | PO                |         1 |                   0 |
+|     99998 |         1982 | SCZ      |              0 |           44 | FS                |         1 |                   0 |
+|     99998 |         1982 | SCZ      |              0 |           44 | PO                |         1 |                   1 |
+|     99999 |         1951 | CAD      |              1 |           19 | FS                |         5 |                   0 |
+|     99999 |         1951 | CAD      |              1 |           19 | PO                |         5 |                   3 |
+|     99999 |         1951 | SCZ      |              0 |           75 | FS                |         5 |                   0 |
+|     99999 |         1951 | SCZ      |              1 |           19 | PO                |         5 |                   3 |
 
 * Setting up the pipeline
 
@@ -384,6 +383,7 @@ res <- pipeline$run(
 #+END_SRC
 
 #+RESULTS:
+: TRUE
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 print(res)
