@@ -98,9 +98,9 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       if (is.null(cuminc_results)) return(NULL)
 
       results <- data.table(
-        time     = cuminc_results$time,
-        estimate = cuminc_results$est,
-        variance = cuminc_results$var
+        time = cuminc_results$time,
+        cif  = cuminc_results$est,
+        var  = cuminc_results$var
       )[
         time >= earliest_onset & time <= latest_onset,
         head(.SD, 1),
@@ -108,9 +108,9 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       ][
         ,
         .(
-          time, variance, estimate,
-          l95 = estimate - qnorm(0.975) * sqrt(variance),
-          u95 = estimate + qnorm(0.975) * sqrt(variance)
+          time, cif, var,
+          l95 = cif - qnorm(0.975) * sqrt(var),
+          u95 = cif + qnorm(0.975) * sqrt(var)
         )
       ]
 
@@ -126,7 +126,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       ][
         ,
         .(
-          time, estimate, variance, l95, u95,
+          time, cif, var, l95, u95,
           cases = cumsum(
             ifelse(is.na(cases_amount), 0, cases_amount)
           )
@@ -255,12 +255,12 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         group = c("all", self$get_stratify_values(tte, stratify_column))
       ) |>
         left_join(
-          cif_results |> select(!!as.name(stratify_column), time, estimate),
+          cif_results |> select(!!as.name(stratify_column), time, cif),
           by = c("group" = stratify_column)
         ) |>
         pivot_wider(
           names_from  = group,
-          values_from = estimate
+          values_from = cif
         ) |>
         arrange(time)
 

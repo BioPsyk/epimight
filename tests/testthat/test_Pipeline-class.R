@@ -8,13 +8,13 @@ source("../utils.R")
 # Preparation
 #=================================================================================
 
-tte <- read_csv(
+pool_tte <- read_csv(
   "../data/pipeline-tte.csv",
   show_col_type = FALSE,
   col_types=cols(person_id = col_character()),
 ) |> as.data.table()
 
-pipeline <- Pipeline$new(pool = tte)
+pipeline <- Pipeline$new(pool = pool_tte)
 
 #=================================================================================
 # Tests
@@ -95,8 +95,6 @@ describe("initialize", {
         relatives_diagnosed = c(0, 1)
       )
     )
-
-    Pipeline$new(pool = tte)
   })
 })
 
@@ -134,6 +132,26 @@ describe("get_tte", {
     expect_equal(tte_no_strat, tte_strat)
   })
 })
+
+describe("run_cif", {
+  it("allows valid input", {
+    stratify_cols <- list("born_at_year")
+
+    tte <- pipeline$get_tte("PO", "SCZ", "CAD", stratify_cols)
+    cif <- pipeline$run_cif(tte, "d1", "c1", stratify_cols, 1, 100)
+
+    print(cif)
+  })
+})
+
+#describe("run_cif", {
+#  it("doesn't change the output when stratify columns are given", {
+#    tte_no_strat <- pipeline$get_tte("PO", "SCZ", "CAD")
+#    tte_strat    <- pipeline$get_tte("PO", "SCZ", "CAD", list("born_at_year"))
+#
+#    expect_equal(tte_no_strat, tte_strat)
+#  })
+#})
 
 #describe("run", {
 #  it("doesn't allow empty arguments", {

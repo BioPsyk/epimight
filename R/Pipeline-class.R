@@ -133,8 +133,8 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that runs cif on the given time-to-event data and handles all prefixes of columns.
     run_cif = function(tte, disorder_prefix, cohort_prefix, stratify_columns, earliest_onset, latest_onset) {
-      status_col   <- paste0(disorder_prefix, "_failure_status")
-      time_col     <- paste0(disorder_prefix, "_failure_time")
+      status_col <- paste0(disorder_prefix, "_failure_status")
+      time_col   <- paste0(disorder_prefix, "_failure_time")
 
       tmp_tte <- tte |>
         rename(
@@ -144,12 +144,13 @@ Pipeline <- R6::R6Class( #nolint
         as.data.table()
 
       private$sub_analyses$cif$run(
-        tte            = tmp_tte,
-        stratify_columns  = stratify_columns,
-        earliest_onset = earliest_onset,
-        latest_onset   = latest_onset
+        tte              = tmp_tte,
+        stratify_columns = stratify_columns,
+        earliest_onset   = earliest_onset,
+        latest_onset     = latest_onset
       ) |>
-        rename_with(~ paste0(cohort_prefix, "_", .), .cols = c(estimate, cases, variance, l95, u95))
+        select(!!!stratify_columns, time, cif, var, l95, u95, cases) |>
+        rename_with(~ paste0(cohort_prefix, "_", .), .cols = c(cif, var, l95, u95, cases))
     },
     #' @description
     #' Helper that runs heritability on the given time-to-event data and handles all prefixes of columns.
