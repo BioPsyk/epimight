@@ -4,8 +4,20 @@ library(devtools)
 
 devtools::load_all(".")
 
-args <- commandArgs(trailingOnly=TRUE)
+raw_args    <- commandArgs()
+project_dir <- NULL
 
+for (arg in raw_args) {
+  match       <- str_match(arg, "^--file=(.*)")
+  script_path <- match[,2]
+
+  if (is.na(script_path)) next
+
+  project_dir <- normalizePath(file.path(getwd(), dirname(script_path)))
+  break
+}
+
+args    <- commandArgs(trailinOnly = TRUE)
 seed    <- args[1]
 n_count <- args[2]
 

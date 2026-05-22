@@ -63,7 +63,7 @@
                (defun ibp/generate-test-data ()
                  "Generates test data"
                  (interactive)
-                 (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/generate-test-data.R)"))
+                 (ibp/tmux-pane-cmd "0.1" "(clear; ./scripts/generate-test-data.R 6 100000)"))
 
                (defun ibp/kill-dev-env ()
                  "Kills all processes and tmux"
