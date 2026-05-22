@@ -169,6 +169,28 @@ Pipeline <- R6::R6Class( #nolint
         rename_with(~ paste0(curr_prefix, "_", .), .cols = c(se, l95, u95)) |>
         select(time, !!!stratify_columns, starts_with(curr_prefix))
     },
+    remove_cif_prefix = function(dt, disorder, cohort, stratify_columns) {
+      prefix <- paste0(disorder, "_", cohort, "_")
+
+      dt |>
+        mutate(disorder = disorder, cohort = cohort) |>
+        rename_with(~
+          str_remove(., paste0("^", prefix)),
+          .cols = starts_with(prefix)
+        ) |>
+        select(disorder, cohort, !!!stratify_columns, everything())
+    },
+    remove_h2_prefix = function(dt, disorder, stratify_columns) {
+      prefix <- paste0(disorder, "_")
+
+      dt |>
+        mutate(disorder = disorder) |>
+        rename_with(~
+          str_remove(., paste0("^", prefix)),
+          .cols = starts_with(prefix)
+        ) |>
+        select(disorder, !!!stratify_columns, everything())
+    },
     #' @description
     #' Runs a single draw which produces stratified genetic correlation for the 2 disorders specified in the
     #' pipeline run function.
@@ -264,39 +286,15 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(rg) == 0) return(result$fail("rg", "rg", "empty"))
 
-      remove_cif_prefix <- function(dt, disorder, cohort) {
-        prefix <- paste0(disorder, "_", cohort, "_")
-
-        dt |>
-          mutate(disorder = disorder, cohort = cohort) |>
-          rename_with(~
-            str_remove(., paste0("^", prefix)),
-            .cols = starts_with(prefix)
-          ) |>
-          select(disorder, cohort, !!!args$stratify_column, everything())
-      }
-
-      remove_h2_prefix <- function(dt, disorder) {
-        prefix <- paste0(disorder, "_")
-
-        dt |>
-          mutate(disorder = disorder) |>
-          rename_with(~
-            str_remove(., paste0("^", prefix)),
-            .cols = starts_with(prefix)
-          ) |>
-          select(disorder, !!!args$stratify_column, everything())
-      }
-
       result$success(list(
         cif = rbindlist(list(
-          remove_cif_prefix(cif_d1_c1, "d1", "c1"),
-          remove_cif_prefix(cif_d1_c3, "d1", "c3"),
-          remove_cif_prefix(cif_d2_c1, "d2", "c1")
+          self$remove_cif_prefix(cif_d1_c1, "d1", "c1", args$stratify_columns),
+          self$remove_cif_prefix(cif_d1_c3, "d1", "c3", args$stratify_columns),
+          self$remove_cif_prefix(cif_d2_c1, "d2", "c1", args$stratify_columns)
         )),
         h2 = rbindlist(list(
-          remove_h2_prefix(h2_d1, "d1"),
-          remove_h2_prefix(h2_d2, "d2")
+          self$remove_h2_prefix(h2_d1, "d1", args$stratify_columns),
+          self$remove_h2_prefix(h2_d2, "d2", args$stratify_columns)
         )),
         rg = rg
       ))
