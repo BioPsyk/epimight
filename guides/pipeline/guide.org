@@ -415,16 +415,38 @@ data.table(
 #+RESULTS:
 | form       | analysis | nrow |
 |------------+----------+------|
-| stratified | cif      | 9709 |
+| stratified | cif      | 8725 |
 | stratified | h2       |  152 |
 | stratified | rg       |   71 |
-| meta       | cif      |    3 |
+| meta       | cif      |    5 |
 | meta       | h2       |    2 |
 | meta       | rg       |    1 |
 
 ** Stratified results
 
 *** Cumulative incidence
+
+The cif results for the different disorders and cohorts are kept in one dataset, group by these columns:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$stratified$cif |> distinct(disorder, cohort)
+#+END_SRC
+
+#+RESULTS:
+| disorder | cohort |
+|----------+--------|
+| d1       | c1     |
+| d1       | c2     |
+| d1       | c3     |
+| d2       | c1     |
+| d2       | c3     |
+
+The dataset contains one row for every distinct combination of:
+
+- ~disorder~
+- ~cohort~
+- ~born_at_year~
+- ~time~
 
 Here are the first 20 rows of the stratified cumulative incidence results:
 
@@ -458,6 +480,23 @@ res$stratified$cif |> head(20)
 
 *** Heritability
 
+The heritability results for the different disorders are kept in one dataset, group by disorder:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$stratified$h2 |> distinct(disorder)
+#+END_SRC
+
+#+RESULTS:
+| disorder |
+|----------|
+| d1       |
+| d2       |
+
+The dataset contains one row for every distinct combination of:
+
+- ~disorder~
+- ~born_at_year~
+
 Here are the first 20 rows of the stratified heritability results:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
@@ -489,6 +528,9 @@ res$stratified$h2 |> head(20)
 | d1       |         1969 | 0.363916522735581 |  0.17246159684856 |   0.0258917929124032 | 0.701941252558759 |
 
 *** Genetic correlation
+
+The genetic correlation results for the 2 disorders that was analyzed is kept in a dataset
+which contains one row per distinct ~born_at_year~ value.
 
 Here are the first 20 rows of the stratified genetic correlation results:
 
@@ -531,11 +573,13 @@ res$meta$cif
 #+END_SRC
 
 #+RESULTS:
-| disorder | cohort |         fixed_meta |            fixed_se |          fixed_l95 |          fixed_u95 |          rand_meta |              rand_se |           rand_l95 |           rand_u95 |
-|----------+--------+--------------------+---------------------+--------------------+--------------------+--------------------+----------------------+--------------------+--------------------|
-| d1       | c1     |                    |                   0 |                    |                    | 0.0452154295324825 | 0.000518578195081514 | 0.0441990162701227 | 0.0462318427948423 |
-| d1       | c3     |                    |                   0 |                    |                    | 0.0445874122120618 |  0.00105714246197171 | 0.0425154129865973 | 0.0466594114375264 |
-| d2       | c1     | 0.0213501565229231 | 5.9499478969251e-05 | 0.0212335375441434 | 0.0214667755017029 | 0.0484475334648579 | 0.000509639647888222 | 0.0474486397549969 | 0.0494464271747188 |
+| disorder | cohort |         fixed_meta |             fixed_se |          fixed_l95 |          fixed_u95 |          rand_meta |             rand_se |           rand_l95 |           rand_u95 |
+|----------+--------+--------------------+----------------------+--------------------+--------------------+--------------------+---------------------+--------------------+--------------------|
+| d1       | c1     |                    |                    0 |                    |                    | 0.0456087069671214 | 0.00112723967822808 | 0.0433993171977944 | 0.0478180967364485 |
+| d1       | c2     |                    |                    0 |                    |                    | 0.0867704127767831 |  0.0013332106810242 | 0.0841573198419757 | 0.0893835057115905 |
+| d1       | c3     |                    |                    0 |                    |                    | 0.0460310702228015 | 0.00158350712097499 | 0.0429273962656905 | 0.0491347441799125 |
+| d2       | c1     | 0.0213501565229231 | 8.41449701124476e-05 | 0.0211852323815027 | 0.0215150806643435 | 0.0488178085118158 | 0.00110716780209432 | 0.0466477596197109 | 0.0509878574039207 |
+| d2       | c3     |                    |                    0 |                    |                    | 0.0901683720712316 | 0.00131881569223621 | 0.0875834933144486 | 0.0927532508280146 |
 
 *** Heritability
 
