@@ -388,6 +388,8 @@ res <- pipeline$run(
 
 ** Cumulative incidence
 
+*** Combined
+
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined$cif |> head(20)
 #+END_SRC
@@ -464,6 +466,8 @@ res$meta_combined$cif |> head(20)
 
 ** Heritability
 
+*** Combined
+
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined$h2 |> head(20)
 #+END_SRC
@@ -531,6 +535,8 @@ res$meta_combined$h2 |> head(20)
 | d2       | 0.365288551056109 |   8.004628555711e-06 |           0 |           4 |   8.004628555711e-06 |        0 | 0.00282924522721361 | 0.359743230410771 | 0.370833871701448 |
 
 ** Genetic correlation
+
+*** Combined
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined$rg |> head(20)
