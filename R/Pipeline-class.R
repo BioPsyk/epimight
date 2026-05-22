@@ -224,15 +224,15 @@ Pipeline <- R6::R6Class( #nolint
       h2_d2 <- self$run_h2(
         "d2",
         cif_d2_c1,
-        cif_d2_c3 |> rename(c2_cif = c3_cif, c2_cases = c3_cases),
+        cif_d2_c3 |> rename(c2_cif = c3_cif, c2_cif_cases = c3_cif_cases),
         args$relationship_kind,
         args$stratify_columns
       )
       if (is.null(h2_d2)) return(result$fail("h2_d2", "h2", "empty"))
 
-      cif_d1_c1 <- cif_d1_c1 |> rename_with(~ paste0("cif_d1_", .), .cols = starts_with("c1_"))
-      cif_d1_c3 <- cif_d1_c3 |> rename_with(~ paste0("cif_d1_", .), .cols = starts_with("c3_"))
-      cif_d2_c1 <- cif_d2_c1 |> rename_with(~ paste0("cif_d2_", .), .cols = starts_with("c1_"))
+      cif_d1_c1 <- cif_d1_c1 |> rename_with(~ paste0("d1_", .), .cols = starts_with("c1_"))
+      cif_d1_c3 <- cif_d1_c3 |> rename_with(~ paste0("d1_", .), .cols = starts_with("c3_"))
+      cif_d2_c1 <- cif_d2_c1 |> rename_with(~ paste0("d2_", .), .cols = starts_with("c1_"))
 
       join_columns <- list("time")
 
@@ -253,32 +253,66 @@ Pipeline <- R6::R6Class( #nolint
         filter(row_number() == 1) |>
         as.data.table()
 
-      print(combined)
+      if (nrow(combined) == 0) return(result$fail("combined", "tte", "empty"))
 
-      if (nrow(combined) == 0) return(result$fail("re_h2_combined", "tte", "empty"))
-
-      gc_d1_d2 <- private$sub_analyses$gc$run(
+      rg <- private$sub_analyses$gc$run(
         relationship_kind = args$relationship_kind,
         estimates         = combined
       ) |>
-        rename_with(~ paste0("gc_d1_d2_", .), .cols = c(rhh, se, l95, u95, rg, h2_l95, h2_u95))
+        select(!!!args$stratify_columns, rg, se, rg_l95, rg_u95) |>
+        rename(rg_se = se)
 
-      if (nrow(gc_d1_d2) == 0) return(result$fail("gc_d1_d2", "gc", "empty"))
+      if (nrow(rg) == 0) return(result$fail("rg", "rg", "empty"))
 
-      result$success(gc_d1_d2)
+      remove_cif_prefix <- function(dt, disorder, cohort) {
+        prefix <- paste0(disorder, "_", cohort, "_")
+
+        dt |>
+          mutate(disorder = disorder, cohort = cohort) |>
+          rename_with(~
+            str_remove(., paste0("^", prefix)),
+            .cols = starts_with(prefix)
+          ) |>
+          select(disorder, cohort, !!!args$stratify_column, everything())
+      }
+
+      remove_h2_prefix <- function(dt, disorder) {
+        prefix <- paste0(disorder, "_")
+
+        dt |>
+          mutate(disorder = disorder) |>
+          rename_with(~
+            str_remove(., paste0("^", prefix)),
+            .cols = starts_with(prefix)
+          ) |>
+          select(disorder, !!!args$stratify_column, everything())
+      }
+
+      result$success(list(
+        cif = rbindlist(list(
+          remove_cif_prefix(cif_d1_c1, "d1", "c1"),
+          remove_cif_prefix(cif_d1_c3, "d1", "c3"),
+          remove_cif_prefix(cif_d2_c1, "d2", "c1")
+        )),
+        h2 = rbindlist(list(
+          remove_h2_prefix(h2_d1, "d1"),
+          remove_h2_prefix(h2_d2, "d2")
+        )),
+        rg = rg
+      ))
     },
     #' @description
     #' Meta analyzes all draw results grouped by draw.
     meta_analyze_draw_results = function(draw_results) {
-      sources <- list("h2_d1", "h2_d2", "gc_d1_d2")
+      sources <- list("d1_h2", "d2_h2", "rg")
       result  <- NULL
 
       for (src in sources) {
         meta <- private$sub_analyses$core$run_meta(
-          estimates       = draw_results,
-          estimate_column = paste0(src, "_estimate"),
-          se_column       = paste0(src, "_se"),
-          stratify_columns   = list("draw")
+          estimates        = draw_results,
+          estimate_column  = src,
+          se_column        = paste0(src, "_se"),
+          stratify_columns = list("draw")
         ) |> mutate(source = src)
 
         if (is.null(result)) {
@@ -293,15 +327,15 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Meta analyzes all draw results grouped by draw.
     rubins_combine_draw_results = function(draw_results, stratify_columns) {
-      sources <- list("h2_d1", "h2_d2", "gc_d1_d2")
+      sources <- list("d1_h2", "d2_h2", "gc")
       result  <- NULL
 
       for (src in sources) {
         rubin <- private$sub_analyses$core$run_rubins_combine(
-          estimates       = draw_results,
-          estimate_column = paste0(src, "_estimate"),
-          se_column       = paste0(src, "_se"),
-          stratify_columns   = stratify_columns
+          estimates        = draw_results,
+          estimate_column  = src,
+          se_column        = paste0(src, "_se"),
+          stratify_columns = stratify_columns
         ) |> mutate(source = src)
 
         if (is.null(result)) {
@@ -412,7 +446,7 @@ Pipeline <- R6::R6Class( #nolint
         }
       }
 
-      if (nrow(results) == 0) stop("All draws failed")
+      if (is.null(results) || nrow(results) == 0) stop("All draws failed")
 
       meta  <- self$meta_analyze_draw_results(results)
       rubin <- self$rubins_combine_draw_results(results, args$stratify_columns)
