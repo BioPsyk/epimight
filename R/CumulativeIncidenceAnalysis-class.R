@@ -231,11 +231,11 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
     #' Retrieves all distinct group values of the provided column of the provided TTE data.
     #'
     #' @param tte TTE data to use.
-    #' @param group_column Column to retrieve values from.
+    #' @param stratify_column Column to retrieve values from.
     #' @returns List of values.
-    get_group_values = function(tte, group_column) {
+    get_stratify_values = function(tte, stratify_column) {
       groups <- tte |>
-        rename(group = !!as.name(group_column)) |>
+        rename(group = !!as.name(stratify_column)) |>
         arrange(group) |>
         distinct(group) |>
         mutate(group = as.character(group)) |>
@@ -248,15 +248,15 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
     #'
     #' @param tte TTE data to use.
     #' @param cif_results Results that the "run" function produced.
-    #' @param group_column Column to group the summary on.
+    #' @param stratify_column Column to group the summary on.
     #' @returns Data.table with summary.
-    make_group_summary = function(tte, cif_results, group_column) {
+    make_stratify_summary = function(tte, cif_results, stratify_column) {
       summary <- data.table(
-        group = c("all", self$get_group_values(tte, group_column))
+        group = c("all", self$get_stratify_values(tte, stratify_column))
       ) |>
         left_join(
-          cif_results |> select(!!as.name(group_column), time, estimate),
-          by = c("group" = group_column)
+          cif_results |> select(!!as.name(stratify_column), time, estimate),
+          by = c("group" = stratify_column)
         ) |>
         pivot_wider(
           names_from  = group,

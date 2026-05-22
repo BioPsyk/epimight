@@ -108,7 +108,7 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Runs a single draw which produces stratified genetic correlation for the 2 disorders specified in the
     #' pipeline run function.
-    run_draw = function(tte_c1, re_d1_c1, re_d2_c1, args) {
+    run_draw = function(tte_c1, cif_d1_c1, cif_d2_c1, args) {
       result  <- AnalysisResult$new()
       tmp_tte <- copy(tte_c1)
 
@@ -128,23 +128,23 @@ Pipeline <- R6::R6Class( #nolint
       tte_c3 <- tmp_tte[d2_relatives_diagnosed > 0]
       if (nrow(tte_c3) == 0) return(result$fail("tte_c3", "tte", "empty"))
 
-      re_d1_c2 <- private$run_cif(
+      cif_d1_c2 <- private$run_cif(
         tte_c2, "d1", "c2",
         args$stratify_columns,
         args$disorder1$earliest_onset,
         args$disorder1$latest_onset
       )
-      if (is.null(re_d1_c2)) return(result$fail("re_d1_c2", "cif", "empty"))
+      if (is.null(cif_d1_c2)) return(result$fail("cif_d1_c2", "cif", "empty"))
 
-      re_d1_c3 <- private$run_cif(
+      cif_d1_c3 <- private$run_cif(
         tte_c3, "d1", "c3",
         args$stratify_columns,
         args$disorder1$earliest_onset,
         args$disorder1$latest_onset
       )
-      if (is.null(re_d1_c3)) return(result$fail("re_d1_c3", "cif", "empty"))
+      if (is.null(cif_d1_c3)) return(result$fail("cif_d1_c3", "cif", "empty"))
 
-      re_d2_c3 <- private$run_cif(
+      cif_d2_c3 <- private$run_cif(
         tte_c3,
         "d2",
         "c3",
@@ -152,23 +152,23 @@ Pipeline <- R6::R6Class( #nolint
         args$disorder2$earliest_onset,
         args$disorder2$latest_onset
       )
-      if (is.null(re_d2_c3)) return(result$fail("re_d2_c3", "cif", "empty"))
+      if (is.null(cif_d2_c3)) return(result$fail("cif_d2_c3", "cif", "empty"))
 
-      h2_d1 <- private$run_h2("d1", re_d1_c1, re_d1_c2, args$relationship_kind, args$stratify_columns)
+      h2_d1 <- private$run_h2("d1", cif_d1_c1, cif_d1_c2, args$relationship_kind, args$stratify_columns)
       if (is.null(h2_d1)) return(result$fail("h2_d1", "h2", "empty"))
 
       h2_d2 <- private$run_h2(
         "d2",
-        re_d2_c1,
-        re_d2_c3 |> rename(c2_estimate = c3_estimate, c2_cases = c3_cases),
+        cif_d2_c1,
+        cif_d2_c3 |> rename(c2_estimate = c3_estimate, c2_cases = c3_cases),
         args$relationship_kind,
         args$stratify_columns
       )
       if (is.null(h2_d2)) return(result$fail("h2_d2", "h2", "empty"))
 
-      re_d1_c1 <- re_d1_c1 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c1_"))
-      re_d1_c3 <- re_d1_c3 |> rename_with(~ paste0("re_d1_", .), .cols = starts_with("c3_"))
-      re_d2_c1 <- re_d2_c1 |> rename_with(~ paste0("re_d2_", .), .cols = starts_with("c1_"))
+      cif_d1_c1 <- cif_d1_c1 |> rename_with(~ paste0("cif_d1_", .), .cols = starts_with("c1_"))
+      cif_d1_c3 <- cif_d1_c3 |> rename_with(~ paste0("cif_d1_", .), .cols = starts_with("c3_"))
+      cif_d2_c1 <- cif_d2_c1 |> rename_with(~ paste0("cif_d2_", .), .cols = starts_with("c1_"))
 
       join_columns <- list("time")
 
@@ -178,9 +178,9 @@ Pipeline <- R6::R6Class( #nolint
 
       join_symbols <- rlang::syms(join_columns)
 
-      combined <- re_d1_c1 |>
-        inner_join(re_d1_c3, by = join_by(!!!join_columns)) |>
-        inner_join(re_d2_c1, by = join_by(!!!join_columns)) |>
+      combined <- cif_d1_c1 |>
+        inner_join(cif_d1_c3, by = join_by(!!!join_columns)) |>
+        inner_join(cif_d2_c1, by = join_by(!!!join_columns)) |>
         inner_join(h2_d1, by = join_by(!!!join_columns)) |>
         inner_join(h2_d2, by = join_by(!!!join_columns)) |>
         select(all_of(unlist(join_columns)), everything()) |>
@@ -188,6 +188,8 @@ Pipeline <- R6::R6Class( #nolint
         arrange(desc(time)) |>
         filter(row_number() == 1) |>
         as.data.table()
+
+      print(combined)
 
       if (nrow(combined) == 0) return(result$fail("re_h2_combined", "tte", "empty"))
 
@@ -364,27 +366,27 @@ Pipeline <- R6::R6Class( #nolint
       args   <- validator$run(...)
       tte_c1 <- private$get_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$stratify_columns)
 
-      re_d1_c1 <- private$run_cif(
+      cif_d1_c1 <- private$run_cif(
         tte_c1, "d1", "c1",
         args$stratify_columns,
         args$disorder1$earliest_onset,
         args$disorder1$latest_onset
       )
-      if (is.null(re_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
+      if (is.null(cif_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
 
-      re_d2_c1 <- private$run_cif(
+      cif_d2_c1 <- private$run_cif(
         tte_c1, "d2", "c1",
         args$stratify_columns,
         args$disorder2$earliest_onset,
         args$disorder2$latest_onset
       )
-      if (is.null(re_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
+      if (is.null(cif_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
       errors  <- list()
       results <- NULL
 
       for (k in seq_len(args$draws)) {
-        draw <- private$run_draw(tte_c1, re_d1_c1, re_d2_c1, args)
+        draw <- private$run_draw(tte_c1, cif_d1_c1, cif_d2_c1, args)
 
         if (!is.null(draw$error)) {
           errors <- append(errors, draw)
