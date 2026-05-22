@@ -401,6 +401,17 @@ Pipeline <- R6::R6Class( #nolint
 
       if (is.null(rg_results) || nrow(rg_results) == 0) stop("All draws failed")
 
+      #---------------------------------------------------------------------------------
+      # Cumulative incidence
+
+      cif_meta <- private$sub_analyses$core$run_meta(
+        estimates        = cif_results,
+        estimate_column  = "cif",
+        se_column        = "cif_se",
+        stratify_columns = list("draw", "disorder", "cohort")
+      ) |>
+        select(draw, disorder, cohort, everything())
+
       cif_stratify_columns <- c(list("disorder", "cohort"), args$stratify_columns, list("time"))
       cif_combined <- private$sub_analyses$core$run_rubins_combine(
         estimates        = cif_results,
@@ -410,6 +421,34 @@ Pipeline <- R6::R6Class( #nolint
       ) |>
         select(!!!cif_stratify_columns, fixed_meta, fixed_se, fixed_l95, fixed_u95) |>
         rename(cif = fixed_meta, se = fixed_se, l95 = fixed_l95, u95 = fixed_u95)
+
+      cif_combined_meta <- private$sub_analyses$core$run_meta(
+        estimates        = cif_combined,
+        estimate_column  = "cif",
+        se_column        = "se",
+        stratify_columns = list("disorder", "cohort")
+      ) |>
+        select(disorder, cohort, everything()) |>
+        rename(cif = fixed_meta, se = fixed_se, l95 = fixed_l95, u95 = fixed_u95)
+
+      cif_meta_combined <- private$sub_analyses$core$run_rubins_combine(
+        estimates        = cif_meta,
+        estimate_column  = "fixed_meta",
+        se_column        = "fixed_se",
+        stratify_columns = list("disorder", "cohort")
+      ) |>
+        select(disorder, cohort, everything())
+
+      #---------------------------------------------------------------------------------
+      # Heritability
+
+      h2_meta <- private$sub_analyses$core$run_meta(
+        estimates        = h2_results,
+        estimate_column  = "h2",
+        se_column        = "h2_se",
+        stratify_columns = list("draw", "disorder")
+      ) |>
+        select(draw, disorder, everything())
 
       h2_stratify_columns <- c(list("disorder"), args$stratify_columns)
       h2_combined <- private$sub_analyses$core$run_rubins_combine(
@@ -421,6 +460,33 @@ Pipeline <- R6::R6Class( #nolint
         select(!!!h2_stratify_columns, fixed_meta, fixed_se, fixed_l95, fixed_u95) |>
         rename(h2 = fixed_meta, se = fixed_se, l95 = fixed_l95, u95 = fixed_u95)
 
+      h2_combined_meta <- private$sub_analyses$core$run_meta(
+        estimates        = h2_combined,
+        estimate_column  = "h2",
+        se_column        = "se",
+        stratify_columns = list("disorder")
+      ) |>
+        select(disorder, everything())
+
+      h2_meta_combined <- private$sub_analyses$core$run_rubins_combine(
+        estimates        = h2_meta,
+        estimate_column  = "fixed_meta",
+        se_column        = "fixed_se",
+        stratify_columns = list("disorder")
+      ) |>
+        select(disorder, everything())
+
+      #---------------------------------------------------------------------------------
+      # Genetic correlation
+
+      rg_meta <- private$sub_analyses$core$run_meta(
+        estimates        = rg_results,
+        estimate_column  = "rg",
+        se_column        = "rg_se",
+        stratify_columns = list("draw")
+      ) |>
+        select(draw, everything())
+
       rg_combined <- private$sub_analyses$core$run_rubins_combine(
         estimates        = rg_results,
         estimate_column  = "rg",
@@ -430,38 +496,38 @@ Pipeline <- R6::R6Class( #nolint
         select(!!!args$stratify_columns, fixed_meta, fixed_se, fixed_l95, fixed_u95) |>
         rename(rg = fixed_meta, se = fixed_se, l95 = fixed_l95, u95 = fixed_u95)
 
-      cif_meta <- private$sub_analyses$core$run_meta(
-        estimates        = cif_combined,
-        estimate_column  = "cif",
-        se_column        = "se",
-        stratify_columns = list("disorder", "cohort")
-      ) |>
-        select(disorder, cohort, everything())
-
-      h2_meta <- private$sub_analyses$core$run_meta(
-        estimates        = h2_combined,
-        estimate_column  = "h2",
-        se_column        = "se",
-        stratify_columns = list("disorder")
-      ) |>
-        select(disorder, everything())
-
-      rg_meta <- private$sub_analyses$core$run_meta(
+      rg_combined_meta <- private$sub_analyses$core$run_meta(
         estimates        = rg_combined,
         estimate_column  = "rg",
         se_column        = "se"
       )
 
+      rg_meta_combined <- private$sub_analyses$core$run_rubins_combine(
+        estimates        = rg_meta,
+        estimate_column  = "fixed_meta",
+        se_column        = "fixed_se"
+      )
+
       return(list(
-        stratified = list(
+        combined = list(
           cif = cif_combined,
           h2  = h2_combined,
           rg  = rg_combined
+        ),
+        combined_meta = list(
+          cif = cif_combined_meta,
+          h2  = h2_combined_meta,
+          rg  = rg_combined_meta
         ),
         meta = list(
           cif = cif_meta,
           h2  = h2_meta,
           rg  = rg_meta
+        ),
+        meta_combined = list(
+          cif = cif_meta_combined,
+          h2  = h2_meta_combined,
+          rg  = rg_meta_combined
         )
       ))
     }
