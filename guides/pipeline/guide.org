@@ -386,72 +386,10 @@ res <- pipeline$run(
 
 * Using the results
 
-The ~pipeline$run~ function outputs cumulative incidence, heritability and genetic correlation in two forms:
-
-- Raw stratified form
-- Meta analyzed form
-
-The value returned by this function is a named list with the following structure:
-
-- stratified
-  - cif
-  - h2
-  - rg
-- meta
-  - cif
-  - h2
-  - rg
-
-Our analysis resulted in the following row counts per result:
+** Cumulative incidence
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-data.table(
-  form     = c("stratified", "stratified", "stratified", "meta", "meta", "meta"),
-  analysis = c("cif", "h2", "rg", "cif", "h2", "rg"),
-  nrow     = c(nrow(res$stratified$cif), nrow(res$stratified$h2), nrow(res$stratified$rg), nrow(res$meta$cif), nrow(res$meta$h2), nrow(res$meta$rg))
-)
-#+END_SRC
-
-#+RESULTS:
-| form       | analysis | nrow |
-|------------+----------+------|
-| stratified | cif      | 8725 |
-| stratified | h2       |  152 |
-| stratified | rg       |   71 |
-| meta       | cif      |    5 |
-| meta       | h2       |    2 |
-| meta       | rg       |    1 |
-
-** Stratified results
-
-*** Cumulative incidence
-
-The cif results for the different disorders and cohorts are kept in one dataset, group by these columns:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-res$stratified$cif |> distinct(disorder, cohort)
-#+END_SRC
-
-#+RESULTS:
-| disorder | cohort |
-|----------+--------|
-| d1       | c1     |
-| d1       | c2     |
-| d1       | c3     |
-| d2       | c1     |
-| d2       | c3     |
-
-The dataset contains one row for every distinct combination of:
-
-- ~disorder~
-- ~cohort~
-- ~born_at_year~
-- ~time~
-
-Here are the first 20 rows of the stratified cumulative incidence results:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-res$stratified$cif |> head(20)
+res$combined$cif |> head(20)
 #+END_SRC
 
 #+RESULTS:
@@ -478,29 +416,56 @@ res$stratified$cif |> head(20)
 | d1       | c1     |         1950 |   19 |  0.0464939024390244 | 0.00581516667769737 |   0.0350961757507376 |  0.0578916291273112 |
 | d1       | c1     |         1950 |   20 |  0.0518292682926829 | 0.00612256924709045 |   0.0398290325683857 |  0.0638295040169802 |
 
-*** Heritability
-
-The heritability results for the different disorders are kept in one dataset, grouped by disorder:
+*** Combined meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-res$stratified$h2 |> distinct(disorder)
+res$combined_meta$cif |> head(20)
 #+END_SRC
 
 #+RESULTS:
-| disorder |
-|----------|
-| d1       |
-| d2       |
+| disorder | cohort |                cif |                   se |                l95 |                u95 |          rand_meta |             rand_se |           rand_l95 |           rand_u95 |
+|----------+--------+--------------------+----------------------+--------------------+--------------------+--------------------+---------------------+--------------------+--------------------|
+| d1       | c1     |                    |                    0 |                    |                    | 0.0456087069671214 | 0.00112723967822808 | 0.0433993171977944 | 0.0478180967364485 |
+| d1       | c2     |                    |                    0 |                    |                    | 0.0867704127767831 |  0.0013332106810242 | 0.0841573198419757 | 0.0893835057115905 |
+| d1       | c3     |                    |                    0 |                    |                    | 0.0460310702228015 | 0.00158350712097499 | 0.0429273962656905 | 0.0491347441799125 |
+| d2       | c1     | 0.0213501565229231 | 8.41449701124476e-05 | 0.0211852323815027 | 0.0215150806643435 | 0.0488178085118158 | 0.00110716780209432 | 0.0466477596197109 | 0.0509878574039207 |
+| d2       | c3     |                    |                    0 |                    |                    | 0.0901683720712316 | 0.00131881569223621 | 0.0875834933144486 | 0.0927532508280146 |
 
-The dataset contains one row for every distinct combination of:
-
-- ~disorder~
-- ~born_at_year~
-
-Here are the first 20 rows of the stratified heritability results:
+*** Meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-res$stratified$h2 |> head(20)
+res$meta$cif |> head(20)
+#+END_SRC
+
+#+RESULTS:
+| draw | disorder | cohort |         fixed_meta |             fixed_se |          fixed_l95 |          fixed_u95 |          rand_meta |             rand_se |           rand_l95 |           rand_u95 |
+|------+----------+--------+--------------------+----------------------+--------------------+--------------------+--------------------+---------------------+--------------------+--------------------|
+|    1 | d1       | c1     |                    |                    0 |                    |                    | 0.0456086905738163 | 0.00112720776532043 | 0.0433993633537883 | 0.0478180177938443 |
+|    1 | d1       | c2     |                    |                    0 |                    |                    | 0.0867702176291688 | 0.00133317575361835 | 0.0841571931520768 | 0.0893832421062607 |
+|    1 | d1       | c3     |                    |                    0 |                    |                    | 0.0460310061991051 | 0.00158346409736305 | 0.0429274165682735 | 0.0491345958299367 |
+|    1 | d2       | c1     | 0.0213501565229231 | 8.41449701124476e-05 | 0.0211852323815027 | 0.0215150806643435 | 0.0488177930754089 | 0.00110713648392288 |   0.04664780556692 | 0.0509877805838977 |
+|    1 | d2       | c3     |                    |                    0 |                    |                    | 0.0901681887012813 | 0.00131878129476111 | 0.0875833773635496 | 0.0927530000390131 |
+|    2 | d1       | c1     |                    |                    0 |                    |                    | 0.0456086905738163 | 0.00112720776532043 | 0.0433993633537883 | 0.0478180177938443 |
+|    2 | d1       | c2     |                    |                    0 |                    |                    | 0.0867702176291688 | 0.00133317575361835 | 0.0841571931520768 | 0.0893832421062607 |
+|    2 | d1       | c3     |                    |                    0 |                    |                    | 0.0460310061991051 | 0.00158346409736305 | 0.0429274165682735 | 0.0491345958299367 |
+|    2 | d2       | c1     | 0.0213501565229231 | 8.41449701124476e-05 | 0.0211852323815027 | 0.0215150806643435 | 0.0488177930754089 | 0.00110713648392288 |   0.04664780556692 | 0.0509877805838977 |
+|    2 | d2       | c3     |                    |                    0 |                    |                    | 0.0901681887012813 | 0.00131878129476111 | 0.0875833773635496 | 0.0927530000390131 |
+
+*** Meta combined
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$meta_combined$cif |> head(20)
+#+END_SRC
+
+#+RESULTS:
+| disorder | cohort |         fixed_meta |           within_var | between_var | k_resamples |            total_var | b_over_t |             fixed_se |          fixed_l95 |          fixed_u95 |
+|----------+--------+--------------------+----------------------+-------------+-------------+----------------------+----------+----------------------+--------------------+--------------------|
+| d2       | c1     | 0.0213501565229231 | 7.08037599522469e-09 |           0 |          10 | 7.08037599522469e-09 |        0 | 8.41449701124476e-05 | 0.0211852323815027 | 0.0215150806643435 |
+
+** Heritability
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$combined$h2 |> head(20)
 #+END_SRC
 
 #+RESULTS:
@@ -527,15 +492,48 @@ res$stratified$h2 |> head(20)
 | d1       |         1968 | 0.314405564073685 | 0.168437789360705 |  -0.0157325030732964 | 0.644543631220666 |
 | d1       |         1969 | 0.363916522735581 |  0.17246159684856 |   0.0258917929124032 | 0.701941252558759 |
 
-*** Genetic correlation
-
-The genetic correlation results for the 2 disorders that was analyzed is kept in a dataset
-which contains one row per distinct ~born_at_year~ value.
-
-Here are the first 20 rows of the stratified genetic correlation results:
+*** Combined meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-res$stratified$rg |> head(20)
+res$combined_meta$h2 |> head(20)
+#+END_SRC
+
+#+RESULTS:
+| disorder |        fixed_meta |           fixed_se |         fixed_l95 |         fixed_u95 |         rand_meta |            rand_se |          rand_l95 |          rand_u95 |
+|----------+-------------------+--------------------+-------------------+-------------------+-------------------+--------------------+-------------------+-------------------|
+| d1       | 0.169388918071326 | 0.0138162542353367 | 0.142309059770067 | 0.196468776372586 | 0.260690016100728 | 0.0224156872247837 | 0.216755269140152 | 0.304624763061304 |
+| d2       | 0.301021800947672 | 0.0166545785715652 | 0.268378826947404 | 0.333664774947939 | 0.307796725625423 | 0.0229211229429831 | 0.262871324657176 | 0.352722126593669 |
+
+*** Meta
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$meta$h2 |> head(20)
+#+END_SRC
+
+#+RESULTS:
+| draw | disorder |        fixed_meta |            fixed_se |         fixed_l95 |         fixed_u95 |         rand_meta |             rand_se |          rand_l95 |          rand_u95 |
+|------+----------+-------------------+---------------------+-------------------+-------------------+-------------------+---------------------+-------------------+-------------------|
+|    1 | d1       | 0.348599522858652 | 0.00279774944712143 | 0.343115933942294 |  0.35408311177501 |   0.3415569422819 | 0.00464166274356823 | 0.332459283304507 | 0.350654601259294 |
+|    1 | d2       | 0.365288551056109 | 0.00282924522721361 | 0.359743230410771 | 0.370833871701448 | 0.354925509880619 | 0.00461439451830099 | 0.345881296624749 | 0.363969723136489 |
+|    2 | d1       | 0.348599522858652 | 0.00279774944712143 | 0.343115933942294 |  0.35408311177501 |   0.3415569422819 | 0.00464166274356823 | 0.332459283304507 | 0.350654601259294 |
+|    2 | d2       | 0.365288551056109 | 0.00282924522721361 | 0.359743230410771 | 0.370833871701448 | 0.354925509880619 | 0.00461439451830099 | 0.345881296624749 | 0.363969723136489 |
+
+*** Meta combined
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$meta_combined$h2 |> head(20)
+#+END_SRC
+
+#+RESULTS:
+| disorder |        fixed_meta |           within_var | between_var | k_resamples |            total_var | b_over_t |            fixed_se |         fixed_l95 |         fixed_u95 |
+|----------+-------------------+----------------------+-------------+-------------+----------------------+----------+---------------------+-------------------+-------------------|
+| d1       | 0.348599522858652 | 7.82740196886825e-06 |           0 |           4 | 7.82740196886825e-06 |        0 | 0.00279774944712143 | 0.343115933942294 |  0.35408311177501 |
+| d2       | 0.365288551056109 |   8.004628555711e-06 |           0 |           4 |   8.004628555711e-06 |        0 | 0.00282924522721361 | 0.359743230410771 | 0.370833871701448 |
+
+** Genetic correlation
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$combined$rg |> head(20)
 #+END_SRC
 
 #+RESULTS:
@@ -562,48 +560,36 @@ res$stratified$rg |> head(20)
 |         1968 |  -0.329753530190719 | 0.448326426280582 |  -1.20847332570066 |    0.548966265319222 |
 |         1969 |   0.236060262355523 | 0.315017680539607 | -0.381374391502106 |    0.853494916213152 |
 
-** Meta analyzed results
-
-*** Cumulative incidence
-
-Here are all the rows of the meta analyzed cumulative incidence results:
+*** Combined meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-res$meta$cif
-#+END_SRC
-
-#+RESULTS:
-| disorder | cohort |         fixed_meta |             fixed_se |          fixed_l95 |          fixed_u95 |          rand_meta |             rand_se |           rand_l95 |           rand_u95 |
-|----------+--------+--------------------+----------------------+--------------------+--------------------+--------------------+---------------------+--------------------+--------------------|
-| d1       | c1     |                    |                    0 |                    |                    | 0.0456087069671214 | 0.00112723967822808 | 0.0433993171977944 | 0.0478180967364485 |
-| d1       | c2     |                    |                    0 |                    |                    | 0.0867704127767831 |  0.0013332106810242 | 0.0841573198419757 | 0.0893835057115905 |
-| d1       | c3     |                    |                    0 |                    |                    | 0.0460310702228015 | 0.00158350712097499 | 0.0429273962656905 | 0.0491347441799125 |
-| d2       | c1     | 0.0213501565229231 | 8.41449701124476e-05 | 0.0211852323815027 | 0.0215150806643435 | 0.0488178085118158 | 0.00110716780209432 | 0.0466477596197109 | 0.0509878574039207 |
-| d2       | c3     |                    |                    0 |                    |                    | 0.0901683720712316 | 0.00131881569223621 | 0.0875834933144486 | 0.0927532508280146 |
-
-*** Heritability
-
-Here are all the rows of the meta analyzed heritability results:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-res$meta$h2
-#+END_SRC
-
-#+RESULTS:
-| disorder |        fixed_meta |           fixed_se |         fixed_l95 |         fixed_u95 |         rand_meta |            rand_se |          rand_l95 |          rand_u95 |
-|----------+-------------------+--------------------+-------------------+-------------------+-------------------+--------------------+-------------------+-------------------|
-| d1       | 0.169388918071326 | 0.0138162542353367 | 0.142309059770067 | 0.196468776372586 | 0.260690016100728 | 0.0224156872247837 | 0.216755269140152 | 0.304624763061304 |
-| d2       | 0.301021800947672 | 0.0166545785715652 | 0.268378826947404 | 0.333664774947939 | 0.307796725625423 | 0.0229211229429831 | 0.262871324657176 | 0.352722126593669 |
-
-*** Genetic correlation
-
-Here is the only row of the meta analyzed genetic correlation results:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-res$meta$rg
+res$combined_meta$rg |> head(20)
 #+END_SRC
 
 #+RESULTS:
 |        fixed_meta |           fixed_se |        fixed_l95 |         fixed_u95 |           rand_meta |            rand_se |           rand_l95 |           rand_u95 |
 |-------------------+--------------------+------------------+-------------------+---------------------+--------------------+--------------------+--------------------|
 | 0.178589401589062 | 0.0204023679250218 | 0.13860076045602 | 0.218578042722105 | -0.0606355608626104 | 0.0682538462336655 | -0.194413099480595 | 0.0731419777553738 |
+
+*** Meta
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$meta$rg |> head(20)
+#+END_SRC
+
+#+RESULTS:
+| draw |          fixed_meta |            fixed_se |           fixed_l95 |           fixed_u95 |          rand_meta |            rand_se |           rand_l95 |            rand_u95 |
+|------+---------------------+---------------------+---------------------+---------------------+--------------------+--------------------+--------------------+---------------------|
+|    1 | -0.0511139512612466 | 0.00530539696739628 | -0.0615125293173433 | -0.0407153732051499 | -0.117347940509089 | 0.0209588324847656 | -0.158427252179229 | -0.0762686288389481 |
+|    2 | -0.0511139512612466 | 0.00530539696739628 | -0.0615125293173433 | -0.0407153732051499 | -0.117347940509089 | 0.0209588324847656 | -0.158427252179229 | -0.0762686288389481 |
+
+*** Meta combined
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$meta_combined$rg |> head(20)
+#+END_SRC
+
+#+RESULTS:
+|          fixed_meta |           within_var | between_var | k_resamples |            total_var | b_over_t |            fixed_se |           fixed_l95 |           fixed_u95 |
+|---------------------+----------------------+-------------+-------------+----------------------+----------+---------------------+---------------------+---------------------|
+| -0.0511139512612466 | 2.81472369816577e-05 |           0 |           2 | 2.81472369816577e-05 |        0 | 0.00530539696739628 | -0.0615125293173433 | -0.0407153732051499 |
