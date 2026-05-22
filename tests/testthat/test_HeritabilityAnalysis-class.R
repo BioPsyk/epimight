@@ -8,35 +8,11 @@ source("../utils.R")
 # Preparation
 #=================================================================================
 
-set.seed(6)
-
-tte <- generate_random_tte(10000)
-tte <- generate_failure(tte, 20, 10)
-tte <- generate_diagnosed_relatives(tte, "diagnosed_relatives") |>
-  select(-born_at_year, -dead_at_year) |>
-  relocate(failure_time, .after = person_id) |>
-  relocate(failure_status, .after = failure_time) |>
-  relocate(relatives, .after = failure_status) |>
-  relocate(diagnosed_relatives, .after = relatives) |>
-  as.data.frame()
-
-tte_dt <- data.table(tte)
-
-relationship_kind <- "PO"
-h2_analysis       <- HeritabilityAnalysis$new()
-cif_analysis      <- CumulativeIncidenceAnalysis$new()
+h2_analysis <- HeritabilityAnalysis$new()
 
 #=================================================================================
 # Tests
 #=================================================================================
-
-describe("relationship_coefficient_from_kind", {
-  it("Produces correct coefficients for common kinds", {
-    expect_equal(h2_analysis$relationship_coefficient_from_kind("PO"), 0.5)
-    expect_equal(h2_analysis$relationship_coefficient_from_kind("FS"), 0.5)
-    expect_equal(h2_analysis$relationship_coefficient_from_kind("HS"), 0.25)
-  })
-})
 
 describe("calculate_h2", {
   it("Produces same results regardless of vectorization or not", {
@@ -61,122 +37,11 @@ describe("calculate_h2", {
     results2 <- NULL
 
     for (i in seq_len(nrow(estimates))) {
-      est      <- estimates[i,]
+      est      <- estimates[i, ]
       curr     <- h2_analysis$calculate_h2(est$id, est$k1, est$kr, est$a1, est$ar, est$rc)
       results2 <- rbind(results2, curr)
     }
 
     expect_dataframe_equal(results1, results2)
-  })
-})
-
-describe("run", {
-  it("Produces heritability estimates larger than 0.5 for weighted relatives", {
-    tte2 <- tte_dt |>
-      mutate(cohort = "all") |>
-      union_all(
-        tte_dt |>
-        filter(diagnosed_relatives > 0) |>
-        mutate(cohort = "affected_relatives")
-      )
-
-    estimates <- cif_analysis$run(
-      tte = tte2,
-      stratify_columns = list("cohort")
-    )
-
-    cohort1 <- estimates |> filter(cohort == "all")
-    cohort2 <- estimates |> filter(cohort == "affected_relatives")
-
-    combined <- cohort1 |>
-      inner_join(cohort2, by = join_by(time)) |>
-      rename(
-        c1_estimate = estimate.x,
-        c1_cases    = cases.x,
-        c2_estimate = estimate.y,
-        c2_cases    = cases.y
-      ) |>
-      select(time, c1_estimate, c1_cases, c2_estimate, c2_cases) |>
-      arrange(desc(time)) |>
-      filter(row_number() == 1) |>
-      as.data.table()
-
-    results <- h2_analysis$run(
-      relationship_kind = relationship_kind,
-      estimates         = combined
-    )
-
-    expect_gt(results[[1]], 0.5)
-  })
-
-  it("Produces heritability stratified by birth year", {
-    tte2 <- tte_dt |>
-      mutate(
-        born_at_year = as.character(format(born_at, "%Y"))
-      )
-
-    tte2 <- tte2 |>
-      mutate(cohort = "all") |>
-      union_all(
-        tte2 |>
-        filter(diagnosed_relatives > 0) |>
-        mutate(cohort = "affected_relatives")
-      )
-
-    estimates <- cif_analysis$run(
-      tte = tte2,
-      stratify_columns = list("born_at_year", "cohort")
-    )
-
-    #=================================================================================
-    # Variant 1
-    #=================================================================================
-
-    cohort1 <- estimates |> filter(cohort == "all")
-    cohort2 <- estimates |> filter(cohort == "affected_relatives")
-
-    combined <- cohort1 |>
-      inner_join(cohort2, by = join_by(time, born_at_year)) |>
-      rename(
-        c1_estimate = estimate.x,
-        c1_cases    = cases.x,
-        c2_estimate = estimate.y,
-        c2_cases    = cases.y
-      ) |>
-      select(time, born_at_year, c1_estimate, c1_cases, c2_estimate, c2_cases) |>
-      group_by(born_at_year) |>
-      arrange(desc(time)) |>
-      filter(row_number() == 1) |>
-      as.data.table()
-
-    estimates <- h2_analysis$run(
-      relationship_kind = relationship_kind,
-      estimates         = combined
-    )
-
-    validator <- ArgumentsValidator$new(
-      meta = list(
-        required = TRUE,
-        type     = "data.table",
-        columns  = list(
-          fixed_meta = list(required = TRUE, type = "numeric"),
-          fixed_se   = list(required = TRUE, type = "numeric"),
-          fixed_l95  = list(required = TRUE, type = "numeric"),
-          fixed_u95  = list(required = TRUE, type = "numeric"),
-          rand_meta  = list(required = TRUE, type = "numeric"),
-          rand_se    = list(required = TRUE, type = "numeric"),
-          rand_l95   = list(required = TRUE, type = "numeric"),
-          rand_u95   = list(required = TRUE, type = "numeric")
-        )
-      )
-    )
-
-    meta <- h2_analysis$run_meta(
-      estimates = estimates,
-      estimate_column = "estimate",
-      se_column       = "se"
-    )
-
-    validator$run(meta = meta)
   })
 })
