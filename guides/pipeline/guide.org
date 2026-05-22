@@ -388,7 +388,7 @@ res <- pipeline$run(
 
 ** Cumulative incidence
 
-*** Combined
+*** Raw -> Rubin combine
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined$cif |> head(20)
@@ -418,7 +418,7 @@ res$combined$cif |> head(20)
 | d1       | c1     |         1950 |   19 |  0.0464939024390244 | 0.00581516667769737 |   0.0350961757507376 |  0.0578916291273112 |
 | d1       | c1     |         1950 |   20 |  0.0518292682926829 | 0.00612256924709045 |   0.0398290325683857 |  0.0638295040169802 |
 
-*** Combined meta
+*** Raw -> Rubin combine -> Meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined_meta$cif |> head(20)
@@ -433,7 +433,7 @@ res$combined_meta$cif |> head(20)
 | d2       | c1     | 0.0213501565229231 | 8.41449701124476e-05 | 0.0211852323815027 | 0.0215150806643435 | 0.0488178085118158 | 0.00110716780209432 | 0.0466477596197109 | 0.0509878574039207 |
 | d2       | c3     |                    |                    0 |                    |                    | 0.0901683720712316 | 0.00131881569223621 | 0.0875834933144486 | 0.0927532508280146 |
 
-*** Meta
+*** Raw -> Meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$meta$cif |> head(20)
@@ -453,7 +453,7 @@ res$meta$cif |> head(20)
 |    2 | d2       | c1     | 0.0213501565229231 | 8.41449701124476e-05 | 0.0211852323815027 | 0.0215150806643435 | 0.0488177930754089 | 0.00110713648392288 |   0.04664780556692 | 0.0509877805838977 |
 |    2 | d2       | c3     |                    |                    0 |                    |                    | 0.0901681887012813 | 0.00131878129476111 | 0.0875833773635496 | 0.0927530000390131 |
 
-*** Meta combined
+*** Raw -> Meta -> Rubin combine
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$meta_combined$cif |> head(20)
@@ -466,7 +466,7 @@ res$meta_combined$cif |> head(20)
 
 ** Heritability
 
-*** Combined
+*** Raw -> Rubin combine
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined$h2 |> head(20)
@@ -496,7 +496,7 @@ res$combined$h2 |> head(20)
 | d1       |         1968 | 0.314405564073685 | 0.168437789360705 |  -0.0157325030732964 | 0.644543631220666 |
 | d1       |         1969 | 0.363916522735581 |  0.17246159684856 |   0.0258917929124032 | 0.701941252558759 |
 
-*** Combined meta
+*** Raw -> Rubin combine -> Meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined_meta$h2 |> head(20)
@@ -508,7 +508,7 @@ res$combined_meta$h2 |> head(20)
 | d1       | 0.169388918071326 | 0.0138162542353367 | 0.142309059770067 | 0.196468776372586 | 0.260690016100728 | 0.0224156872247837 | 0.216755269140152 | 0.304624763061304 |
 | d2       | 0.301021800947672 | 0.0166545785715652 | 0.268378826947404 | 0.333664774947939 | 0.307796725625423 | 0.0229211229429831 | 0.262871324657176 | 0.352722126593669 |
 
-*** Meta
+*** Raw -> Meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$meta$h2 |> head(20)
@@ -522,7 +522,7 @@ res$meta$h2 |> head(20)
 |    2 | d1       | 0.348599522858652 | 0.00279774944712143 | 0.343115933942294 |  0.35408311177501 |   0.3415569422819 | 0.00464166274356823 | 0.332459283304507 | 0.350654601259294 |
 |    2 | d2       | 0.365288551056109 | 0.00282924522721361 | 0.359743230410771 | 0.370833871701448 | 0.354925509880619 | 0.00461439451830099 | 0.345881296624749 | 0.363969723136489 |
 
-*** Meta combined
+*** Raw -> Meta -> Rubin combine
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$meta_combined$h2 |> head(20)
@@ -536,7 +536,7 @@ res$meta_combined$h2 |> head(20)
 
 ** Genetic correlation
 
-*** Combined
+*** Raw -> Rubin combine
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined$rg |> head(20)
@@ -566,7 +566,7 @@ res$combined$rg |> head(20)
 |         1968 |  -0.329753530190719 | 0.448326426280582 |  -1.20847332570066 |    0.548966265319222 |
 |         1969 |   0.236060262355523 | 0.315017680539607 | -0.381374391502106 |    0.853494916213152 |
 
-*** Combined meta
+*** Raw -> Run combine -> Meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined_meta$rg |> head(20)
@@ -577,7 +577,7 @@ res$combined_meta$rg |> head(20)
 |-------------------+--------------------+------------------+-------------------+---------------------+--------------------+--------------------+--------------------|
 | 0.178589401589062 | 0.0204023679250218 | 0.13860076045602 | 0.218578042722105 | -0.0606355608626104 | 0.0682538462336655 | -0.194413099480595 | 0.0731419777553738 |
 
-*** Meta
+*** Raw -> Meta
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$meta$rg |> head(20)
@@ -589,7 +589,7 @@ res$meta$rg |> head(20)
 |    1 | -0.0511139512612466 | 0.00530539696739628 | -0.0615125293173433 | -0.0407153732051499 | -0.117347940509089 | 0.0209588324847656 | -0.158427252179229 | -0.0762686288389481 |
 |    2 | -0.0511139512612466 | 0.00530539696739628 | -0.0615125293173433 | -0.0407153732051499 | -0.117347940509089 | 0.0209588324847656 | -0.158427252179229 | -0.0762686288389481 |
 
-*** Meta combined
+*** Raw -> Meta -> Rubin combine
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$meta_combined$rg |> head(20)
