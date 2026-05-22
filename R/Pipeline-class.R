@@ -10,8 +10,64 @@
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
-    pool = NULL,
-    analysis = NULL,
+    pool         = NULL,
+    sub_analyses = NULL
+  ),
+  public = list(
+    #' @description
+    #' Creates an pipeline instance that stores the given time-to-event data.
+    initialize = function(...) {
+      validator <- ArgumentsValidator$new(
+        pool = list(
+          required = TRUE,
+          type     = "data.table",
+          columns  = list(
+            person_id = list(
+              type     = "string",
+              required = TRUE
+            ),
+            disorder = list(
+              type     = "string",
+              required = TRUE
+            ),
+            failure_status = list(
+              type     = "integer",
+              enum     = list(0, 1, 2),
+              required = TRUE
+            ),
+            failure_time = list(
+              type     = "numeric",
+              minimum  = 0,
+              required = TRUE
+            ),
+            relationship_kind = list(
+              type     = "string",
+              enum     = names(epimight:::relationship_kinds),
+              required = TRUE
+            ),
+            relatives = list(
+              type     = "integer",
+              minimum  = 0,
+              required = TRUE
+            ),
+            relatives_diagnosed = list(
+              type     = "integer",
+              minimum  = 0,
+              required = TRUE
+            )
+          )
+        )
+      )
+
+      args <- validator$run(...)
+      private$pool <- args$pool
+      private$sub_analyses <- list(
+        core = Analysis$new(),
+        h2   = HeritabilityAnalysis$new(),
+        cif  = CumulativeIncidenceAnalysis$new(),
+        gc   = GeneticCorrelationAnalysis$new()
+      )
+    },
     #' @description
     #' Downsample relative counts to independent Bernoulli indicators.
     #'
@@ -87,7 +143,7 @@ Pipeline <- R6::R6Class( #nolint
         ) |>
         as.data.table()
 
-      private$analysis$cif$run(
+      private$sub_analyses$cif$run(
         tte            = tmp_tte,
         stratify_columns  = stratify_columns,
         earliest_onset = earliest_onset,
@@ -98,7 +154,7 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that runs heritability on the given time-to-event data and handles all prefixes of columns.
     run_h2 = function(disorder_prefix, re_c1, re_c2, relationship_kind, stratify_columns) {
-      private$analysis$h2$run(
+      private$sub_analyses$h2$run(
         relationship_kind = relationship_kind,
         estimates         = re_c1 |> inner_join(re_c2, by = join_by(time, !!!stratify_columns))
       ) |>
@@ -112,12 +168,12 @@ Pipeline <- R6::R6Class( #nolint
       result  <- AnalysisResult$new()
       tmp_tte <- copy(tte_c1)
 
-      tmp_tte$d1_relatives_diagnosed <- private$downsample_relatives_diagnosed(
+      tmp_tte$d1_relatives_diagnosed <- self$downsample_relatives_diagnosed(
         tmp_tte$d1_relatives_diagnosed,
         tmp_tte$d1_relatives
       )
 
-      tmp_tte$d2_relatives_diagnosed <- private$downsample_relatives_diagnosed(
+      tmp_tte$d2_relatives_diagnosed <- self$downsample_relatives_diagnosed(
         tmp_tte$d2_relatives_diagnosed,
         tmp_tte$d2_relatives
       )
@@ -128,7 +184,7 @@ Pipeline <- R6::R6Class( #nolint
       tte_c3 <- tmp_tte[d2_relatives_diagnosed > 0]
       if (nrow(tte_c3) == 0) return(result$fail("tte_c3", "tte", "empty"))
 
-      cif_d1_c2 <- private$run_cif(
+      cif_d1_c2 <- self$run_cif(
         tte_c2, "d1", "c2",
         args$stratify_columns,
         args$disorder1$earliest_onset,
@@ -136,7 +192,7 @@ Pipeline <- R6::R6Class( #nolint
       )
       if (is.null(cif_d1_c2)) return(result$fail("cif_d1_c2", "cif", "empty"))
 
-      cif_d1_c3 <- private$run_cif(
+      cif_d1_c3 <- self$run_cif(
         tte_c3, "d1", "c3",
         args$stratify_columns,
         args$disorder1$earliest_onset,
@@ -144,7 +200,7 @@ Pipeline <- R6::R6Class( #nolint
       )
       if (is.null(cif_d1_c3)) return(result$fail("cif_d1_c3", "cif", "empty"))
 
-      cif_d2_c3 <- private$run_cif(
+      cif_d2_c3 <- self$run_cif(
         tte_c3,
         "d2",
         "c3",
@@ -154,10 +210,10 @@ Pipeline <- R6::R6Class( #nolint
       )
       if (is.null(cif_d2_c3)) return(result$fail("cif_d2_c3", "cif", "empty"))
 
-      h2_d1 <- private$run_h2("d1", cif_d1_c1, cif_d1_c2, args$relationship_kind, args$stratify_columns)
+      h2_d1 <- self$run_h2("d1", cif_d1_c1, cif_d1_c2, args$relationship_kind, args$stratify_columns)
       if (is.null(h2_d1)) return(result$fail("h2_d1", "h2", "empty"))
 
-      h2_d2 <- private$run_h2(
+      h2_d2 <- self$run_h2(
         "d2",
         cif_d2_c1,
         cif_d2_c3 |> rename(c2_estimate = c3_estimate, c2_cases = c3_cases),
@@ -193,7 +249,7 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(combined) == 0) return(result$fail("re_h2_combined", "tte", "empty"))
 
-      gc_d1_d2 <- private$analysis$gc$run(
+      gc_d1_d2 <- private$sub_analyses$gc$run(
         relationship_kind = args$relationship_kind,
         estimates         = combined
       ) |>
@@ -210,7 +266,7 @@ Pipeline <- R6::R6Class( #nolint
       result  <- NULL
 
       for (src in sources) {
-        meta <- private$analysis$core$run_meta(
+        meta <- private$sub_analyses$core$run_meta(
           estimates       = draw_results,
           estimate_column = paste0(src, "_estimate"),
           se_column       = paste0(src, "_se"),
@@ -233,7 +289,7 @@ Pipeline <- R6::R6Class( #nolint
       result  <- NULL
 
       for (src in sources) {
-        rubin <- private$analysis$core$run_rubins_combine(
+        rubin <- private$sub_analyses$core$run_rubins_combine(
           estimates       = draw_results,
           estimate_column = paste0(src, "_estimate"),
           se_column       = paste0(src, "_se"),
@@ -248,62 +304,6 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       result |> select(!!!stratify_columns, everything())
-    }
-  ),
-  public = list(
-    #' @description
-    #' Creates an pipeline instance that stores the given time-to-event data.
-    initialize = function(...) {
-      validator <- ArgumentsValidator$new(
-        pool = list(
-          required = TRUE,
-          type     = "data.table",
-          columns  = list(
-            person_id = list(
-              type     = "string",
-              required = TRUE
-            ),
-            disorder = list(
-              type     = "string",
-              required = TRUE
-            ),
-            failure_status = list(
-              type     = "integer",
-              enum     = list(0, 1, 2),
-              required = TRUE
-            ),
-            failure_time = list(
-              type     = "numeric",
-              minimum  = 0,
-              required = TRUE
-            ),
-            relationship_kind = list(
-              type     = "string",
-              enum     = names(epimight:::relationship_kinds),
-              required = TRUE
-            ),
-            relatives = list(
-              type     = "integer",
-              minimum  = 0,
-              required = TRUE
-            ),
-            relatives_diagnosed = list(
-              type     = "integer",
-              minimum  = 0,
-              required = TRUE
-            )
-          )
-        )
-      )
-
-      args <- validator$run(...)
-      private$pool <- args$pool
-      private$analysis <- list(
-        core = Analysis$new(),
-        h2   = HeritabilityAnalysis$new(),
-        cif  = CumulativeIncidenceAnalysis$new(),
-        gc   = GeneticCorrelationAnalysis$new()
-      )
     },
     #' @description
     #' Runs a single experiment using the given disorders and relationship_kind.
@@ -364,9 +364,9 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args   <- validator$run(...)
-      tte_c1 <- private$get_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$stratify_columns)
+      tte_c1 <- self$get_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$stratify_columns)
 
-      cif_d1_c1 <- private$run_cif(
+      cif_d1_c1 <- self$run_cif(
         tte_c1, "d1", "c1",
         args$stratify_columns,
         args$disorder1$earliest_onset,
@@ -374,7 +374,7 @@ Pipeline <- R6::R6Class( #nolint
       )
       if (is.null(cif_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
 
-      cif_d2_c1 <- private$run_cif(
+      cif_d2_c1 <- self$run_cif(
         tte_c1, "d2", "c1",
         args$stratify_columns,
         args$disorder2$earliest_onset,
@@ -386,7 +386,7 @@ Pipeline <- R6::R6Class( #nolint
       results <- NULL
 
       for (k in seq_len(args$draws)) {
-        draw <- private$run_draw(tte_c1, cif_d1_c1, cif_d2_c1, args)
+        draw <- self$run_draw(tte_c1, cif_d1_c1, cif_d2_c1, args)
 
         if (!is.null(draw$error)) {
           errors <- append(errors, draw)
@@ -406,8 +406,8 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(results) == 0) stop("All draws failed")
 
-      meta  <- private$meta_analyze_draw_results(results)
-      rubin <- private$rubins_combine_draw_results(results, args$stratify_columns)
+      meta  <- self$meta_analyze_draw_results(results)
+      rubin <- self$rubins_combine_draw_results(results, args$stratify_columns)
 
       list(
         args       = args,
@@ -415,7 +415,7 @@ Pipeline <- R6::R6Class( #nolint
         results    = results,
         meta       = meta,
         rubin      = rubin,
-        rubin_meta = private$analysis$core$run_meta(
+        rubin_meta = private$sub_analyses$core$run_meta(
           estimates       = rubin,
           estimate_column = "fixed_meta",
           se_column       = "fixed_se"
