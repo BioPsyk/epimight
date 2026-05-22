@@ -83,7 +83,7 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given disorders, relationship kind and group columns.
     #' Makes sure that the retrieved data fulfills the requirements of carrying out a single pipeline run.
-    get_tte = function(disorder1_id, disorder2_id, relkind, stratify_columns) {
+    get_tte = function(relkind, disorder1_id, disorder2_id, stratify_columns = NULL) {
       tte <- private$pool |>
         filter(relationship_kind == relkind) |>
         select(-relationship_kind)

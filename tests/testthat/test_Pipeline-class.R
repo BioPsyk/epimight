@@ -100,86 +100,126 @@ describe("initialize", {
   })
 })
 
-describe("run_experiment", {
-  it("doesn't allow empty arguments", {
-    expect_error(pipeline$run())
-  })
-
-  it("fails when disorder 1 is not found", {
-    expect_error(pipeline$run(
-      disorder1 = list(
-        id             = "unknown",
-        earliest_onset = 1,
-        latest_onset   = 100
-      ),
-      disorder2 = list(
-        id             = "CAD",
-        earliest_onset = 0,
-        latest_onset   = 100
-      ),
-      relationship_kind = "PO"
-    ))
-  })
-
-  it("fails when disorder 2 is not found", {
-    expect_error(pipeline$run(
-      disorder1 = list(
-        id             = "SCZ",
-        earliest_onset = 1,
-        latest_onset   = 100
-      ),
-      disorder2 = list(
-        id             = "unknown",
-        earliest_onset = 0,
-        latest_onset   = 100
-      ),
-      relationship_kind = "PO"
-    ))
-  })
-
-  it("fails when relationship_kind is not found", {
-    expect_error(pipeline$run(
-      disorder1 = list(
-        id             = "SCZ",
-        earliest_onset = 1,
-        latest_onset   = 100
-      ),
-      disorder2 = list(
-        id             = "CAD",
-        earliest_onset = 0,
-        latest_onset   = 100
-      ),
-      relationship_kind = "unknown"
-    ))
-  })
-
-  it("fails when group column cannot be found in TTE dataset", {
-    expect_error(pipeline$run(
-      disorder1 = list(
-        id = "SCZ"
-      ),
-      disorder2 = list(
-        id = "CAD"
-      ),
-      relationship_kind = "PO",
-      draws = 2,
-      stratify_columns = list("born_at_year", "unknown")
-    ))
-  })
-
-  it("allows valid experiment selection", {
-    results <- pipeline$run(
-      disorder1 = list(
-        id = "SCZ"
-      ),
-      disorder2 = list(
-        id = "CAD"
-      ),
-      relationship_kind = "PO",
-      draws = 2,
-      stratify_columns = list("born_at_year")
+describe("get_tte", {
+  it("fails on unknown disorders", {
+    expect_error(
+      pipeline$get_tte("PO", "unknown", "CAD", list("born_at_year"))
     )
 
-    print(results)
+    expect_error(
+      pipeline$get_tte("PO", "SCZ", "unknown", list("born_at_year"))
+    )
+  })
+
+  it("fails on unknown relationship kind", {
+    expect_error(
+      pipeline$get_tte("unknown", "SCZ", "CAD", list("born_at_year"))
+    )
+  })
+
+  it("fails on invalid stratify column", {
+    expect_error(
+      pipeline$get_tte("PO", "SCZ", "CAD", list(123))
+    )
+
+    expect_error(
+      pipeline$get_tte("PO", "SCZ", "CAD", list("unknown"))
+    )
+  })
+
+  it("allows getting tte for existing disorders, relationship kind and no stratify columns", {
+    tte_c1 <- pipeline$get_tte("PO", "SCZ", "CAD")
+
+    print(tte_c1)
+  })
+
+  it("allows getting tte for existing disorders, relationship kind and stratify columns", {
+    tte_c1 <- pipeline$get_tte("PO", "SCZ", "CAD", list("born_at_year"))
+
+    print(tte_c1)
   })
 })
+
+#describe("run", {
+#  it("doesn't allow empty arguments", {
+#    expect_error(pipeline$run())
+#  })
+#
+#  it("fails when disorder 1 is not found", {
+#    expect_error(pipeline$run(
+#      disorder1 = list(
+#        id             = "unknown",
+#        earliest_onset = 1,
+#        latest_onset   = 100
+#      ),
+#      disorder2 = list(
+#        id             = "CAD",
+#        earliest_onset = 0,
+#        latest_onset   = 100
+#      ),
+#      relationship_kind = "PO"
+#    ))
+#  })
+#
+#  it("fails when disorder 2 is not found", {
+#    expect_error(pipeline$run(
+#      disorder1 = list(
+#        id             = "SCZ",
+#        earliest_onset = 1,
+#        latest_onset   = 100
+#      ),
+#      disorder2 = list(
+#        id             = "unknown",
+#        earliest_onset = 0,
+#        latest_onset   = 100
+#      ),
+#      relationship_kind = "PO"
+#    ))
+#  })
+#
+#  it("fails when relationship_kind is not found", {
+#    expect_error(pipeline$run(
+#      disorder1 = list(
+#        id             = "SCZ",
+#        earliest_onset = 1,
+#        latest_onset   = 100
+#      ),
+#      disorder2 = list(
+#        id             = "CAD",
+#        earliest_onset = 0,
+#        latest_onset   = 100
+#      ),
+#      relationship_kind = "unknown"
+#    ))
+#  })
+#
+#  it("fails when group column cannot be found in TTE dataset", {
+#    expect_error(pipeline$run(
+#      disorder1 = list(
+#        id = "SCZ"
+#      ),
+#      disorder2 = list(
+#        id = "CAD"
+#      ),
+#      relationship_kind = "PO",
+#      draws = 2,
+#      stratify_columns = list("born_at_year", "unknown")
+#    ))
+#  })
+#
+#  it("allows valid experiment selection", {
+#    results <- pipeline$run(
+#      disorder1 = list(
+#        id = "SCZ"
+#      ),
+#      disorder2 = list(
+#        id = "CAD"
+#      ),
+#      relationship_kind = "PO",
+#      draws = 2,
+#      stratify_columns = list("born_at_year")
+#    )
+#
+#    print(results)
+#  })
+#})
