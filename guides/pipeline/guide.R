@@ -3,7 +3,7 @@ library(epimight)
 
 pipeline <- Pipeline$new(pool = tte)
 
-trial1 <- pipeline$run_trial(
+res <- pipeline$run(
   disorder1 = list(
     id             = "SCZ",
     earliest_onset = 1,
@@ -16,5 +16,5 @@ trial1 <- pipeline$run_trial(
   ),
   relationship_kind = "FS",
   draws = 2,
-  stratify_columns = list("born_at_year", "gender")
+  stratify_columns = list("born_at_year")
 )
