@@ -364,7 +364,7 @@ After creating the pipeline instance, you run analyses by supplying the ~run~ fu
 For example, if you want to run an analysis between schizophrenia and coronary artery disease of full siblings,
 using 2 draws, you would run:
 
-#+BEGIN_SRC R :exports code
+#+BEGIN_SRC R :exports code :results output
 res <- pipeline$run(
   disorder1 = list(
     id             = "SCZ",
@@ -383,13 +383,25 @@ res <- pipeline$run(
 #+END_SRC
 
 #+RESULTS:
-: TRUE
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-print(res)
+res$raw$cif |> filter(disorder == "d1", cohort == "c1", time == 1, born_at_year == 1950) |> head(5)
 #+END_SRC
 
 #+RESULTS:
+| draw | disorder | cohort | born_at_year | time |                 cif |              cif_var |              cif_l95 |             cif_u95 | cif_cases |
+|------+----------+--------+--------------+------+---------------------+----------------------+----------------------+---------------------+-----------|
+|    1 | d1       | c1     |         1950 |    1 | 0.00304878048780488 | 2.31844807425023e-06 | 6.44509474977311e-05 | 0.00603311002811203 |         3 |
+|    2 | d1       | c1     |         1950 |    1 | 0.00304878048780488 | 2.31844807425023e-06 | 6.44509474977311e-05 | 0.00603311002811203 |         3 |
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+res$combined$cif |> filter(disorder == "d1", cohort == "c1", time == 1, born_at_year == 1950) |> head(5)
+#+END_SRC
+
+#+RESULTS:
+| disorder | cohort | born_at_year | time |          fixed_meta |           within_var | between_var | k_resamples |            total_var | b_over_t |             fixed_se |           fixed_l95 |           fixed_u95 |
+|----------+--------+--------------+------+---------------------+----------------------+-------------+-------------+----------------------+----------+----------------------+---------------------+---------------------|
+| d1       | c1     |         1950 |    1 | 0.00304878048780488 | 5.37520147299462e-12 |           0 |       10824 | 5.37520147299462e-12 |        0 | 2.31844807425023e-06 | 0.00304423632957935 | 0.00305332464603041 |
 
 The function will output a named list with the following members:
 
