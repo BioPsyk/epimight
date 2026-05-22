@@ -175,6 +175,7 @@ file tte [
 rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
 rectangle "**Disorder 2**\nCAD" as disorder2 #76b354
 rectangle "**Relationship kind**\nPO" as relkind #76b354
+rectangle "**Stratify columns**\nborn_at_year" as stratcols #76b354
 rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Analysis arguments**" as args
 rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**" as results
 
@@ -242,6 +243,7 @@ Boundary1(epimight, "Epimight") {
   Process(run, "**run**")
 }
 
+stratcols --> args
 relkind --> args
 disorder2 --> args
 disorder1 --> args

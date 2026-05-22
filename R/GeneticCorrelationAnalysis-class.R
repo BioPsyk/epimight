@@ -86,14 +86,14 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
           required = TRUE,
           type = "data.table",
           columns = list(
-            re_d1_c1_estimate = list(type = "numeric"),
-            re_d1_c1_cases    = list(type = "integer"),
-            re_d1_c3_estimate = list(type = "numeric"),
-            re_d1_c3_cases    = list(type = "integer"),
-            re_d2_c1_estimate = list(type = "numeric"),
-            re_d2_c1_cases    = list(type = "integer"),
-            h2_d1_estimate    = list(type = "numeric"),
-            h2_d2_estimate    = list(type = "numeric")
+            cif_d1_c1_estimate = list(type = "numeric"),
+            cif_d1_c1_cases    = list(type = "integer"),
+            cif_d1_c3_estimate = list(type = "numeric"),
+            cif_d1_c3_cases    = list(type = "integer"),
+            cif_d2_c1_estimate = list(type = "numeric"),
+            cif_d2_c1_cases    = list(type = "integer"),
+            h2_d1_estimate     = list(type = "numeric"),
+            h2_d2_estimate     = list(type = "numeric")
           )
         )
       )
@@ -108,12 +108,12 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
       suppressWarnings({
         results <- self$calculate_rg(
           estimates$id,
-          estimates$re_d1_c1_estimate,
-          estimates$re_d1_c3_estimate,
-          estimates$re_d2_c1_estimate,
-          estimates$re_d1_c1_cases,
-          estimates$re_d1_c3_cases,
-          estimates$re_d2_c1_cases,
+          estimates$cif_d1_c1_estimate,
+          estimates$cif_d1_c3_estimate,
+          estimates$cif_d2_c1_estimate,
+          estimates$cif_d1_c1_cases,
+          estimates$cif_d1_c3_cases,
+          estimates$cif_d2_c1_cases,
           estimates$h2_d1_estimate,
           estimates$h2_d2_estimate,
           args$relationship_kind

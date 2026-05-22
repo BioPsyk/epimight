@@ -189,8 +189,6 @@ Pipeline <- R6::R6Class( #nolint
         filter(row_number() == 1) |>
         as.data.table()
 
-      print(combined)
-
       if (nrow(combined) == 0) return(result$fail("re_h2_combined", "tte", "empty"))
 
       gc_d1_d2 <- private$analysis$gc$run(
