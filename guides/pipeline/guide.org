@@ -232,8 +232,8 @@ file meta_h2 [
 file meta_rg [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**
 
-| **rhh** | *rg*  |
-| 0.054   | 0.054 |
+| **rhh** | **rg** |
+| 0.054   | 0.054  |
 ]
 
 Boundary1(epimight, "Epimight") {
@@ -413,7 +413,7 @@ For example, if you want to run an analysis between schizophrenia and coronary a
 using 2 draws, you would run:
 
 #+BEGIN_SRC R :exports both
-trial1 <- pipeline$run_trial(
+analysis1 <- pipeline$run(
   disorder1 = list(
     id             = "SCZ",
     earliest_onset = 1,
@@ -441,7 +441,9 @@ The function will output a named list with the following members:
   - ~h2~ :: Heritability
   - ~rg~ :: Genetic correlation
 
-** Using trial results
+
+
+* Using trial results :noexport:
 
 The ~run_trail~ function returns a list with the following members:
 
