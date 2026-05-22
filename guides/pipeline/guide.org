@@ -480,7 +480,7 @@ res$stratified$cif |> head(20)
 
 *** Heritability
 
-The heritability results for the different disorders are kept in one dataset, group by disorder:
+The heritability results for the different disorders are kept in one dataset, grouped by disorder:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$stratified$h2 |> distinct(disorder)
