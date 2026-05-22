@@ -325,29 +325,6 @@ Pipeline <- R6::R6Class( #nolint
       result |> select(draw, source, everything())
     },
     #' @description
-    #' Meta analyzes all draw results grouped by draw.
-    rubins_combine_draw_results = function(draw_results, stratify_columns) {
-      sources <- list("d1_h2", "d2_h2", "gc")
-      result  <- NULL
-
-      for (src in sources) {
-        rubin <- private$sub_analyses$core$run_rubins_combine(
-          estimates        = draw_results,
-          estimate_column  = src,
-          se_column        = paste0(src, "_se"),
-          stratify_columns = stratify_columns
-        ) |> mutate(source = src)
-
-        if (is.null(result)) {
-          result <- rubin
-        } else {
-          result <- rbind(result, rubin)
-        }
-      }
-
-      result |> select(!!!stratify_columns, everything())
-    },
-    #' @description
     #' Runs a single experiment using the given disorders and relationship_kind.
     run = function(...) {
       validator <- ArgumentsValidator$new(
@@ -395,8 +372,9 @@ Pipeline <- R6::R6Class( #nolint
           required = TRUE
         ),
         stratify_columns = list(
-          type  = "list",
-          items = list(type = "string")
+          type    = "list",
+          items   = list(type = "string"),
+          default = list()
         ),
         draws = list(
           type    = "integer",
@@ -424,8 +402,10 @@ Pipeline <- R6::R6Class( #nolint
       )
       if (is.null(cif_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
 
-      errors  <- list()
-      results <- NULL
+      errors      <- list()
+      cif_results <- NULL
+      h2_results  <- NULL
+      rg_results  <- NULL
 
       for (k in seq_len(args$draws)) {
         draw <- self$run_draw(tte_c1, cif_d1_c1, cif_d2_c1, args)
@@ -435,34 +415,26 @@ Pipeline <- R6::R6Class( #nolint
           next
         }
 
-        res <- draw$results |>
-          mutate(draw = k) |>
-          select(draw, everything())
-
-        if (is.null(results)) {
-          results <- res
-        } else {
-          results <- rbind(results, res)
-        }
+        cif_results <- rbind(cif_results, draw$results$cif |> mutate(draw = k) |> select(draw, everything()))
+        h2_results  <- rbind(h2_results,  draw$results$h2  |> mutate(draw = k) |> select(draw, everything()))
+        rg_results  <- rbind(rg_results,  draw$results$rg  |> mutate(draw = k) |> select(draw, everything()))
       }
 
-      if (is.null(results) || nrow(results) == 0) stop("All draws failed")
+      if (is.null(rg_results) || nrow(rg_results) == 0) stop("All draws failed")
 
-      meta  <- self$meta_analyze_draw_results(results)
-      rubin <- self$rubins_combine_draw_results(results, args$stratify_columns)
+      cif_results <- private$sub_analyses$core$run_rubins_combine(
+        estimates        = cif_results,
+        estimate_column  = "cif",
+        se_column        = "cif_se",
+        stratify_columns = c(list("time", "disorder", "cohort"), args$stratify_columns)
+      ) |> select(!!!cif_stratify_columns, everything())
 
-      list(
-        args       = args,
-        errors     = errors,
-        results    = results,
-        meta       = meta,
-        rubin      = rubin,
-        rubin_meta = private$sub_analyses$core$run_meta(
-          estimates       = rubin,
-          estimate_column = "fixed_meta",
-          se_column       = "fixed_se"
-        )
-      )
+      print(cif_results)
+
+      return(NULL)
+
+      #meta  <- self$meta_analyze_draw_results(results)
+      #rubin <- self$rubins_combine_draw_results(results, args$stratify_columns)
     }
   )
 )

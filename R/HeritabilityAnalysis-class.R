@@ -33,23 +33,23 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
       }
 
       # lifetime prevalence unaffected/general population represeting the upper tail z value
-      t1   <- qnorm(k1, lower.tail = FALSE)
-      y    <- dnorm(t1)
-      i    <- y / k1
+      t1 <- qnorm(k1, lower.tail = FALSE)
+      y  <- dnorm(t1)
+      i  <- y / k1
+
       # lifetime prevalence in the relatives of the affected ones represeting the upper tail z value
-      tr   <- qnorm(kr, lower.tail = FALSE)
-      yr   <- dnorm(tr)
+      tr  <- qnorm(kr, lower.tail = FALSE)
+      yr  <- dnorm(tr)
+      num <- t1 - tr * sqrt(1 - (1 - t1 / i) * (t1 ^ 2 - tr ^ 2))
+      den <- rc * (i + (i - t1) * tr ^ 2)
+      h2  <- num / den
 
-      num  <- t1 - tr * sqrt(1 - (1 - t1 / i) * (t1 ^ 2 - tr ^ 2))
-      den  <- rc * (i + (i - t1) * tr ^ 2)
-      h2   <- num / den
       # se estimation
-      wg   <- (((k1 ^ 2) / (y ^ 2)) * (1 - k1)) / a1
-      vvg  <- (1 / i - rc * h2 * (i - t1)) ^ 2 # there is a + in Wray and a - in Falconer
-      wr   <- kr ^ 2 / yr ^ 2 * (1 - kr) / ar
-      vvr  <- (1 / i) ^ 2
-
-      se   <- 1 / rc * sqrt(vvg * wg + vvr * wr)
+      wg  <- (((k1 ^ 2) / (y ^ 2)) * (1 - k1)) / a1
+      vvg <- (1 / i - rc * h2 * (i - t1)) ^ 2 # there is a + in Wray and a - in Falconer
+      wr  <- kr ^ 2 / yr ^ 2 * (1 - kr) / ar
+      vvr <- (1 / i) ^ 2
+      se  <- 1 / rc * sqrt(vvg * wg + vvr * wr)
       l95 <- h2 - 1.96 * se
       u95 <- h2 + 1.96 * se
 
