@@ -78,8 +78,8 @@ Analysis <- R6::R6Class( #nolint
     #'
     #' @return Meta analysis result
     run_meta = function(...) {
-      args          <- private$validator$run(...)
-      group_symbols <- rlang::syms(args$stratify_columns)
+      args             <- private$validator$run(...)
+      stratify_symbols <- rlang::syms(args$stratify_columns)
 
       args$estimates |>
         filter_all(
@@ -93,7 +93,7 @@ Analysis <- R6::R6Class( #nolint
           fixed_se = 1 / (se ^ 2),
           rand_se  = 1 / ((se ^ 2) + var(estimate))
         ) |>
-        group_by(!!!group_symbols) |>
+        group_by(!!!stratify_symbols) |>
         summarise(
           fixed_se_sum = sum(fixed_se),
           fixed_meta   = sum(estimate * fixed_se) / fixed_se_sum,
@@ -113,9 +113,9 @@ Analysis <- R6::R6Class( #nolint
         as.data.table()
     },
     run_rubins_combine = function(...) {
-      args          <- private$validator$run(...)
-      group_symbols <- rlang::syms(args$stratify_columns)
-      k_resamples   <- nrow(args$estimates)
+      args             <- private$validator$run(...)
+      stratify_symbols <- rlang::syms(args$stratify_columns)
+      k_resamples      <- nrow(args$estimates)
 
       args$estimates |>
         filter_all(
@@ -125,7 +125,7 @@ Analysis <- R6::R6Class( #nolint
           estimate = !!as.name(args$estimate_column), # theta
           se       = !!as.name(args$se_column)
         ) |>
-        group_by(!!!group_symbols) |>
+        group_by(!!!stratify_symbols) |>
         summarise(
           fixed_meta  = mean(estimate), # theta bar
           within_var  = mean(se ^ 2),   # W

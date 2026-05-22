@@ -187,11 +187,11 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         )
       }
 
-      group_symbols <- rlang::syms(args$stratify_columns)
+      stratify_symbols <- rlang::syms(args$stratify_columns)
       permutations  <- args$tte |>
-        select(!!!group_symbols) |>
-        distinct(!!!group_symbols) |>
-        arrange(!!!group_symbols) |>
+        select(!!!stratify_symbols) |>
+        distinct(!!!stratify_symbols) |>
+        arrange(!!!stratify_symbols) |>
         as.data.frame()
 
       runner <- function(idx) {

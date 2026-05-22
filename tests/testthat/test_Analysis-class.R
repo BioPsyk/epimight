@@ -93,21 +93,21 @@ describe("run_meta", {
   })
 })
 
-describe("run_rubin", {
+describe("run_rubins_combine", {
   it("Fails when no arguments are given", {
-    expect_error(analysis$run_rubin())
+    expect_error(analysis$run_rubins_combine())
   })
 
   it("Fails when incorrect types are given", {
     expect_error(
-      analysis$run_rubin(
+      analysis$run_rubins_combine(
         results     = "no data.table?",
         meta_column = "h2"
       )
     )
 
     expect_error(
-      analysis$run_rubin(
+      analysis$run_rubins_combine(
         estimates = data.table(
           se = c(0.2, 0.3),
           h2 = c(0.5, 0.4)
@@ -118,7 +118,7 @@ describe("run_rubin", {
     )
 
     expect_error(
-      analysis$run_rubin(
+      analysis$run_rubins_combine(
         estimates = data.table(
           se = c(0.2, 0.3),
           h2 = c("data", "table")
@@ -129,7 +129,7 @@ describe("run_rubin", {
     )
 
     expect_error(
-      analysis$run_rubin(
+      analysis$run_rubins_combine(
         estimates = data.table(
           se = c(TRUE, FALSE),
           h2 = c(0.5, 0.4)
@@ -142,7 +142,7 @@ describe("run_rubin", {
 
   it("Fails when estimate column is missing", {
     expect_error(
-      analysis$run_rubin(
+      analysis$run_rubins_combine(
         estimates = data.table(
           se = c(0.2, 0.3),
           h2 = c(0.5, 0.4)
@@ -153,7 +153,7 @@ describe("run_rubin", {
   })
 
   it("Succeeds with valid input", {
-    analysis$run_rubin(
+    analysis$run_rubins_combine(
       estimates = data.table(
         h2 = c(0.5, 0.4),
         se = c(0.2, 0.3)
