@@ -132,9 +132,9 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' @description
     #' Helper that runs cif on the given time-to-event data and handles all prefixes of columns.
-    run_cif = function(tte, disorder_prefix, cohort_prefix, stratify_columns, earliest_onset, latest_onset) {
-      status_col <- paste0(disorder_prefix, "_failure_status")
-      time_col   <- paste0(disorder_prefix, "_failure_time")
+    run_cif = function(tte, disorder, cohort, stratify_columns, earliest_onset, latest_onset) {
+      status_col <- paste0(disorder, "_failure_status")
+      time_col   <- paste0(disorder, "_failure_time")
 
       tmp_tte <- tte |>
         rename(
@@ -150,17 +150,24 @@ Pipeline <- R6::R6Class( #nolint
         latest_onset     = latest_onset
       ) |>
         select(!!!stratify_columns, time, cif, var, l95, u95, cases) |>
-        rename_with(~ paste0(cohort_prefix, "_", .), .cols = c(cif, var, l95, u95, cases))
+        rename_with(~ paste0(cohort, "_", .), .cols = c(cif)) |>
+        rename_with(~ paste0(cohort, "_cif_", .), .cols = c(var, l95, u95, cases))
     },
     #' @description
     #' Helper that runs heritability on the given time-to-event data and handles all prefixes of columns.
-    run_h2 = function(disorder_prefix, re_c1, re_c2, relationship_kind, stratify_columns) {
+    run_h2 = function(disorder, cif_c1, cif_c2, relationship_kind, stratify_columns) {
+      cif <-  cif_c1 |>
+        inner_join(cif_c2, by = join_by(time, !!!stratify_columns))
+
+      curr_prefix <- paste0(disorder, "_h2")
+
       private$sub_analyses$h2$run(
         relationship_kind = relationship_kind,
-        estimates         = re_c1 |> inner_join(re_c2, by = join_by(time, !!!stratify_columns))
+        estimates         = cif
       ) |>
-        rename_with(~ paste0("h2_", disorder_prefix, "_", .), .cols = c(estimate, se, l95, u95)) |>
-        select(time, !!!stratify_columns, starts_with("h2_"))
+        rename_with(~ curr_prefix, .cols = c(h2)) |>
+        rename_with(~ paste0(curr_prefix, "_", .), .cols = c(se, l95, u95)) |>
+        select(time, !!!stratify_columns, starts_with(curr_prefix))
     },
     #' @description
     #' Runs a single draw which produces stratified genetic correlation for the 2 disorders specified in the
@@ -217,7 +224,7 @@ Pipeline <- R6::R6Class( #nolint
       h2_d2 <- self$run_h2(
         "d2",
         cif_d2_c1,
-        cif_d2_c3 |> rename(c2_estimate = c3_estimate, c2_cases = c3_cases),
+        cif_d2_c3 |> rename(c2_cif = c3_cif, c2_cases = c3_cases),
         args$relationship_kind,
         args$stratify_columns
       )
@@ -365,7 +372,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args   <- validator$run(...)
-      tte_c1 <- self$get_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$stratify_columns)
+      tte_c1 <- self$get_tte(args$relationship_kind, args$disorder1$id, args$disorder2$id, args$stratify_columns)
 
       cif_d1_c1 <- self$run_cif(
         tte_c1, "d1", "c1",

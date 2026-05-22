@@ -78,20 +78,20 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
           required = TRUE,
           type = "data.table",
           columns = list(
-            c1_estimate = list(
+            c1_cif = list(
               required = TRUE,
               type     = "numeric"
             ),
-            c1_cases = list(
+            c1_cif_cases = list(
               required = TRUE,
               type     = "integer",
               minimum  = 0
             ),
-            c2_estimate = list(
+            c2_cif = list(
               required = TRUE,
               type     = "numeric"
             ),
-            c2_cases = list(
+            c2_cif_cases = list(
               required = TRUE,
               type     = "integer",
               minimum  = 0
@@ -107,10 +107,10 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
       suppressWarnings({
         results <- self$calculate_h2(
           estimates$id,
-          estimates$c1_estimate,
-          estimates$c2_estimate,
-          estimates$c1_cases,
-          estimates$c2_cases,
+          estimates$c1_cif,
+          estimates$c2_cif,
+          estimates$c1_cif_cases,
+          estimates$c2_cif_cases,
           args$relationship_kind
         ) |>
           filter_all(
