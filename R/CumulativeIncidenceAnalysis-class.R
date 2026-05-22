@@ -108,10 +108,12 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       ][
         ,
         .(
-          time, cif, var,
+          time,
+          cif,
+          se  = sqrt(var),
           l95 = cif - qnorm(0.975) * sqrt(var),
           u95 = cif + qnorm(0.975) * sqrt(var),
-          se  = sqrt(var)
+          var
         )
       ]
 
@@ -127,7 +129,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       ][
         ,
         .(
-          time, cif, var, l95, u95,
+          time, cif, se, l95, u95, var,
           cases = cumsum(
             ifelse(is.na(cases_amount), 0, cases_amount)
           )

@@ -149,9 +149,9 @@ Pipeline <- R6::R6Class( #nolint
         earliest_onset   = earliest_onset,
         latest_onset     = latest_onset
       ) |>
-        select(!!!stratify_columns, time, cif, var, l95, u95, cases) |>
+        select(!!!stratify_columns, time, cif, se, l95, u95, var, cases) |>
         rename_with(~ paste0(cohort, "_", .), .cols = c(cif)) |>
-        rename_with(~ paste0(cohort, "_cif_", .), .cols = c(var, l95, u95, cases))
+        rename_with(~ paste0(cohort, "_cif_", .), .cols = c(se, l95, u95, var, cases))
     },
     #' @description
     #' Helper that runs heritability on the given time-to-event data and handles all prefixes of columns.
@@ -302,29 +302,6 @@ Pipeline <- R6::R6Class( #nolint
       ))
     },
     #' @description
-    #' Meta analyzes all draw results grouped by draw.
-    meta_analyze_draw_results = function(draw_results) {
-      sources <- list("d1_h2", "d2_h2", "rg")
-      result  <- NULL
-
-      for (src in sources) {
-        meta <- private$sub_analyses$core$run_meta(
-          estimates        = draw_results,
-          estimate_column  = src,
-          se_column        = paste0(src, "_se"),
-          stratify_columns = list("draw")
-        ) |> mutate(source = src)
-
-        if (is.null(result)) {
-          result <- meta
-        } else {
-          result <- rbind(result, meta)
-        }
-      }
-
-      result |> select(draw, source, everything())
-    },
-    #' @description
     #' Runs a single experiment using the given disorders and relationship_kind.
     run = function(...) {
       validator <- ArgumentsValidator$new(
@@ -426,9 +403,10 @@ Pipeline <- R6::R6Class( #nolint
       cif_combined <- private$sub_analyses$core$run_rubins_combine(
         estimates        = cif_results,
         estimate_column  = "cif",
-        se_column        = "cif_var",
+        se_column        = "cif_se",
         stratify_columns = cif_stratify_columns
-      ) |> select(!!!cif_stratify_columns, everything())
+      ) |>
+        select(!!!cif_stratify_columns, everything())
 
       h2_stratify_columns <- c(list("disorder"), args$stratify_columns)
       h2_combined <- private$sub_analyses$core$run_rubins_combine(
@@ -436,25 +414,49 @@ Pipeline <- R6::R6Class( #nolint
         estimate_column  = "h2",
         se_column        = "h2_se",
         stratify_columns = h2_stratify_columns
-      ) |> select(!!!h2_stratify_columns, everything())
+      ) |>
+        select(!!!h2_stratify_columns, everything())
 
       rg_combined <- private$sub_analyses$core$run_rubins_combine(
         estimates        = rg_results,
         estimate_column  = "rg",
         se_column        = "rg_se",
         stratify_columns = args$stratify_columns
-      ) |> select(!!!args$stratify_columns, everything())
+      ) |>
+        select(!!!args$stratify_columns, everything())
+
+      cif_meta <- private$sub_analyses$core$run_meta(
+        estimates        = cif_combined |> select(!!!cif_stratify_columns, fixed_meta, fixed_se),
+        estimate_column  = "fixed_meta",
+        se_column        = "fixed_se",
+        stratify_columns = list("disorder", "cohort")
+      ) |>
+        select(disorder, cohort, everything())
+
+      h2_meta <- private$sub_analyses$core$run_meta(
+        estimates        = h2_combined |> select(!!!h2_stratify_columns, fixed_meta, fixed_se),
+        estimate_column  = "fixed_meta",
+        se_column        = "fixed_se",
+        stratify_columns = list("disorder")
+      ) |>
+        select(disorder, everything())
+
+      rg_meta <- private$sub_analyses$core$run_meta(
+        estimates        = cif_combined |> select(!!!args$stratify_columns, fixed_meta, fixed_se),
+        estimate_column  = "fixed_meta",
+        se_column        = "fixed_se"
+      )
 
       return(list(
-        raw = list(
-          cif = cif_results,
-          h2  = h2_results,
-          rg  = rg_results
-        ),
         combined = list(
           cif = cif_combined,
           h2  = h2_combined,
           rg  = rg_combined
+        ),
+        meta = list(
+          cif = cif_meta,
+          h2  = h2_meta,
+          rg  = rg_meta
         )
       ))
     }
