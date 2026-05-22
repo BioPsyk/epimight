@@ -83,14 +83,14 @@ old_analysis <- function() {
 }
 
 new_analysis <- function() {
-  group_columns <- c(
+  stratify_columns <- c(
     "born_at_year",
     "diagnosed_relatives"
   )
 
   group_tte <- make_tte_groups()
 
-  results <- analysis$run(group_tte, group_columns) |>
+  results <- analysis$run(group_tte, stratify_columns) |>
     rename_group_results() |>
     as.data.frame()
 

@@ -27,7 +27,7 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given disorders, relationship kind and group columns.
     #' Makes sure that the retrieved data fulfills the requirements of carrying out a single pipeline run.
-    get_tte = function(disorder1_id, disorder2_id, relkind, group_columns) {
+    get_tte = function(disorder1_id, disorder2_id, relkind, stratify_columns) {
       tte <- private$pool |>
         filter(relationship_kind == relkind) |>
         select(-relationship_kind)
@@ -64,9 +64,9 @@ Pipeline <- R6::R6Class( #nolint
 
       combined <- inner_join(tte_d1, tte_d2, by = join_by(person_id))
 
-      if (!is.list(group_columns)) return(combined)
+      if (!is.list(stratify_columns)) return(combined)
 
-      for (col in group_columns) {
+      for (col in stratify_columns) {
         if (!(col %in% colnames(combined))) {
           stop("group_column \"", col, "\" was not found in TTE dataset: ", paste(colnames(combined), collapse = ", "))
         }
@@ -76,7 +76,7 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' @description
     #' Helper that runs cif on the given time-to-event data and handles all prefixes of columns.
-    run_cif = function(tte, disorder_prefix, cohort_prefix, group_columns, earliest_onset, latest_onset) {
+    run_cif = function(tte, disorder_prefix, cohort_prefix, stratify_columns, earliest_onset, latest_onset) {
       status_col   <- paste0(disorder_prefix, "_failure_status")
       time_col     <- paste0(disorder_prefix, "_failure_time")
 
@@ -89,7 +89,7 @@ Pipeline <- R6::R6Class( #nolint
 
       private$analysis$cif$run(
         tte            = tmp_tte,
-        group_columns  = group_columns,
+        stratify_columns  = stratify_columns,
         earliest_onset = earliest_onset,
         latest_onset   = latest_onset
       ) |>
@@ -97,13 +97,13 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' @description
     #' Helper that runs heritability on the given time-to-event data and handles all prefixes of columns.
-    run_h2 = function(disorder_prefix, re_c1, re_c2, relationship_kind, group_columns) {
+    run_h2 = function(disorder_prefix, re_c1, re_c2, relationship_kind, stratify_columns) {
       private$analysis$h2$run(
         relationship_kind = relationship_kind,
-        estimates         = re_c1 |> inner_join(re_c2, by = join_by(time, !!!group_columns))
+        estimates         = re_c1 |> inner_join(re_c2, by = join_by(time, !!!stratify_columns))
       ) |>
         rename_with(~ paste0("h2_", disorder_prefix, "_", .), .cols = c(estimate, se, l95, u95)) |>
-        select(time, !!!group_columns, starts_with("h2_"))
+        select(time, !!!stratify_columns, starts_with("h2_"))
     },
     #' @description
     #' Runs a single draw which produces stratified genetic correlation for the 2 disorders specified in the
@@ -130,7 +130,7 @@ Pipeline <- R6::R6Class( #nolint
 
       re_d1_c2 <- private$run_cif(
         tte_c2, "d1", "c2",
-        args$group_columns,
+        args$stratify_columns,
         args$disorder1$earliest_onset,
         args$disorder1$latest_onset
       )
@@ -138,7 +138,7 @@ Pipeline <- R6::R6Class( #nolint
 
       re_d1_c3 <- private$run_cif(
         tte_c3, "d1", "c3",
-        args$group_columns,
+        args$stratify_columns,
         args$disorder1$earliest_onset,
         args$disorder1$latest_onset
       )
@@ -148,13 +148,13 @@ Pipeline <- R6::R6Class( #nolint
         tte_c3,
         "d2",
         "c3",
-        args$group_columns,
+        args$stratify_columns,
         args$disorder2$earliest_onset,
         args$disorder2$latest_onset
       )
       if (is.null(re_d2_c3)) return(result$fail("re_d2_c3", "cif", "empty"))
 
-      h2_d1 <- private$run_h2("d1", re_d1_c1, re_d1_c2, args$relationship_kind, args$group_columns)
+      h2_d1 <- private$run_h2("d1", re_d1_c1, re_d1_c2, args$relationship_kind, args$stratify_columns)
       if (is.null(h2_d1)) return(result$fail("h2_d1", "h2", "empty"))
 
       h2_d2 <- private$run_h2(
@@ -162,7 +162,7 @@ Pipeline <- R6::R6Class( #nolint
         re_d2_c1,
         re_d2_c3 |> rename(c2_estimate = c3_estimate, c2_cases = c3_cases),
         args$relationship_kind,
-        args$group_columns
+        args$stratify_columns
       )
       if (is.null(h2_d2)) return(result$fail("h2_d2", "h2", "empty"))
 
@@ -172,8 +172,8 @@ Pipeline <- R6::R6Class( #nolint
 
       join_columns <- list("time")
 
-      if ("group_columns" %in% names(args) && is.list(args$group_columns)) {
-        join_columns <- c(join_columns, args$group_columns)
+      if ("stratify_columns" %in% names(args) && is.list(args$stratify_columns)) {
+        join_columns <- c(join_columns, args$stratify_columns)
       }
 
       join_symbols <- rlang::syms(join_columns)
@@ -214,7 +214,7 @@ Pipeline <- R6::R6Class( #nolint
           estimates       = draw_results,
           estimate_column = paste0(src, "_estimate"),
           se_column       = paste0(src, "_se"),
-          group_columns   = list("draw")
+          stratify_columns   = list("draw")
         ) |> mutate(source = src)
 
         if (is.null(result)) {
@@ -228,7 +228,7 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' @description
     #' Meta analyzes all draw results grouped by draw.
-    rubins_combine_draw_results = function(draw_results, group_columns) {
+    rubins_combine_draw_results = function(draw_results, stratify_columns) {
       sources <- list("h2_d1", "h2_d2", "gc_d1_d2")
       result  <- NULL
 
@@ -237,7 +237,7 @@ Pipeline <- R6::R6Class( #nolint
           estimates       = draw_results,
           estimate_column = paste0(src, "_estimate"),
           se_column       = paste0(src, "_se"),
-          group_columns   = group_columns
+          stratify_columns   = stratify_columns
         ) |> mutate(source = src)
 
         if (is.null(result)) {
@@ -247,7 +247,7 @@ Pipeline <- R6::R6Class( #nolint
         }
       }
 
-      result |> select(!!!group_columns, everything())
+      result |> select(!!!stratify_columns, everything())
     }
   ),
   public = list(
@@ -352,7 +352,7 @@ Pipeline <- R6::R6Class( #nolint
           enum     = names(epimight:::relationship_kinds),
           required = TRUE
         ),
-        group_columns = list(
+        stratify_columns = list(
           type  = "list",
           items = list(type = "string")
         ),
@@ -364,11 +364,11 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       args   <- validator$run(...)
-      tte_c1 <- private$get_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$group_columns)
+      tte_c1 <- private$get_tte(args$disorder1$id, args$disorder2$id, args$relationship_kind, args$stratify_columns)
 
       re_d1_c1 <- private$run_cif(
         tte_c1, "d1", "c1",
-        args$group_columns,
+        args$stratify_columns,
         args$disorder1$earliest_onset,
         args$disorder1$latest_onset
       )
@@ -376,7 +376,7 @@ Pipeline <- R6::R6Class( #nolint
 
       re_d2_c1 <- private$run_cif(
         tte_c1, "d2", "c1",
-        args$group_columns,
+        args$stratify_columns,
         args$disorder2$earliest_onset,
         args$disorder2$latest_onset
       )
@@ -407,7 +407,7 @@ Pipeline <- R6::R6Class( #nolint
       if (nrow(results) == 0) stop("All draws failed")
 
       meta  <- private$meta_analyze_draw_results(results)
-      rubin <- private$rubins_combine_draw_results(results, args$group_columns)
+      rubin <- private$rubins_combine_draw_results(results, args$stratify_columns)
 
       list(
         args       = args,

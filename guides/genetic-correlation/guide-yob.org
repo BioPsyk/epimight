@@ -415,7 +415,7 @@ run_cif_stratified <- function(disorder, cohort) {
   cif_analysis$run(
     tte = tte,
     earliest_onset = onset,
-    group_columns = list("born_at_year")
+    stratify_columns = list("born_at_year")
   )
 }
 

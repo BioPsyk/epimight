@@ -25,7 +25,7 @@ Analysis <- R6::R6Class( #nolint
         ),
         estimate_column = list(required = TRUE, type = "string"),
         se_column       = list(required = TRUE, type = "string"),
-        group_columns   = list(
+        stratify_columns   = list(
           type    = "list",
           items   = list(required = TRUE, type = "string"),
           default = list()
@@ -45,13 +45,13 @@ Analysis <- R6::R6Class( #nolint
           type     = "numeric"
         )
 
-        if (!("group_columns" %in% rules && is.list(rules$group_columns))) {
+        if (!("stratify_columns" %in% rules && is.list(rules$stratify_columns))) {
           private$validator$check_type("estimates", rule, args$estimates)
 
           return(args)
         }
 
-        for (gcol in rules$group_columns) {
+        for (gcol in rules$stratify_columns) {
           rule$columns[[args$se_column]] <- list(
             required = TRUE,
             type     = "any"
@@ -79,7 +79,7 @@ Analysis <- R6::R6Class( #nolint
     #' @return Meta analysis result
     run_meta = function(...) {
       args          <- private$validator$run(...)
-      group_symbols <- rlang::syms(args$group_columns)
+      group_symbols <- rlang::syms(args$stratify_columns)
 
       args$estimates |>
         filter_all(
@@ -114,7 +114,7 @@ Analysis <- R6::R6Class( #nolint
     },
     run_rubins_combine = function(...) {
       args          <- private$validator$run(...)
-      group_symbols <- rlang::syms(args$group_columns)
+      group_symbols <- rlang::syms(args$stratify_columns)
       k_resamples   <- nrow(args$estimates)
 
       args$estimates |>

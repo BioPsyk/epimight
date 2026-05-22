@@ -82,7 +82,7 @@ describe("run", {
 
     estimates <- cif_analysis$run(
       tte = tte2,
-      group_columns = list("cohort")
+      stratify_columns = list("cohort")
     )
 
     cohort1 <- estimates |> filter(cohort == "all")
@@ -125,7 +125,7 @@ describe("run", {
 
     estimates <- cif_analysis$run(
       tte = tte2,
-      group_columns = list("born_at_year", "cohort")
+      stratify_columns = list("born_at_year", "cohort")
     )
 
     #=================================================================================

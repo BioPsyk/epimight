@@ -126,11 +126,11 @@ describe("initialize", {
 
 describe("run_experiment", {
   it("doesn't allow empty arguments", {
-    expect_error(pipeline$run_analysis())
+    expect_error(pipeline$run())
   })
 
   it("fails when disorder 1 is not found", {
-    expect_error(pipeline$run_analysis(
+    expect_error(pipeline$run(
       disorder1 = list(
         id             = "unknown",
         earliest_onset = 1,
@@ -146,7 +146,7 @@ describe("run_experiment", {
   })
 
   it("fails when disorder 2 is not found", {
-    expect_error(pipeline$run_analysis(
+    expect_error(pipeline$run(
       disorder1 = list(
         id             = "SCZ",
         earliest_onset = 1,
@@ -162,7 +162,7 @@ describe("run_experiment", {
   })
 
   it("fails when relationship_kind is not found", {
-    expect_error(pipeline$run_analysis(
+    expect_error(pipeline$run(
       disorder1 = list(
         id             = "SCZ",
         earliest_onset = 1,
@@ -178,7 +178,7 @@ describe("run_experiment", {
   })
 
   it("fails when group column cannot be found in TTE dataset", {
-    expect_error(pipeline$run_analysis(
+    expect_error(pipeline$run(
       disorder1 = list(
         id = "SCZ"
       ),
@@ -187,12 +187,12 @@ describe("run_experiment", {
       ),
       relationship_kind = "PO",
       draws = 2,
-      group_columns = list("born_at_year", "unknown")
+      stratify_columns = list("born_at_year", "unknown")
     ))
   })
 
   it("allows valid experiment selection", {
-    results <- pipeline$run_analysis(
+    results <- pipeline$run(
       disorder1 = list(
         id = "SCZ"
       ),
@@ -201,7 +201,7 @@ describe("run_experiment", {
       ),
       relationship_kind = "PO",
       draws = 2,
-      group_columns = list("gender", "born_at_year")
+      stratify_columns = list("born_at_year")
     )
 
     print(results)

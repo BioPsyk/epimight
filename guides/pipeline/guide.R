@@ -16,5 +16,5 @@ trial1 <- pipeline$run_trial(
   ),
   relationship_kind = "FS",
   draws = 2,
-  group_columns = list("born_at_year", "gender")
+  stratify_columns = list("born_at_year", "gender")
 )

@@ -412,8 +412,8 @@ After creating the pipeline instance, you run analyses by supplying the ~run~ fu
 For example, if you want to run an analysis between schizophrenia and coronary artery disease of full siblings,
 using 2 draws, you would run:
 
-#+BEGIN_SRC R :exports both
-analysis1 <- pipeline$run(
+#+BEGIN_SRC R :exports code
+res <- pipeline$run(
   disorder1 = list(
     id             = "SCZ",
     earliest_onset = 1,
@@ -426,9 +426,17 @@ analysis1 <- pipeline$run(
   ),
   relationship_kind = "FS",
   draws = 2,
-  group_columns = list("born_at_year")
+  stratify_columns = list("born_at_year")
 )
 #+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+print(res)
+#+END_SRC
+
+#+RESULTS:
 
 The function will output a named list with the following members:
 

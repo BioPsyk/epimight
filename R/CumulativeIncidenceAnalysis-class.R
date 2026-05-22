@@ -159,7 +159,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
             )
           )
         ),
-        group_columns = list(
+        stratify_columns = list(
           type  = "list",
           items = list(type = "string")
         ),
@@ -177,7 +177,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
-      if (!exists("group_columns", where = args) || length(args$group_columns) == 0) {
+      if (!exists("stratify_columns", where = args) || length(args$stratify_columns) == 0) {
         return(
           private$run_single(
             tte            = args$tte,
@@ -187,7 +187,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         )
       }
 
-      group_symbols <- rlang::syms(args$group_columns)
+      group_symbols <- rlang::syms(args$stratify_columns)
       permutations  <- args$tte |>
         select(!!!group_symbols) |>
         distinct(!!!group_symbols) |>
@@ -196,7 +196,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
       runner <- function(idx) {
         filter_expr <- private$build_filter_expression(
-          args$group_columns,
+          args$stratify_columns,
           permutations[idx, ]
         )
 
@@ -213,7 +213,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         if (is.null(group_results)) return(NULL)
 
         mutate_expr <- private$build_mutate_expression(
-          args$group_columns, permutations[idx, ]
+          args$stratify_columns, permutations[idx, ]
         )
 
         group_results <- rlang::eval_tidy(mutate_expr) |> collect()
