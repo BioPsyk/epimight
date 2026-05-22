@@ -384,7 +384,7 @@ res <- pipeline$run(
 
 #+RESULTS:
 
-* Using the results
+* Analysis results
 
 ** Cumulative incidence
 
