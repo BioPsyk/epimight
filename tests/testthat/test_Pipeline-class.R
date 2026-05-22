@@ -8,37 +8,13 @@ source("../utils.R")
 # Preparation
 #=================================================================================
 
-set.seed(6)
+tte <- read_csv(
+  "../data/pipeline-tte.csv",
+  show_col_type = FALSE,
+  col_types=cols(person_id = col_character()),
+) |> as.data.table()
 
-d1_tte <- generate_random_tte(10000)
-d1_tte <- generate_failure(d1_tte, 20, 10)
-d1_tte <- generate_diagnosed_relatives(d1_tte, "relatives_diagnosed") |>
-  select(-born_at, -dead_at_year) |>
-  relocate(failure_time, .after = person_id) |>
-  relocate(failure_status, .after = failure_time) |>
-  relocate(relatives, .after = failure_status) |>
-  relocate(relatives_diagnosed, .after = relatives) |>
-  mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
-  as.data.frame()
-
-d1_tte_dt <- data.table(d1_tte)
-
-d2_tte <- generate_random_tte(10000)
-d2_tte <- generate_failure(d2_tte, 19, 11)
-d2_tte <- generate_diagnosed_relatives(d2_tte, "relatives_diagnosed") |>
-  select(-born_at, -dead_at_year) |>
-  relocate(failure_time, .after = person_id) |>
-  relocate(failure_status, .after = failure_time) |>
-  relocate(relatives, .after = failure_status) |>
-  relocate(relatives_diagnosed, .after = relatives) |>
-  mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
-  as.data.frame()
-
-d2_tte_dt <- data.table(d2_tte)
-
-tte_dt <- rbindlist(list(d1_tte_dt, d2_tte_dt))
-
-pipeline <- Pipeline$new(pool = tte_dt)
+pipeline <- Pipeline$new(pool = tte)
 
 #=================================================================================
 # Tests
@@ -120,7 +96,7 @@ describe("initialize", {
       )
     )
 
-    Pipeline$new(pool = tte_dt)
+    Pipeline$new(pool = tte)
   })
 })
 
