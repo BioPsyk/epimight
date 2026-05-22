@@ -127,16 +127,11 @@ describe("get_tte", {
     )
   })
 
-  it("allows getting tte for existing disorders, relationship kind and no stratify columns", {
-    tte_c1 <- pipeline$get_tte("PO", "SCZ", "CAD")
+  it("doesn't change the output when stratify columns are given", {
+    tte_no_strat <- pipeline$get_tte("PO", "SCZ", "CAD")
+    tte_strat    <- pipeline$get_tte("PO", "SCZ", "CAD", list("born_at_year"))
 
-    print(tte_c1)
-  })
-
-  it("allows getting tte for existing disorders, relationship kind and stratify columns", {
-    tte_c1 <- pipeline$get_tte("PO", "SCZ", "CAD", list("born_at_year"))
-
-    print(tte_c1)
+    expect_equal(tte_no_strat, tte_strat)
   })
 })
 
