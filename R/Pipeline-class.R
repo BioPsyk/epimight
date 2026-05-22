@@ -253,8 +253,10 @@ Pipeline <- R6::R6Class( #nolint
       if (is.null(h2_d2)) return(result$fail("h2_d2", "h2", "empty"))
 
       cif_d1_c1 <- cif_d1_c1 |> rename_with(~ paste0("d1_", .), .cols = starts_with("c1_"))
+      cif_d1_c2 <- cif_d1_c2 |> rename_with(~ paste0("d1_", .), .cols = starts_with("c2_"))
       cif_d1_c3 <- cif_d1_c3 |> rename_with(~ paste0("d1_", .), .cols = starts_with("c3_"))
       cif_d2_c1 <- cif_d2_c1 |> rename_with(~ paste0("d2_", .), .cols = starts_with("c1_"))
+      cif_d2_c3 <- cif_d2_c3 |> rename_with(~ paste0("d2_", .), .cols = starts_with("c3_"))
 
       join_columns <- list("time")
 
@@ -288,8 +290,10 @@ Pipeline <- R6::R6Class( #nolint
 
       result$success(list(
         cif = rbindlist(list(
+          self$remove_cif_prefix(cif_d1_c1, "d1", "c1", args$stratify_columns),
           self$remove_cif_prefix(cif_d1_c2, "d1", "c2", args$stratify_columns),
           self$remove_cif_prefix(cif_d1_c3, "d1", "c3", args$stratify_columns),
+          self$remove_cif_prefix(cif_d2_c1, "d2", "c1", args$stratify_columns),
           self$remove_cif_prefix(cif_d2_c3, "d2", "c3", args$stratify_columns)
         )),
         h2 = rbindlist(list(
@@ -406,26 +410,6 @@ Pipeline <- R6::R6Class( #nolint
       ) |>
         select(!!!cif_stratify_columns, fixed_meta, fixed_se, fixed_l95, fixed_u95) |>
         rename(cif = fixed_meta, se = fixed_se, l95 = fixed_l95, u95 = fixed_u95)
-
-      cif_d1_c1 <- cif_d1_c1 |>
-        mutate(disorder = "d1", cohort = "c1") |>
-        rename_with(
-          ~ str_remove(., "^c1_"),
-          .cols = starts_with("c1_")
-        ) |>
-        select(disorder, cohort, !!!args$stratify_columns, time, cif, cif_se, cif_l95, cif_u95) |>
-        rename(se = cif_se, l95 = cif_l95, u95 = cif_u95)
-
-      cif_d2_c1 <- cif_d2_c1 |>
-        mutate(disorder = "d2", cohort = "c1") |>
-        rename_with(
-          ~ str_remove(., "^c1_"),
-          .cols = starts_with("c1_")
-        ) |>
-        select(disorder, cohort, !!!args$stratify_columns, time, cif, cif_se, cif_l95, cif_u95) |>
-        rename(se = cif_se, l95 = cif_l95, u95 = cif_u95)
-
-      cif_combined <- rbindlist(list(cif_combined, cif_d1_c1, cif_d2_c1))
 
       h2_stratify_columns <- c(list("disorder"), args$stratify_columns)
       h2_combined <- private$sub_analyses$core$run_rubins_combine(
