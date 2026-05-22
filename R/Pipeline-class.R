@@ -406,7 +406,8 @@ Pipeline <- R6::R6Class( #nolint
         se_column        = "cif_se",
         stratify_columns = cif_stratify_columns
       ) |>
-        select(!!!cif_stratify_columns, everything())
+        select(!!!cif_stratify_columns, fixed_meta, fixed_se, fixed_l95, fixed_u95) |>
+        rename(cif = fixed_meta, se = fixed_se, l95 = fixed_l95, u95 = fixed_u95)
 
       h2_stratify_columns <- c(list("disorder"), args$stratify_columns)
       h2_combined <- private$sub_analyses$core$run_rubins_combine(
@@ -415,7 +416,8 @@ Pipeline <- R6::R6Class( #nolint
         se_column        = "h2_se",
         stratify_columns = h2_stratify_columns
       ) |>
-        select(!!!h2_stratify_columns, everything())
+        select(!!!h2_stratify_columns, fixed_meta, fixed_se, fixed_l95, fixed_u95) |>
+        rename(h2 = fixed_meta, se = fixed_se, l95 = fixed_l95, u95 = fixed_u95)
 
       rg_combined <- private$sub_analyses$core$run_rubins_combine(
         estimates        = rg_results,
@@ -423,32 +425,33 @@ Pipeline <- R6::R6Class( #nolint
         se_column        = "rg_se",
         stratify_columns = args$stratify_columns
       ) |>
-        select(!!!args$stratify_columns, everything())
+        select(!!!args$stratify_columns, fixed_meta, fixed_se, fixed_l95, fixed_u95) |>
+        rename(rg = fixed_meta, se = fixed_se, l95 = fixed_l95, u95 = fixed_u95)
 
       cif_meta <- private$sub_analyses$core$run_meta(
-        estimates        = cif_combined |> select(!!!cif_stratify_columns, fixed_meta, fixed_se),
-        estimate_column  = "fixed_meta",
-        se_column        = "fixed_se",
+        estimates        = cif_combined,
+        estimate_column  = "cif",
+        se_column        = "se",
         stratify_columns = list("disorder", "cohort")
       ) |>
         select(disorder, cohort, everything())
 
       h2_meta <- private$sub_analyses$core$run_meta(
-        estimates        = h2_combined |> select(!!!h2_stratify_columns, fixed_meta, fixed_se),
-        estimate_column  = "fixed_meta",
-        se_column        = "fixed_se",
+        estimates        = h2_combined,
+        estimate_column  = "h2",
+        se_column        = "se",
         stratify_columns = list("disorder")
       ) |>
         select(disorder, everything())
 
       rg_meta <- private$sub_analyses$core$run_meta(
-        estimates        = cif_combined |> select(!!!args$stratify_columns, fixed_meta, fixed_se),
-        estimate_column  = "fixed_meta",
-        se_column        = "fixed_se"
+        estimates        = cif_combined,
+        estimate_column  = "rg",
+        se_column        = "se"
       )
 
       return(list(
-        combined = list(
+        stratified = list(
           cif = cif_combined,
           h2  = h2_combined,
           rg  = rg_combined

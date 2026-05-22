@@ -384,14 +384,143 @@ res <- pipeline$run(
 
 #+RESULTS:
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-res$meta$cif |> filter(disorder == "d1", cohort == "c1") |> head(100)
+* Using the results
+
+The ~pipeline$run~ function outputs cumulative incidence, heritability and genetic correlation in two forms:
+
+- Raw stratified form
+- Meta analyzed form
+
+The value returned by this function is a named list with the following structure:
+
+#+BEGIN_SRC R :exports both :results output
+message("forms of results:")
+print(names(res))
+message("stratified results:")
+print(names(res$stratified))
+message("meta-analyzed results:")
+print(names(res$meta))
 #+END_SRC
 
 #+RESULTS:
-| disorder | cohort | fixed_meta | fixed_se | fixed_l95 | fixed_u95 |          rand_meta |              rand_se |           rand_l95 |         rand_u95 |
-|----------+--------+------------+----------+-----------+-----------+--------------------+----------------------+--------------------+------------------|
-| d1       | c1     |            |        0 |           |           | 0.0452144990224391 | 0.000732878921546365 | 0.0437780563362082 | 0.04665094170867 |
+: forms of results:
+: [1] "stratified" "meta"
+: stratified results:
+: [1] "cif" "h2"  "rg"
+: meta-analyzed results:
+: [1] "cif" "h2"  "rg"
+
+** Stratified results
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+res$stratified$cif |>
+  filter(disorder == "d1", cohort == "c1") |>
+  head(100)
+#+END_SRC
+
+#+RESULTS:
+| disorder | cohort | born_at_year | time |           fixed_meta |           within_var | between_var | k_resamples |            total_var | b_over_t |             fixed_se |             fixed_l95 |           fixed_u95 |
+|----------+--------+--------------+------+----------------------+----------------------+-------------+-------------+----------------------+----------+----------------------+-----------------------+---------------------|
+| d1       | c1     |         1950 |    1 |  0.00304878048780488 | 2.31844807425023e-06 |           0 |       10824 | 2.31844807425023e-06 |        0 |  0.00152264509136247 |  6.43961087344303e-05 | 0.00603316486687533 |
+| d1       | c1     |         1950 |    2 |  0.00533536585365854 | 4.04798249156989e-06 |           0 |       10824 | 4.04798249156989e-06 |        0 |  0.00201195986330987 |   0.00139192452157118 | 0.00927880718574589 |
+| d1       | c1     |         1950 |    3 |  0.00685975609756097 | 5.19657618357608e-06 |           0 |       10824 | 5.19657618357608e-06 |        0 |   0.0022796000051711 |   0.00239174008742562 |  0.0113277721076963 |
+| d1       | c1     |         1950 |    4 |  0.00838414634146341 | 6.34162619996739e-06 |           0 |       10824 | 6.34162619996739e-06 |        0 |  0.00251825856495464 |   0.00344835955415232 |  0.0133199331287745 |
+| d1       | c1     |         1950 |    5 |  0.00990853658536585 |  7.4831325407438e-06 |           0 |       10824 |  7.4831325407438e-06 |        0 |  0.00273553149145533 |   0.00454689486211342 |  0.0152701783086183 |
+| d1       | c1     |         1950 |    6 |   0.0114329268292683 | 8.62109520590529e-06 |           0 |       10824 | 8.62109520590529e-06 |        0 |   0.0029361701595625 |   0.00567803331652578 |  0.0171878203420108 |
+| d1       | c1     |         1950 |    7 |   0.0121951219512195 | 9.18874783306901e-06 |           0 |       10824 | 9.18874783306901e-06 |        0 |  0.00303129474533062 |    0.0062537842503715 |  0.0181364596520675 |
+| d1       | c1     |         1950 |    8 |   0.0137195121951219 | 1.03213949842748e-05 |           0 |       10824 | 1.03213949842748e-05 |        0 |  0.00321269279332382 |   0.00742263432020727 |  0.0200163900700366 |
+| d1       | c1     |         1950 |    9 |   0.0152439024390244 | 1.14504984598665e-05 |           0 |       10824 | 1.14504984598665e-05 |        0 |  0.00338385851652614 |   0.00861153974663316 |  0.0218762651314156 |
+| d1       | c1     |         1950 |   10 |   0.0190548780487805 | 1.42577509538232e-05 |           0 |       10824 | 1.42577509538232e-05 |        0 |  0.00377594371698298 |    0.0116540283634939 |  0.0264557277340671 |
+| d1       | c1     |         1950 |   11 |   0.0205792682926829 | 1.53744515728841e-05 |           0 |       10824 | 1.53744515728841e-05 |        0 |  0.00392102685184431 |    0.0128940556630681 |  0.0282644809222978 |
+| d1       | c1     |         1950 |   12 |    0.024390243902439 | 1.81506968968771e-05 |           0 |       10824 | 1.81506968968771e-05 |        0 |  0.00426036347004304 |    0.0160399315011547 |  0.0327405563037234 |
+| d1       | c1     |         1950 |   13 |   0.0259146341463415 | 1.92549946594966e-05 |           0 |       10824 | 1.92549946594966e-05 |        0 |  0.00438805135105512 |    0.0173140534982734 |  0.0345152147944095 |
+| d1       | c1     |         1950 |   14 |   0.0289634146341463 | 2.14529577328325e-05 |           0 |       10824 | 2.14529577328325e-05 |        0 |  0.00463173377179998 |    0.0198852164414184 |  0.0380416128268743 |
+| d1       | c1     |         1950 |   15 |   0.0327743902439024 | 2.41804775027599e-05 |           0 |       10824 | 2.41804775027599e-05 |        0 |  0.00491736489420501 |    0.0231363550512606 |  0.0424124254365443 |
+| d1       | c1     |         1950 |   16 |   0.0373475609756098 | 2.74242648184935e-05 |           0 |       10824 | 2.74242648184935e-05 |        0 |  0.00523681819605125 |    0.0270833973113493 |  0.0476117246398702 |
+| d1       | c1     |         1950 |   17 |   0.0396341463414634 | 2.90342002123598e-05 |           0 |       10824 | 2.90342002123598e-05 |        0 |   0.0053883392814818 |    0.0290730013497591 |  0.0501952913331677 |
+| d1       | c1     |         1950 |   18 |   0.0442073170731707 | 3.22301478906686e-05 |           0 |       10824 | 3.22301478906686e-05 |        0 |  0.00567716019596669 |     0.033080083089076 |  0.0553345510572655 |
+| d1       | c1     |         1950 |   19 |   0.0464939024390244 | 3.38161634894019e-05 |           0 |       10824 | 3.38161634894019e-05 |        0 |  0.00581516667769737 |    0.0350961757507376 |  0.0578916291273112 |
+| d1       | c1     |         1950 |   20 |   0.0518292682926829 | 3.74858541854178e-05 |           0 |       10824 | 3.74858541854178e-05 |        0 |  0.00612256924709045 |    0.0398290325683857 |  0.0638295040169802 |
+| d1       | c1     |         1950 |   21 |   0.0594512195121951 | 4.26529607157835e-05 |           0 |       10824 | 4.26529607157835e-05 |        0 |  0.00653092341983762 |    0.0466506096093134 |  0.0722518294150769 |
+| d1       | c1     |         1950 |   22 |   0.0632621951219512 | 4.52032967965938e-05 |           0 |       10824 | 4.52032967965938e-05 |        0 |  0.00672333970557741 |    0.0500844492990195 |   0.076439940944883 |
+| d1       | c1     |         1950 |   23 |   0.0670731707317073 | 4.77314849033986e-05 |           0 |       10824 | 4.77314849033986e-05 |        0 |  0.00690879764527798 |    0.0535319273469625 |  0.0806144141164522 |
+| d1       | c1     |         1950 |   24 |   0.0724085365853659 |  5.1233736937641e-05 |           0 |       10824 |  5.1233736937641e-05 |        0 |  0.00715777457996834 |    0.0583792984086279 |  0.0864377747621038 |
+| d1       | c1     |         1950 |   25 |   0.0731707317073171 | 5.17305161595719e-05 |           0 |       10824 | 5.17305161595719e-05 |        0 |  0.00719239293695582 |    0.0590736415508837 |  0.0872678218637505 |
+| d1       | c1     |         1950 |   26 |   0.0785060975609756 | 5.51831567177117e-05 |           0 |       10824 | 5.51831567177117e-05 |        0 |  0.00742853664712719 |    0.0639461657326063 |  0.0930660293893449 |
+| d1       | c1     |         1950 |   27 |    0.083079268292683 | 5.81080132643762e-05 |           0 |       10824 | 5.81080132643762e-05 |        0 |  0.00762286122557509 |    0.0681384602905558 |  0.0980200762948101 |
+| d1       | c1     |         1950 |   28 |   0.0891768292682927 | 6.19582073131486e-05 |           0 |       10824 | 6.19582073131486e-05 |        0 |  0.00787135358837021 |    0.0737489762350871 |   0.104604682301498 |
+| d1       | c1     |         1950 |   29 |   0.0914634146341464 | 6.33874154740856e-05 |           0 |       10824 | 6.33874154740856e-05 |        0 |  0.00796162140986907 |     0.075858636670803 |    0.10706819259749 |
+| d1       | c1     |         1950 |   30 |              0.09375 | 6.48086503639958e-05 |           0 |       10824 | 6.48086503639958e-05 |        0 |  0.00805038200112242 |    0.0779712512778001 |     0.1095287487222 |
+| d1       | c1     |         1950 |   31 |   0.0975609756097561 | 6.71596547423261e-05 |           0 |       10824 | 6.71596547423261e-05 |        0 |  0.00819509943456003 |    0.0814985807180185 |   0.113623370501494 |
+| d1       | c1     |         1950 |   32 |   0.0990853658536586 | 6.80938563059209e-05 |           0 |       10824 | 6.80938563059209e-05 |        0 |  0.00825190016335152 |    0.0829116415334896 |   0.115259090173828 |
+| d1       | c1     |         1950 |   33 |    0.104420731707317 | 7.13356480407177e-05 |           0 |       10824 | 7.13356480407177e-05 |        0 |  0.00844604333642196 |    0.0878664867679301 |   0.120974976646704 |
+| d1       | c1     |         1950 |   34 |    0.106707317073171 | 7.27117010993087e-05 |           0 |       10824 | 7.27117010993087e-05 |        0 |  0.00852711563773523 |    0.0899941704232097 |   0.123420463723132 |
+| d1       | c1     |         1950 |   35 |    0.107469512195122 | 7.31686140377929e-05 |           0 |       10824 | 7.31686140377929e-05 |        0 |  0.00855386544421836 |     0.090703935924454 |    0.12423508846579 |
+| d1       | c1     |         1950 |   36 |    0.108231707317073 | 7.36246410572583e-05 |           0 |       10824 | 7.36246410572583e-05 |        0 |  0.00858048023465227 |    0.0914139660571548 |   0.125049448576992 |
+| d1       | c1     |         1950 |   37 |    0.108993902439024 | 7.40797821577052e-05 |           0 |       10824 | 7.40797821577052e-05 |        0 |  0.00860696126154319 |    0.0921242583663998 |   0.125863546511649 |
+| d1       | c1     |         1950 |   40 |    0.112804878048781 | 7.63421946162673e-05 |           0 |       10824 | 7.63421946162673e-05 |        0 |  0.00873740205188403 |    0.0956795700270879 |   0.129930186070473 |
+| d1       | c1     |         1950 |   42 |    0.113567073170732 | 7.67920202099231e-05 |           0 |       10824 | 7.67920202099231e-05 |        0 |   0.0087631056258568 |    0.0963913861440524 |   0.130742760197411 |
+| d1       | c1     |         1950 |   53 |    0.114329268292683 | 7.72409598845564e-05 |           0 |       10824 | 7.72409598845564e-05 |        0 |  0.00878868362637752 |     0.097103448384983 |   0.131555088200383 |
+| d1       | c1     |         1950 |   76 |    0.115091463414634 | 7.76890241930783e-05 |           0 |       10824 | 7.76890241930783e-05 |        0 |  0.00881413774529751 |    0.0978157534338511 |   0.132367173395417 |
+| d1       | c1     |         1951 |    2 | 0.000770416024653313 | 5.93540851042614e-07 |           0 |       10824 | 5.93540851042614e-07 |        0 | 0.000770416024653313 |  -0.00073959938366718 | 0.00228043143297381 |
+| d1       | c1     |         1951 |    3 |  0.00231124807395994 | 1.77787750257998e-06 |           0 |       10824 | 1.77787750257998e-06 |        0 |  0.00133337072960973 | -0.000302158556075129 | 0.00492465470399501 |
+| d1       | c1     |         1951 |    4 |  0.00308166409861325 |  2.3686736569996e-06 |           0 |       10824 |  2.3686736569996e-06 |        0 |  0.00153904959536709 |  6.51268916937592e-05 | 0.00609820130553274 |
+| d1       | c1     |         1951 |    5 |  0.00462249614791988 | 3.54752091364989e-06 |           0 |       10824 | 3.54752091364989e-06 |        0 |  0.00188348637203721 |  0.000930862858726945 | 0.00831412943711281 |
+| d1       | c1     |         1951 |    6 |  0.00539291217257319 | 4.13557237145096e-06 |           0 |       10824 | 4.13557237145096e-06 |        0 |  0.00203361067351914 |   0.00140703525247568 |  0.0093787890926707 |
+| d1       | c1     |         1951 |    7 |  0.00770416024653313 | 5.89423628049763e-06 |           0 |       10824 | 5.89423628049763e-06 |        0 |  0.00242780482751345 |   0.00294566278460676 |  0.0124626577084595 |
+| d1       | c1     |         1951 |    9 |   0.0100154083204931 | 7.64466609803089e-06 |           0 |       10824 | 7.64466609803089e-06 |        0 |  0.00276489893088896 |   0.00459620641595071 |  0.0154346102250354 |
+| d1       | c1     |         1951 |   10 |   0.0115562403697997 | 8.80704517444555e-06 |           0 |       10824 | 8.80704517444555e-06 |        0 |  0.00296766662117657 |   0.00573961379229362 |  0.0173728669473058 |
+| d1       | c1     |         1951 |   11 |    0.012326656394453 |   9.386862544636e-06 |           0 |       10824 |   9.386862544636e-06 |        0 |  0.00306379871150766 |   0.00632161091989799 |   0.018331701869008 |
+| d1       | c1     |         1951 |   12 |   0.0154083204930663 | 1.16969808646094e-05 |           0 |       10824 | 1.16969808646094e-05 |        0 |  0.00342008492067221 |   0.00870495404854872 |  0.0221116869375838 |
+| d1       | c1     |         1951 |   13 |   0.0208012326656394 | 1.57044604890686e-05 |           0 |       10824 | 1.57044604890686e-05 |        0 |  0.00396288537420256 |    0.0130339773322024 |  0.0285684879990765 |
+| d1       | c1     |         1951 |   14 |   0.0215716486902928 | 1.62732990859882e-05 |           0 |       10824 | 1.62732990859882e-05 |        0 |  0.00403401773496203 |    0.0136649739297672 |  0.0294783234508183 |
+| d1       | c1     |         1951 |   15 |   0.0231124807395994 | 1.74082312140519e-05 |           0 |       10824 | 1.74082312140519e-05 |        0 |  0.00417231724753187 |    0.0149347389344369 |  0.0312902225447619 |
+| d1       | c1     |         1951 |   16 |   0.0285053929121726 | 2.13516678712175e-05 |           0 |       10824 | 2.13516678712175e-05 |        0 |  0.00462078649920308 |    0.0194486513737345 |  0.0375621344506106 |
+| d1       | c1     |         1951 |   17 |   0.0315870570107858 |  2.3584934710221e-05 |           0 |       10824 |  2.3584934710221e-05 |        0 |  0.00485643230264985 |    0.0220684496975921 |  0.0411056643239795 |
+| d1       | c1     |         1951 |   18 |   0.0362095531587057 | 2.69073857389419e-05 |           0 |       10824 | 2.69073857389419e-05 |        0 |  0.00518723295591608 |    0.0260425765651102 |  0.0463765297523012 |
+| d1       | c1     |         1951 |   19 |   0.0408320493066256 |  3.0196900400657e-05 |           0 |       10824 |  3.0196900400657e-05 |        0 |  0.00549517064345203 |    0.0300615148454596 |  0.0516025837677915 |
+| d1       | c1     |         1951 |   20 |   0.0462249614791988 |  3.3993038255041e-05 |           0 |       10824 |  3.3993038255041e-05 |        0 |  0.00583035489957867 |    0.0347974658760246 |  0.0576524570823729 |
+| d1       | c1     |         1951 |   21 |   0.0485362095531587 | 3.56062333192152e-05 |           0 |       10824 | 3.56062333192152e-05 |        0 |  0.00596709588654441 |    0.0368407016155316 |  0.0602317174907857 |
+| d1       | c1     |         1951 |   22 |   0.0539291217257319 | 3.93383282102659e-05 |           0 |       10824 | 3.93383282102659e-05 |        0 |  0.00627202744017163 |    0.0416359479429955 |  0.0662222955084683 |
+| d1       | c1     |         1951 |   24 |   0.0600924499229584 | 4.35486839908698e-05 |           0 |       10824 | 4.35486839908698e-05 |        0 |  0.00659914267089823 |    0.0471581302879979 |  0.0730267695579189 |
+| d1       | c1     |         1951 |   25 |    0.061633281972265 | 4.45921263413885e-05 |           0 |       10824 | 4.45921263413885e-05 |        0 |  0.00667773362312308 |    0.0485449240709438 |  0.0747216398735863 |
+| d1       | c1     |         1951 |   26 |   0.0654853620955316 | 4.71847184774973e-05 |           0 |       10824 | 4.71847184774973e-05 |        0 |  0.00686911336909628 |    0.0520218998921029 |  0.0789488242989603 |
+| d1       | c1     |         1951 |   27 |   0.0677966101694915 | 4.87292961818413e-05 |           0 |       10824 | 4.87292961818413e-05 |        0 |  0.00698063723322171 |     0.054114561192377 |  0.0814786591466061 |
+| d1       | c1     |         1951 |   28 |   0.0701078582434514 | 5.02656397940608e-05 |           0 |       10824 | 5.02656397940608e-05 |        0 |  0.00708982649957394 |    0.0562117983042865 |  0.0840039181826164 |
+| d1       | c1     |         1951 |   29 |   0.0716486902927581 | 5.12852947813342e-05 |           0 |       10824 | 5.12852947813342e-05 |        0 |   0.0071613752018264 |    0.0576123948971783 |  0.0856849856883378 |
+| d1       | c1     |         1951 |   30 |   0.0747303543913713 | 5.33136243285892e-05 |           0 |       10824 | 5.33136243285892e-05 |        0 |  0.00730161792540456 |    0.0604191832575784 |  0.0890415255251643 |
+| d1       | c1     |         1951 |   31 |   0.0755007704160246 | 5.38184200858521e-05 |           0 |       10824 | 5.38184200858521e-05 |        0 |  0.00733610387643551 |     0.061122006818211 |  0.0898795340138382 |
+| d1       | c1     |         1951 |   32 |   0.0770416024653313 | 5.48252664901276e-05 |           0 |       10824 | 5.48252664901276e-05 |        0 |  0.00740440858476405 |    0.0625289616391937 |  0.0915542432914688 |
+| d1       | c1     |         1951 |   34 |   0.0778120184899846 | 5.53273175506987e-05 |           0 |       10824 | 5.53273175506987e-05 |        0 |  0.00743823349665085 |    0.0632330808365489 |  0.0923909561434202 |
+| d1       | c1     |         1951 |   35 |   0.0785824345146379 | 5.58284537121429e-05 |           0 |       10824 | 5.58284537121429e-05 |        0 |  0.00747184406369291 |    0.0639376201497998 |   0.093227248879476 |
+| d1       | c1     |         1951 |   36 |   0.0808936825885978 | 5.73263715548039e-05 |           0 |       10824 | 5.73263715548039e-05 |        0 |  0.00757141806762801 |    0.0660537031760469 |  0.0957336620011487 |
+| d1       | c1     |         1951 |   37 |   0.0824345146379045 | 5.83204093720021e-05 |           0 |       10824 | 5.83204093720021e-05 |        0 |  0.00763678003951941 |    0.0674664257604464 |  0.0974026035153625 |
+| d1       | c1     |         1951 |   38 |   0.0832049306625578 | 5.88160561414781e-05 |           0 |       10824 | 5.88160561414781e-05 |        0 |  0.00766916267538237 |    0.0681733718188083 |  0.0982364895063072 |
+| d1       | c1     |         1951 |   39 |   0.0839753466872111 | 5.93107880118269e-05 |           0 |       10824 | 5.93107880118269e-05 |        0 |  0.00770134975259706 |    0.0688807011721208 |  0.0990699922023013 |
+| d1       | c1     |         1951 |   42 |   0.0847457627118644 | 5.98046049830487e-05 |           0 |       10824 | 5.98046049830487e-05 |        0 |   0.0077333437129775 |    0.0695884090344285 |  0.0999031163893003 |
+| d1       | c1     |         1951 |   46 |   0.0870570107858243 | 6.12805652381784e-05 |           0 |       10824 | 6.12805652381784e-05 |        0 |  0.00782819041913126 |    0.0717137575643271 |   0.102400264007322 |
+| d1       | c1     |         1951 |   75 |    0.088597842835131 | 6.22599646693531e-05 |           0 |       10824 | 6.22599646693531e-05 |        0 |  0.00789049837902227 |    0.0731324660122473 |   0.104063219658015 |
+| d1       | c1     |         1952 |    2 |    0.003813882532418 | 2.90025712400528e-06 |           0 |       10824 | 2.90025712400528e-06 |        0 |  0.00170301412912673 |  0.000475974839329607 |  0.0071517902255064 |
+| d1       | c1     |         1952 |    3 |   0.0045766590389016 | 3.47764538813922e-06 |           0 |       10824 | 3.47764538813922e-06 |        0 |  0.00186484460160605 |  0.000921563619753747 | 0.00823175445804946 |
+| d1       | c1     |         1952 |    4 |   0.0053394355453852 | 4.05414570428989e-06 |           0 |       10824 | 4.05414570428989e-06 |        0 |  0.00201349092480942 |   0.00139299333275874 | 0.00928587775801167 |
+| d1       | c1     |         1952 |    5 |   0.0068649885583524 | 5.20448214994881e-06 |           0 |       10824 | 5.20448214994881e-06 |        0 |  0.00228133341490208 |   0.00239357506514432 |  0.0113364020515605 |
+| d1       | c1     |         1952 |    6 |    0.007627765064836 |  5.7783186226771e-06 |           0 |       10824 |  5.7783186226771e-06 |        0 |  0.00240381335021609 |   0.00291629089841247 |  0.0123392392312595 |
+| d1       | c1     |         1952 |    7 |   0.0083905415713196 | 6.35126714742252e-06 |           0 |       10824 | 6.35126714742252e-06 |        0 |  0.00252017204718696 |   0.00345100435883316 |   0.013330078783806 |
+| d1       | c1     |         1952 |    8 |    0.011441647597254 | 8.63417969773569e-06 |           0 |       10824 | 8.63417969773569e-06 |        0 |  0.00293839747102663 |   0.00568238855404181 |  0.0172009066404662 |
+| d1       | c1     |         1952 |    9 |   0.0122044241037376 | 9.20268848576128e-06 |           0 |       10824 | 9.20268848576128e-06 |        0 |  0.00303359332900132 |   0.00625858117889503 |  0.0181502670285802 |
+| d1       | c1     |         1952 |   10 |   0.0137299771167048 | 1.03370418703834e-05 |           0 |       10824 | 1.03370418703834e-05 |        0 |  0.00321512703798518 |   0.00742832812225384 |  0.0200316261111558 |
+| d1       | c1     |         1952 |   11 |   0.0167810831426392 | 1.25950918696031e-05 |           0 |       10824 | 1.25950918696031e-05 |        0 |  0.00354895644797215 |   0.00982512850461379 |  0.0237370377806646 |
+| d1       | c1     |         1952 |   12 |   0.0198321891685736 | 1.48389347010403e-05 |           0 |       10824 | 1.48389347010403e-05 |        0 |  0.00385213378545454 |    0.0122820069490827 |  0.0273823713880645 |
+| d1       | c1     |         1952 |   13 |    0.022883295194508 | 1.70685703646676e-05 |           0 |       10824 | 1.70685703646676e-05 |        0 |  0.00413141263548773 |    0.0147857264289521 |   0.030980863960064 |
+| d1       | c1     |         1952 |   14 |   0.0259344012204424 | 1.92839988604574e-05 |           0 |       10824 | 1.92839988604574e-05 |        0 |  0.00439135501416788 |    0.0173273453926734 |  0.0345414570482115 |
+| d1       | c1     |         1952 |   15 |   0.0289855072463768 | 2.14852201883816e-05 |           0 |       10824 | 2.14852201883816e-05 |        0 |  0.00463521522568063 |    0.0199004854040428 |  0.0380705290887108 |
+| d1       | c1     |         1952 |   16 |   0.0320366132723112 | 2.36722343484117e-05 |           0 |       10824 | 2.36722343484117e-05 |        0 |   0.0048654120430249 |    0.0225004056679824 |    0.04157282087664 |
+| d1       | c1     |         1952 |   17 |   0.0350877192982456 | 2.58450413405192e-05 |           0 |       10824 | 2.58450413405192e-05 |        0 |  0.00508380185889647 |    0.0251234676548085 |  0.0450519709416827 |
+| d1       | c1     |         1952 |   18 |     0.03813882532418 | 2.80036411646749e-05 |           0 |       10824 | 2.80036411646749e-05 |        0 |  0.00529184666866633 |     0.027766805853594 |   0.048510844794766 |
+| d1       | c1     |         1952 |   19 |   0.0411899313501144 | 3.01480338208493e-05 |           0 |       10824 | 3.01480338208493e-05 |        0 |  0.00549072252266032 |    0.0304281152057002 |  0.0519517474945286 |
+| d1       | c1     |         1952 |   20 |   0.0442410373760488 | 3.22782193090126e-05 |           0 |       10824 | 3.22782193090126e-05 |        0 |  0.00568139237414673 |    0.0331055083227212 |  0.0553765664293764 |
+| d1       | c1     |         1952 |   21 |   0.0503432494279176 |  3.6495962842331e-05 |           0 |       10824 |  3.6495962842331e-05 |        0 |  0.00604118886001183 |    0.0385025192622944 |  0.0621839795935408 |
+| d1       | c1     |         1952 |   22 |   0.0541571319603356 | 3.91031970599303e-05 |           0 |       10824 | 3.91031970599303e-05 |        0 |  0.00625325491723553 |     0.041900752322554 |  0.0664135115981172 |
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 res$combined$cif |> filter(disorder == "d1", cohort == "c1", born_at_year == 1950) |> head(100)
@@ -442,299 +571,4 @@ res$combined$cif |> filter(disorder == "d1", cohort == "c1", born_at_year == 195
 | d1       | c1     |         1950 |   53 |   0.114329268292683 | 5.96616588388765e-09 |           0 |       10824 | 5.96616588388765e-09 |        0 | 7.72409598845564e-05 |   0.114177876011309 |   0.114480660574057 |
 | d1       | c1     |         1950 |   76 |   0.115091463414634 | 6.03558448007271e-09 |           0 |       10824 | 6.03558448007271e-09 |        0 | 7.76890241930784e-05 |   0.114939192927216 |   0.115243733902053 |
 
-The function will output a named list with the following members:
-
-- ~stratified~ :: The stratified analysis results
-  - ~cif~ :: Cumulative incidence
-  - ~h2~ :: Heritability
-  - ~rg~ :: Genetic correlation
-- ~meta~ :: The meta analyzed results
-  - ~cif~ :: Cumulative incidence
-  - ~h2~ :: Heritability
-  - ~rg~ :: Genetic correlation
-
-
-
-* Using trial results :noexport:
-
-The ~run_trail~ function returns a list with the following members:
-
-- ~args~ :: The arguments the trail was run with
-- ~errors~ :: Any draw errors encountered
-- ~results~ :: Each independant draw result
-- ~meta~ :: Draw results meta analyzed accross stratification within draws
-- ~rubin~ :: Draw results rubin combined across draws within stratification
-- ~rubin_meta~ :: Rubin combines meta analyzed
-
-*** args
-
-The member ~args~ is just a copy of the arguments supplied to the ~run_trial~ function.
-It's output for debugging and reproducibility purposes.
-
-*** errors
-
-The member ~errors~ is list a unnamed list of each draw that had an error. It's output for debugging purposes.
-
-*** results
-
-The member ~results~ is a ~data.table~ containing resulting rows of each draw performed, with the column
-~draw~ added, that contain the index of the draw that produced the rows.
-
-Each row contains all statistical values produced by the analyses run. Each analysis has it's columns
-prefixed after this naming convention:
-
- - ~re_d1_c1~ = Risk estimates of disorder 1, cohort 1
- - ~re_d1_c2~ = Risk estimates of disorder 1, cohort 2
- - ~re_d1_c3~ = Risk estimates of disorder 1, cohort 3
- - ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
- - ~re_d2_c3~ = Risk estimates of disorder 2, cohort 3
- - ~h2_d1~ = Heritability of disorder 1 (cohort 1 vs cohort 2)
- - ~h2_d2~ = Heritability of disorder 2 (cohort 1 vs cohort 3)
- - ~gc_d1_d2~ = Genetic correlation (disorder 1 vs disorder 2)
-
-**** Cumulative incidence
-
-If we want to look at the statistical values produced by the cumulative incidence analysis
-for disorder 1 and cohort 1, we select the columns starting with ~re_d1_c1~:
-
-#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trial1$results |>
-  select(draw, born_at_year, gender, starts_with("re_d1_c1")) |>
-  tail(5)
-#+END_SRC
-
-#+RESULTS:
-| draw | born_at_year | gender |  re_d1_c1_estimate |    re_d1_c1_variance |        re_d1_c1_l95 |       re_d1_c1_u95 | re_d1_c1_cases |
-|------+--------------+--------+--------------------+----------------------+---------------------+--------------------+----------------|
-|    2 |         2006 | f      | 0.0547945205479452 | 0.000719551678743569 | 0.00221954414990248 |  0.107369496945988 |              8 |
-|    2 |         2010 | m      | 0.0481927710843373 | 0.000559522565597191 | 0.00183133349887483 | 0.0945542086697999 |              7 |
-|    2 |         2014 | f      | 0.0481927710843374 | 0.000559502030334855 | 0.00183218427154885 | 0.0945533578971259 |             13 |
-|    2 |         2015 | m      | 0.0338983050847458 | 0.000564641551674608 | -0.0126747264808592 | 0.0804713366503508 |              7 |
-|    2 |         2016 | f      | 0.0163934426229508 | 0.000268744961031981 | -0.0157371145006566 | 0.0485239997465583 |              4 |
-
-Cumulative incidence analysis produces the following statistical values:
-
-- ~re_d1_c1_estimate~ :: Risk estimate
-- ~re_d1_c1_variance~ :: Variance
-- ~h2_d1_l95~ :: Lower bound of a 95% confidence interval
-- ~h2_d1_u95~ :: Upper bound of a 95% confidence interval
-- ~re_d1_c1_cases~ :: Cumulative number of individuals who have experienced the event of interest
-
-**** Heritability
-
-If we want to look at the statistical values produced by the heritability analysis
-for disorder 1 and cohort 1 vs cohort 2, we select the columns starting with ~h2_d1~:
-
-#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trial1$results |>
-  select(draw, born_at_year, gender, starts_with("h2_d1")) |>
-  tail(5)
-#+END_SRC
-
-#+RESULTS:
-| draw | born_at_year | gender |     h2_d1_estimate |          h2_d1_se |           h2_d1_l95 |         h2_d1_u95 |
-|------+--------------+--------+--------------------+-------------------+---------------------+-------------------|
-|    2 |         2006 | f      | 0.0658407554026909 | 0.324615424267537 |  -0.570405476161682 | 0.702086986967064 |
-|    2 |         2010 | m      |  0.723226322648776 | 0.287220007715378 |   0.160275107526635 |  1.28617753777092 |
-|    2 |         2014 | f      |  0.418040022457864 | 0.256701840629227 | -0.0850955851754205 | 0.921175630091149 |
-|    2 |         2015 | m      |   0.90342591677891 | 0.294946436728867 |    0.32533090079033 |  1.48152093276749 |
-|    2 |         2016 | f      |  0.491585108050739 | 0.409717429540702 |  -0.311461053849037 |  1.29463126995052 |
-
-Heritability analysis produces the following statistical values:
-
-- ~h2_d1_estimate~ :: Heritability/h2
-- ~h2_d1_se~ :: Standard error
-- ~h2_d1_l95~ :: Lower bound of a 95% confidence interval
-- ~h2_d1_u95~ :: Upper bound of a 95% confidence interval
-
-**** Genetic correlation
-
-If we want to look at the statistical values produced by the genetic correlation analysis,
-we select the columns starting with ~gc_d1_d2~:
-
-#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-trial1$results |>
-  select(draw, born_at_year, gender, starts_with("gc_d1_d2")) |>
-  tail(5)
-#+END_SRC
-
-#+RESULTS:
-| draw | born_at_year | gender |        gc_d1_d2_rhh |   gc_d1_d2_estimate |       gc_d1_d2_se |       gc_d1_d2_l95 |      gc_d1_d2_u95 |    gc_d1_d2_gm_h2 | gc_d1_d2_gm_h2_l95 | gc_d1_d2_gm_h2_u95 |
-|------+--------------+--------+---------------------+---------------------+-------------------+--------------------+-------------------+-------------------+--------------------+--------------------|
-|    2 |         2006 | f      |   0.162216343032147 |   0.861090463340052 | 0.640303921023537 |  -1.09277934217399 |  1.41721202823828 | 0.188384786428748 |   -5.8007834013035 |    7.5229643279836 |
-|    2 |         2010 | m      | -0.0280737811190609 | -0.0472440240133014 | 0.521815704830504 |  -1.05083256258685 | 0.994685000348726 | 0.594229253442866 |  -1.76839587835587 |   1.67390783032927 |
-|    2 |         2014 | f      |   0.264456376768054 |   0.646995682269281 | 0.271089117232714 | -0.266878293008066 | 0.795791046544173 | 0.408745195702846 | -0.652920929258049 |   1.94691229379661 |
-|    2 |         2015 | m      |   0.298730147103843 |   0.986760910254737 | 0.398781352972026 | -0.482881304721327 |  1.08034159892901 | 0.302738124300773 |  -1.59504623290055 |   3.56856805341003 |
-|    2 |         2016 | f      |   0.529320805526821 |    1.57248895630592 | 0.480361110169171 | -0.412186970404753 |   1.4708285814584 | 0.336613369145878 |  -1.22451158565281 |   4.36948949826465 |
-
-Genetic correlation analysis produces the following statistical values:
-
-- ~gc_d1_d2_estimate~ :: Genetic correlation/rhog
-- ~gc_d1_d2_estimate~ :: Genetic correlation/rhog
-- ~gc_d1_d2_se~ :: Standard error
-- ~gc_d1_d2_l95~ :: Lower bound of a 95% confidence interval
-- ~gc_d1_d2_u95~ :: Upper bound of a 95% confidence interval
-- ~gc_d1_d2_gm_h2~ :: H2 geometric mean of ~h2_d1_estimate~ and ~h2_d2_estimate~
-- ~gc_d1_d2_gm_l95~ :: Lower bound of a 95% confidence interval of h2 geometric mean
-- ~gc_d1_d2_gm_u95~ :: Upper bound of a 95% confidence interval of h2 geometric mean
-
-*** meta
-
-TBD
-
-*** rubin
-
-TBD
-
-*** rubin_meta
-
-TBD
-* How it works :noexport:
-
-You have a set of disorder pairs you want to produce genetic correlations between and time-to-event data
-of a sample population you want to produce it from.
-
-Each time-to-event entity represents:
-
-1. A distinct individual
-2. A distinct disorder
-3. A distinct type of relatives
-4. The disorder failure status/time of the individual
-5. The amount of relatives the individual have
-6. The amount of relatives diagnosed with the disorder the individual have
-
-Here are 3 examples of what that could look like for the disorder schizophrenia and for the relatives type "full siblings":
-
-- Individual 897
-  - Diagnosed with schizophrenia at age 19
-  - Has 2 full siblings
-  - 1 of the siblings also has a schizophrenia diagnosis
-- Individual 345
-  - No schizophrenia diagnosis, was alive at end of study
-  - Has 3 full siblings
-  - None of the siblings has a schizophrenia diagnosis
-- Individual 193
-  - No schizophrenia diagnosis, died at age 30
-  - Has no full siblings
-  - None of the siblings has a schizophrenia diagnosis
-
-You collect this kind of time-to-event data for all disorders and types of relatives you
-want to produce genetic correlations for and feed it into the pipeline. This is called
-the pipelines time-to-event "pool".
-
-Then for each pair of disorders and type of relatives you want to produce a genetic
-correlation for, you run a "trial". Here are 3 examples of what that could look like:
-
-- ADHD vs. MDD in full siblings
-- ADHD vs. ASD in parent/offspring
-- ADHD vs. Bipolar type 2 in first cousins
-
-By having a pool of all time-to-event data and have the trials select the specific data,
-you only have to prepare your time-to-event once. Adapting the time-to-event data before
-each trial is handled by the pipeline.
-
-** The process
-
-As mentioned before, a trial produces genetic correlations for a distinct pair of disorders and a type
-of relatives. It does this in multiple interdependant steps. First it pulls out the time-to-event data for
-the selected pair of disorders and type of relatives from its time-to-event pool.
-
-It then separates the time-to-event data into 3 cohorts:
-
-- ~c1~ = Target cohort
-- ~c2~ = Individuals with at least 1 diagnosed relative of disorder 1
-- ~c3~ = Individuals with at least 1 diagnosed relative of disorder 2
-
-It then produces the following risk estimates (cumulative incidence):
-
-- ~re_d1_c1~ = Risk estimates of disorder 1, cohort 1
-- ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
-
-It then copies over the time-to-event cohorts and the first risk estimates to a separate
-analysis process (called a "draw") that is repeated ~K~ amount of times.
-
-It then aggregates all draw results and returns:
-
-- The arguments the trial was run with
-- Each independant draw result
-- Any draw errors encountered
-- The aggregated draw results
-
-The sub-chapters below describes how draws are performed, how draw results are aggregated and
-how downsampling of relatives are performed.
-
-*** Performing draws
-
-Each draw performs the following steps:
-
-- [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c2~
-- [[#downsampling][Downsample the diagnosed relatives]] of cohort ~c3~
-- Produce risk estimates
-  - ~re_d1_c2~ = Risk estimates of disorder 1, cohort 2
-  - ~re_d1_c3~ = Risk estimates of disorder 1, cohort 3
-  - ~re_d2_c3~ = Risk estimates of disorder 2, cohort 3
-- Produce heritabilities
-  - ~h2_d1~ = Heritability of disorder 1 (~re_d1_c1~ vs ~re_d1_c2~)
-  - ~h2_d2~ = Heritability of disorder 2 (~re_d2_c1~ vs ~re_d2_c3~)
-- Produce genetic correlation ~gc_d1_d2~ from risk estimates and heritabilities
-- Return all results joined together as a single dataset
-  - ~re_d1_c1~
-  - ~re_d1_c3~
-  - ~re_d2_c1~
-  - ~h2_d1~
-  - ~h2_d2~
-  - ~gc_d1_d2~
-
-If no stratification was used, then the resulting data of a single draw would look something like this:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-trial1$draw_results |>
-  filter(draw == 1) |>
-  select(draw, re_d1_c1_estimate, re_d1_c3_estimate, re_d2_c1_estimate, h2_d1_estimate, h2_d2_estimate, gc_d1_d2_estimate) |>
-  tail(1)
-#+END_SRC
-
-#+RESULTS:
-| draw |  re_d1_c1_estimate |  re_d1_c3_estimate |  re_d2_c1_estimate |    h2_d1_estimate |    h2_d2_estimate | gc_d1_d2_estimate |
-|------+--------------------+--------------------+--------------------+-------------------+-------------------+-------------------|
-|    1 | 0.0163934426229508 | 0.0555555555555556 | 0.0327868852459016 | 0.491585108050739 | 0.230496323896053 |  1.57248895630592 |
-
-You get a single row with statistical values from each analysis carried out (only the estimate column for each analysis is shown for brevity).
-
-If stratification was used, then the resulting data would look something like this (stratification on birth year and gender shown, limited to 5 rows):
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-trial1$draw_results |>
-  filter(draw == 1) |>
-  select(draw, born_at_year, gender, re_d1_c1_estimate, re_d1_c3_estimate, re_d2_c1_estimate, h2_d1_estimate, h2_d2_estimate, gc_d1_d2_estimate) |>
-  tail(5)
-#+END_SRC
-
-#+RESULTS:
-| draw | born_at_year | gender |  re_d1_c1_estimate |  re_d1_c3_estimate |  re_d2_c1_estimate |     h2_d1_estimate |    h2_d2_estimate |   gc_d1_d2_estimate |
-|------+--------------+--------+--------------------+--------------------+--------------------+--------------------+-------------------+---------------------|
-|    1 |         2006 | f      | 0.0547945205479452 | 0.0714285714285714 |   0.10958904109589 | 0.0658407554026909 | 0.539010033234742 |   0.861090463340052 |
-|    1 |         2010 | m      | 0.0481927710843373 | 0.0454545454545455 | 0.0602409638554217 |  0.723226322648776 | 0.488240533549755 | -0.0472440240133014 |
-|    1 |         2014 | f      | 0.0481927710843374 | 0.0833333333333333 |  0.036144578313253 |  0.418040022457864 | 0.399657032902868 |   0.646995682269281 |
-|    1 |         2015 | m      | 0.0338983050847458 |             0.0625 | 0.0508474576271186 |   0.90342591677891 | 0.101447578825193 |   0.986760910254737 |
-|    1 |         2016 | f      | 0.0163934426229508 | 0.0555555555555556 | 0.0327868852459016 |  0.491585108050739 | 0.230496323896053 |    1.57248895630592 |
-
-You get a row for each stratification combination which had data from all analyses (combinations with missing data are discarded).
-
-*** Aggregating draw results
-  :PROPERTIES:
-  :CUSTOM_ID: meta_analysis
-  :END:
-
-The results of all draws are aggregated in 3 steps:
-
-- Meta analyze across stratification within draws
-- Rubin combine across draws, within stratification
-- Meta analyze rubin combine across all
-
-*** Downsampling of diagnosed relatives
-  :PROPERTIES:
-  :CUSTOM_ID: downsampling
-  :END:
-
-TBD
+** Meta analyzed results
