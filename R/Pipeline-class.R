@@ -445,7 +445,7 @@ Pipeline <- R6::R6Class( #nolint
         select(disorder, everything())
 
       rg_meta <- private$sub_analyses$core$run_meta(
-        estimates        = cif_combined,
+        estimates        = rg_combined,
         estimate_column  = "rg",
         se_column        = "se"
       )
