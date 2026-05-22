@@ -390,7 +390,7 @@ res <- pipeline$run(
 
 *** Raw -> Rubin combine
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$combined$cif |> head(20)
 #+END_SRC
 
@@ -420,7 +420,7 @@ res$combined$cif |> head(20)
 
 *** Raw -> Rubin combine -> Meta
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$combined_meta$cif |> head(20)
 #+END_SRC
 
@@ -435,7 +435,7 @@ res$combined_meta$cif |> head(20)
 
 *** Raw -> Meta
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$meta$cif |> head(20)
 #+END_SRC
 
@@ -455,7 +455,7 @@ res$meta$cif |> head(20)
 
 *** Raw -> Meta -> Rubin combine
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$meta_combined$cif |> head(20)
 #+END_SRC
 
@@ -468,7 +468,7 @@ res$meta_combined$cif |> head(20)
 
 *** Raw -> Rubin combine
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$combined$h2 |> head(20)
 #+END_SRC
 
@@ -498,7 +498,7 @@ res$combined$h2 |> head(20)
 
 *** Raw -> Rubin combine -> Meta
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$combined_meta$h2 |> head(20)
 #+END_SRC
 
@@ -510,7 +510,7 @@ res$combined_meta$h2 |> head(20)
 
 *** Raw -> Meta
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$meta$h2 |> head(20)
 #+END_SRC
 
@@ -524,7 +524,7 @@ res$meta$h2 |> head(20)
 
 *** Raw -> Meta -> Rubin combine
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$meta_combined$h2 |> head(20)
 #+END_SRC
 
@@ -538,7 +538,7 @@ res$meta_combined$h2 |> head(20)
 
 *** Raw -> Rubin combine
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$combined$rg |> head(20)
 #+END_SRC
 
@@ -568,7 +568,7 @@ res$combined$rg |> head(20)
 
 *** Raw -> Run combine -> Meta
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$combined_meta$rg |> head(20)
 #+END_SRC
 
@@ -579,7 +579,7 @@ res$combined_meta$rg |> head(20)
 
 *** Raw -> Meta
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$meta$rg |> head(20)
 #+END_SRC
 
@@ -591,7 +591,7 @@ res$meta$rg |> head(20)
 
 *** Raw -> Meta -> Rubin combine
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 res$meta_combined$rg |> head(20)
 #+END_SRC
 
