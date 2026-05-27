@@ -239,3 +239,43 @@ describe("run", {
     print(results)
   })
 })
+
+describe("get_tte exposes per-disorder relatives columns", {
+  it("returns d1_relatives and d2_relatives so run_draw can downsample", {
+    # Regression: previously `get_tte` left `relatives` bare in tte_d1 and
+    # dropped it from tte_d2 entirely. `run_draw` then read
+    # tmp_tte$d1_relatives / $d2_relatives → NULL, silently bypassing
+    # downsample_relatives_diagnosed.
+    tte_c1 <- pipeline$get_tte("PO", "SCZ", "CAD", list("born_at_year"))
+
+    expect_true("d1_relatives" %in% names(tte_c1))
+    expect_true("d2_relatives" %in% names(tte_c1))
+  })
+})
+
+describe("downsample_relatives_diagnosed actually downsamples", {
+  it("produces a mean ~ relatives_diagnosed / relatives, not 1.0", {
+    # If the `relatives` argument is silently NULL (the bug), the binomial
+    # collapses to as.integer(relatives_diagnosed > 0). This test guards
+    # the genuine probability weighting at p = 0.25.
+    set.seed(42)
+    relatives           <- as.integer(rep(4L, 10))
+    relatives_diagnosed <- as.integer(rep(1L, 10))
+
+    means <- replicate(200, mean(pipeline$downsample_relatives_diagnosed(
+      relatives_diagnosed, relatives
+    )))
+    expect_lt(abs(mean(means) - 0.25), 0.02)
+    expect_lt(mean(means), 0.5)
+  })
+
+  it("returns 0 for rows with relatives == 0", {
+    expect_equal(
+      pipeline$downsample_relatives_diagnosed(
+        relatives_diagnosed = as.integer(c(0L, 1L, 2L)),
+        relatives           = as.integer(c(0L, 0L, 0L))
+      ),
+      as.integer(c(0L, 0L, 0L))
+    )
+  })
+})

@@ -94,7 +94,8 @@ Pipeline <- R6::R6Class( #nolint
         rename(
           d1_failure_status      = failure_status,
           d1_failure_time        = failure_time,
-          d1_relatives_diagnosed = relatives_diagnosed
+          d1_relatives_diagnosed = relatives_diagnosed,
+          d1_relatives           = relatives
         )
 
       tte_d2 <- tte |>
@@ -103,9 +104,10 @@ Pipeline <- R6::R6Class( #nolint
         rename(
           d2_failure_status      = failure_status,
           d2_failure_time        = failure_time,
-          d2_relatives_diagnosed = relatives_diagnosed
+          d2_relatives_diagnosed = relatives_diagnosed,
+          d2_relatives           = relatives
         ) |>
-        select(person_id, d2_failure_status, d2_failure_time, d2_relatives_diagnosed)
+        select(person_id, d2_failure_status, d2_failure_time, d2_relatives_diagnosed, d2_relatives)
 
       d1_nrow <- tte_d1 |> nrow()
       d2_nrow <- tte_d2 |> nrow()
