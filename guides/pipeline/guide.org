@@ -1,0 +1,539 @@
+# -*- org-confirm-babel-evaluate: nil -*-
+#+OPTIONS: ^:nil
+#+OPTIONS: html-postamble:nil
+#+OPTIONS: num:3
+#+LANGUAGE: en-us
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/readtheorg.css"/>
+#+HTML_HEAD: <style>blockquote p:last-child, div.figure p {margin: 0;}</style>
+#+LATEX_CLASS: article
+#+LATEX_CLASS_OPTIONS: [a4paper,12pt]
+#+LATEX_HEADER: \usepackage[english]{babel}
+#+LATEX_HEADER: \renewcommand{\familydefault}{\sfdefault}
+#+LATEX_HEADER: \usepackage{helvet}
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{parskip}
+#+LATEX_HEADER: \usepackage{tabularx}
+#+LATEX_HEADER: \usepackage{float}
+#+LATEX_HEADER: \usepackage{color}
+#+LATEX_HEADER: \usepackage{titlesec}
+#+LATEX_HEADER: \usepackage{listings}
+#+LATEX_HEADER: \usepackage[utf8]{inputenc}
+#+LATEX_HEADER: \usepackage[document]{ragged2e}
+#+LATEX_HEADER: \usepackage[T1]{fontenc}
+#+LATEX_HEADER: \usepackage{sectsty}
+#+LATEX_HEADER: \titleformat*{\section}{\LARGE\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsection}{\Large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subsubsection}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\paragraph}{\large\bfseries}
+#+LATEX_HEADER: \titleformat*{\subparagraph}{\large\bfseries}
+#+LATEX_HEADER: \renewcommand{\baselinestretch}{1.2}
+#+LATEX_HEADER: \definecolor{light_grey}{RGB}{51,51,51}
+#+LATEX_HEADER: \definecolor{bright_grey}{RGB}{249,249,249}
+#+LATEX_HEADER: \definecolor{python_blue}{RGB}{41,128,185}
+#+LATEX_HEADER: \hypersetup{colorlinks=true, urlcolor=python_blue, linkcolor=python_blue, citecolor=red}
+#+LATEX_HEADER: \tolerance=1
+#+LATEX_HEADER: \emergencystretch=\maxdimen
+#+LATEX_HEADER: \hyphenpenalty=10000
+#+LATEX_HEADER: \hbadness=10000
+#+LATEX_HEADER: \makeatletter
+#+LATEX_HEADER: \makeatother
+#+LATEX_HEADER: \lstset{
+#+LATEX_HEADER:   xleftmargin=0.5cm,frame=tlbr,framesep=4pt,framerule=0pt,
+#+LATEX_HEADER:   columns=fullflexible,
+#+LATEX_HEADER:   backgroundcolor=\color{white},
+#+LATEX_HEADER:   basicstyle=\footnotesize\ttfamily,
+#+LATEX_HEADER:   breakatwhitespace=false,
+#+LATEX_HEADER:   breaklines=true,
+#+LATEX_HEADER:   frame=single,
+#+LATEX_HEADER:   keepspaces=true,
+#+LATEX_HEADER:   rulecolor=\color{black},
+#+LATEX_HEADER:   showspaces=false,
+#+LATEX_HEADER:   showstringspaces=false,
+#+LATEX_HEADER:   showtabs=false,
+#+LATEX_HEADER:   stepnumber=2,
+#+LATEX_HEADER:   tabsize=2,
+#+LATEX_HEADER: }
+#+LATEX_HEADER: \DeclareUnicodeCharacter{202F}{ }
+#+LATEX: \frenchspacing
+#+LATEX: \raggedright
+#+TITLE: Guide: running the pipeline
+#+AUTHOR: Richard Zetterberg <richard.zetterberg@regionh.dk>
+#+PROPERTY: header-args:R :session *R* :tangle yes :shebang "#!/usr/bin/env Rscript"
+
+#+LATEX: \clearpage
+
+#+BEGIN_SRC R :exports none :tangle no
+devtools::load_all(".")
+source("./tests/utils.R")
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :exports results :results output :tangle no
+tte <- read_csv(
+  "./tests/data/pipeline-tte.csv",
+  show_col_type = FALSE,
+  col_types = cols(person_id = col_character()),
+) |> as.data.table()
+#+END_SRC
+
+#+RESULTS:
+
+This is a guide that explains how to run the epimight pipeline to estimates genetic
+correlation between two disorders stratified by birth year.
+
+- Any data shown in this guide comes from [[../data/pipeline-tte.csv][this randomly generated time-to-event dataset]]
+  - 100 000 individuals
+  - 2 disorders (schizophrenia and coronary artery disease)
+  - 2 types of relatives (parent/offspring and full siblings)
+- All code shown in this guide have been written to [[./guide.R][this R file]]
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:pipeline-component-diagram
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/pipeline-component-diagram.png :exports results
+@startuml
+!include <material7.4.47/Database/DatabaseClock>
+!include <material7.4.47/Science/Flask>
+!include <material/account>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ../diagrams/ibp.puml
+
+skinparam nodesep 80
+skinparam ranksep 80
+
+file tte [
+<color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
+
+| **person_id**  | **born_at_year** | **disorder** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** |
+| ...            | ...              | ...          | ...                | ...              | ...                   | ...                  | ...                     |
+<#76b354>| 99962 | 1999             | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
+| 99962          | 1999             | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
+<#76b354>| 99962 | 1999             | CAD          | 2                  | 34               | PO                    | 2                    | 0                       |
+| 99962          | 1999             | CAD          | 2                  | 34               | FS                    | 1                    | 0                       |
+<#76b354>| 99963 | 2000             | SCZ          | 1                  | 28               | PO                    | 3                    | 1                       |
+| 99963          | 2000             | SCZ          | 1                  | 28               | FS                    | 2                    | 1                       |
+<#76b354>| 99963 | 2000             | CAD          | 0                  | 33               | PO                    | 3                    | 0                       |
+| 99963          | 2000             | CAD          | 0                  | 33               | FS                    | 2                    | 0                       |
+]
+
+rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
+rectangle "**Disorder 2**\nCAD" as disorder2 #76b354
+rectangle "**Relationship kind**\nPO" as relkind #76b354
+rectangle "**Stratify columns**\nborn_at_year" as stratcols #76b354
+rectangle "**Draws**\n2" as draws #76b354
+rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Analysis arguments**" as args
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**" as results
+
+' rectangle "Combined" as combined
+' rectangle "Meta-analyzed" as meta
+
+file combined_cif [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**
+(draw × disorder × cohort × born_at_year × time)
+
+| **draw** | **disorder** | **cohort** | **born_at_year** | **time**  | **cif** |
+|        1 | SCZ          | c1         | 1999             | 25        | 0.054   |
+|        1 | SCZ          | c1         | 1999             | 26        | 0.048   |
+|        1 | SCZ          | c1         | 2000             | 25        | 0.048   |
+|        1 | SCZ          | c1         | 2000             | 26        | 0.048   |
+|      ... | ...          | ...        | ...              | ...       | ...     |
+|        1 | CAD          | c1         | 1999             | 25        | 0.054   |
+|        1 | CAD          | c1         | 1999             | 26        | 0.048   |
+|        1 | CAD          | c1         | 2000             | 25        | 0.048   |
+|        1 | CAD          | c1         | 2000             | 26        | 0.048   |
+|      ... | ...          | ...        | ...              | ...       | ...     |
+]
+
+file combined_h2 [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**
+(draw × disorder × born_at_year)
+
+| **draw** | **disorder** | **born_at_year** | **h2** |
+|        1 | SCZ          | 1999             | 0.054  |
+|        1 | SCZ          | 2000             | 0.048  |
+|      ... | ...          | ...              | ...    |
+|        1 | CAD          | 1999             | 0.053  |
+|        1 | CAD          | 2000             | 0.049  |
+|      ... | ...          | ...              | ...    |
+]
+
+file combined_rg [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**
+(draw × born_at_year)
+
+| **draw** | **born_at_year** | **rg** |
+|        1 | 1999             | 0.054  |
+|        1 | 2000             | 0.054  |
+]
+
+' file meta_h2 [
+' <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**
+' (disorder)
+'
+' | **disorder** | **h2** |
+' | SCZ          | 0.054  |
+' | CAD          | 0.053  |
+' ]
+'
+' file meta_rg [
+' <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**
+'
+' | **rg** |
+' | 0.054  |
+' ]
+
+Boundary1(epimight, "Epimight") {
+  Database(pool, "**TTE pool**")
+  Process(new, "**new**")
+  Process(run, "**run**")
+}
+
+draws --> args
+stratcols --> args
+relkind --> args
+disorder2 --> args
+disorder1 --> args
+
+args --> run : " Given to"
+
+tte -RIGHT-> new : " Given to"
+new -RIGHT-> pool : " Stores data in"
+run -LEFT-> pool : " Reads data from"
+
+run --> results : " Outputs"
+
+' results --> combined
+' results --> meta
+
+results --> combined_cif
+results --> combined_h2
+results --> combined_rg
+
+' meta --> meta_h2
+' meta --> meta_rg
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Pipeline component diagram
+#+RESULTS: fig:pipeline-component-diagram
+[[file:../diagrams/pipeline-component-diagram.png]]
+
+The basic concept of the pipeline is pretty simple, you create a dataset that contains
+time-to-event for all disorders and types of relatives you want to analyse. You feed this
+dataset to the pipeline when you create it. Then you tell the pipeline which pair of disorders
+and type of relatives you want to analyse and it will output cumulative incidences, heritabilities
+and genetic correlations.
+
+The most work you have to do is to format the data in a way that the pipeline expects.
+
+* Glossary
+
+- ~d1~ :: Disorder 1
+- ~d2~ :: Disorder 2
+- ~c1~ :: Cohort 1, target cohort
+- ~c2~ :: Cohort 2, individuals with at least 1 relative diagnosed with ~d1~
+- ~c3~ :: Cohort 3, individuals with at least 1 relative diagnosed with ~d2~
+- ~cif~ :: Cumulative incidence function
+- ~h2~ :: Heritability
+- ~rg~ :: Genetic correlation
+
+* Creating the time-to-event data
+
+We need to be able to uniquely identify every individual in our sample population.
+In the test data of this guide we use a unique number for each individual:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+tte |> distinct(person_id) |> tail(4)
+#+END_SRC
+
+#+RESULTS:
+| person_id |
+|-----------|
+|     99996 |
+|     99997 |
+|     99998 |
+|     99999 |
+
+Then we need to have the stratification data of each individual (in our example, we stratify on birth year):
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+tte |>
+  distinct(person_id, born_at_year) |>
+  tail(4)
+#+END_SRC
+
+#+RESULTS:
+| person_id | born_at_year |
+|-----------+--------------|
+|     99996 |         1981 |
+|     99997 |         2003 |
+|     99998 |         1982 |
+|     99999 |         1951 |
+
+Then for each relationship kind, we need to know how many relatives each individual has. In the test data
+of this guide, we have 2 relationship kinds (~PO~ = "parent offspring", ~FS~ = "full siblings"):
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+tte |>
+  distinct(person_id, born_at_year, relationship_kind, relatives) |>
+  tail(4 * 2)
+#+END_SRC
+
+#+RESULTS:
+| person_id | born_at_year | relationship_kind | relatives |
+|-----------+--------------+-------------------+-----------|
+|     99996 |         1955 | FS                |         5 |
+|     99996 |         1955 | PO                |         5 |
+|     99997 |         1977 | FS                |         1 |
+|     99997 |         1977 | PO                |         1 |
+|     99998 |         1978 | FS                |         2 |
+|     99998 |         1978 | PO                |         2 |
+|     99999 |         2019 | FS                |         4 |
+|     99999 |         2019 | PO                |         4 |
+
+Then for each disorder, we need to know:
+
+- The identifier of each distinct disorder
+- The individuals failure status/time
+- The relatives diagnosis status
+
+Since there are 2 disorders and 2 types of relatives, each individual gets 4 rows:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+tte |> tail(4 * 4)
+#+END_SRC
+
+#+RESULTS:
+| person_id | born_at_year | disorder | failure_status | failure_time | relationship_kind | relatives | relatives_diagnosed |
+|-----------+--------------+----------+----------------+--------------+-------------------+-----------+---------------------|
+|     99996 |         1955 | CAD      |              2 |           69 | FS                |         5 |                   0 |
+|     99996 |         1955 | CAD      |              2 |           69 | PO                |         5 |                   2 |
+|     99996 |         1955 | SCZ      |              2 |           69 | FS                |         5 |                   0 |
+|     99996 |         1955 | SCZ      |              2 |           69 | PO                |         5 |                   0 |
+|     99997 |         1977 | CAD      |              0 |           49 | FS                |         1 |                   0 |
+|     99997 |         1977 | CAD      |              0 |           49 | PO                |         1 |                   1 |
+|     99997 |         1977 | SCZ      |              0 |           49 | FS                |         1 |                   0 |
+|     99997 |         1977 | SCZ      |              0 |           49 | PO                |         1 |                   1 |
+|     99998 |         1978 | CAD      |              0 |           48 | FS                |         2 |                   0 |
+|     99998 |         1978 | CAD      |              0 |           48 | PO                |         2 |                   0 |
+|     99998 |         1978 | SCZ      |              0 |           48 | FS                |         2 |                   0 |
+|     99998 |         1978 | SCZ      |              0 |           48 | PO                |         2 |                   0 |
+|     99999 |         2019 | CAD      |              0 |            7 | FS                |         4 |                   0 |
+|     99999 |         2019 | CAD      |              0 |            7 | PO                |         4 |                   0 |
+|     99999 |         2019 | SCZ      |              1 |            7 | FS                |         4 |                   0 |
+|     99999 |         2019 | SCZ      |              0 |            7 | PO                |         4 |                   0 |
+
+* Setting up the pipeline
+
+To setup the pipeline, we start by importing the epimight library:
+
+#+BEGIN_SRC R :exports code :eval no
+library(dplyr)
+library(readr)
+library(data.table)
+library(epimight)
+#+END_SRC
+
+#+BEGIN_SRC R :exports none :eval no
+tte <- read_csv(
+  "./test-tte.csv",
+  show_col_type = FALSE,
+  col_types = cols(person_id = col_character()),
+) |> as.data.table()
+#+END_SRC
+
+And then create a new instance with our TTE pool (the variable ~tte~ is the data table shown in the previous chapter):
+
+#+BEGIN_SRC R :exports both
+pipeline <- Pipeline$new(pool = tte)
+#+END_SRC
+
+#+RESULTS:
+
+The supplied pool must be a ~data.table~ with the following required columns:
+
+- ~person_id~
+  - Must be a string
+- ~disorder~
+  - Must be a string
+- ~failure_status~
+  - Must be one of these integers:
+    - ~0~ (censored)
+    - ~1~ (event of interest)
+    - ~2~ (competing risk)
+- ~failure_time~
+  - Must be numeric, minimum ~0.0~
+- ~relationship_kind~
+  - Must be one of these strings: [[../data/relationship-kinds.org][names(epimight:::relationship_kinds)]]
+- ~relatives~
+  - Must be an integer, minimum ~0~
+- ~relatives_diagnosed~
+  - Must be an integer, minimum ~0~
+
+It accepts any additional columns used for stratification.
+
+* Running the pipeline
+
+After creating the pipeline instance, we run analyses by supplying the ~run~ function with:
+
+- Disorder 1
+  - Identifier
+  - Earliest onset
+  - Latest onset
+- Disorder 2
+  - Identifier
+  - Earliest onset
+  - Latest onset
+- Relationship kind
+- What stratification columns to use (if any)
+
+For example, if we want to run an analysis between schizophrenia and coronary artery disease of full siblings,
+stratifying on birth year, we would run:
+
+#+BEGIN_SRC R :exports code :results output
+results <- pipeline$run(
+  disorder1 = list(
+    id             = "SCZ",
+    earliest_onset = 1,
+    latest_onset   = 100
+  ),
+  disorder2 = list(
+    id             = "CAD",
+    earliest_onset = 1,
+    latest_onset   = 100
+  ),
+  relationship_kind = "FS",
+  stratify_columns = list("born_at_year")
+)
+#+END_SRC
+
+#+RESULTS:
+
+This will give us the genetic correlation between the two disorders and all the intermediate results (cif and h2)
+in a named list with the members ~cif~, ~h2~ and ~rg~ that contain the results as ~data.tables~.
+
+** Cumulative incidence
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+results$cif |> tail(10)
+#+END_SRC
+
+#+RESULTS:
+| disorder | cohort | born_at_year | time |                 cif | cif_cases |              cif_var |              cif_se |              cif_l95 |             cif_u95 |
+|----------+--------+--------------+------+---------------------+-----------+----------------------+---------------------+----------------------+---------------------|
+| d2       | c3     |         2020 |    5 |  0.0171821305841924 |         3 |   5.823127433961e-05 | 0.00763094190382878 |  0.00222575928457052 |  0.0321385018838144 |
+| d2       | c3     |         2020 |    6 |  0.0240549828178694 |        50 | 8.09548771225154e-05 | 0.00899749282425473 |  0.00642022093117257 |  0.0416897447045663 |
+| d2       | c3     |         2021 |    4 | 0.00386100386100386 |         2 | 1.49073508146867e-05 | 0.00386100386100386 |  -0.0037064246507338 |  0.0114284323727415 |
+| d2       | c3     |         2021 |    5 |  0.0115830115830116 |        49 | 4.43758160344391e-05 | 0.00666151754740908 |  -0.0014733228922918 |   0.024639346058315 |
+| d2       | c3     |         2022 |    4 |   0.017921146953405 |        40 |  6.3309278580142e-05 | 0.00795671279990311 |  0.00232627643026607 |   0.033516017476544 |
+| d2       | c3     |         2023 |    2 | 0.00336700336700337 |         1 |  1.1336711673412e-05 | 0.00336700336700337 | -0.00323220196814833 | 0.00996620870215506 |
+| d2       | c3     |         2023 |    3 | 0.00673400673400673 |        56 | 2.25969533345091e-05 | 0.00475362528335049 | -0.00258292761735924 |  0.0160509410853727 |
+| d2       | c3     |         2024 |    1 | 0.00668896321070234 |         1 | 2.22960435633161e-05 | 0.00472186865163742 |  -0.0025657292862357 |  0.0159436557076404 |
+| d2       | c3     |         2024 |    2 |  0.0100334448160535 |        53 | 3.33317118281687e-05 | 0.00577336226372196 | -0.00128213729054416 |  0.0213490269226512 |
+| d2       | c3     |         2025 |    1 |  0.0104166666666667 |        57 | 3.59169328300426e-05 |  0.0059930737380782 | -0.00132954201665943 |  0.0221628753499928 |
+
+** Heritability
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+results$h2 |> tail(10)
+#+END_SRC
+
+#+RESULTS:
+| disorder | born_at_year | time |                h2 |              h2_se |             h2_l95 |            h2_u95 |
+|----------+--------------+------+-------------------+--------------------+--------------------+-------------------|
+| d2       |         2016 |   10 | 0.167155731798645 | 0.0611343008380767 | 0.0473325021560149 | 0.286978961441276 |
+| d2       |         2017 |    9 | 0.198071233352673 | 0.0583017768267712 |  0.083799750772201 | 0.312342715933144 |
+| d2       |         2018 |    8 | 0.275335560459556 | 0.0476588898783945 |  0.181924136297903 | 0.368746984621209 |
+| d2       |         2019 |    7 | 0.404172176994286 | 0.0520732576179007 |  0.302108592063201 | 0.506235761925372 |
+| d2       |         2020 |    6 | 0.194672239951383 | 0.0526875752307959 | 0.0914045924990234 | 0.297939887403743 |
+| d2       |         2021 |    5 | 0.226226101924819 |  0.041768457380563 |  0.144359925458916 | 0.308092278390723 |
+| d2       |         2022 |    4 | 0.334483707692785 | 0.0482887082464063 |  0.239837839529828 | 0.429129575855741 |
+| d2       |         2023 |    3 |  0.17801525758185 | 0.0363723347127375 |  0.106725481544885 | 0.249305033618816 |
+| d2       |         2024 |    2 | 0.166102751529161 |  0.040820291191763 | 0.0860949807933051 | 0.246110522265016 |
+| d2       |         2025 |    1 | 0.248039566919317 | 0.0377440134015566 |  0.174061300652266 | 0.322017833186368 |
+
+** Genetic correlation
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+results$rg |> tail(10)
+#+END_SRC
+
+#+RESULTS:
+| born_at_year |                 rg |              rg_se |             rg_l95 |              rg_u95 |
+|--------------+--------------------+--------------------+--------------------+---------------------|
+|         2013 | -0.179075320667164 |  0.084697576651044 | -0.924678143897427 |   0.566527502563098 |
+|         2014 |  0.269664239690915 |  0.084238458116332 | -0.486189227722252 |    1.02551770710408 |
+|         2015 | -0.170432655374861 | 0.0871847306066162 | -0.749131921950218 |   0.408266611200496 |
+|         2017 |  -1.34117012389726 | 0.0702556090927773 |  -2.11183423078671 |  -0.570506017007814 |
+|         2018 |   1.22769280763714 | 0.0676019743267204 | -0.159564812047684 |    2.61495042732196 |
+|         2019 | -0.453637066979423 | 0.0764925880370008 | -0.827778081462298 | -0.0794960524965485 |
+|         2020 | -0.321642474457624 | 0.0679892748994138 |  -1.51970462167675 |   0.876419672761505 |
+|         2022 |  0.409101625878093 | 0.0546297086647107 | 0.0155604860817091 |   0.802642765674478 |
+|         2023 |  0.779621784112294 | 0.0531067957663374 |  0.135886921530693 |     1.4233566466939 |
+|         2025 | -0.293985698128784 | 0.0473656476707593 |  -0.71248758810402 |   0.124516191846453 |
+
+
+* Meta-analyzing the results
+
+When using stratification, we can meta-analyze the results simply by passing the results inte the ~run_meta~ function:
+
+#+BEGIN_SRC R :exports code :results output
+meta <- pipeline$run_meta(results)
+#+END_SRC
+
+#+BEGIN_SRC R :exports none :eval no
+print(meta$rg)
+#+END_SRC
+
+#+RESULTS:
+
+** Cumulative incidence
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+meta$cif |> tail(10)
+#+END_SRC
+
+#+RESULTS:
+| disorder | cohort | time |        fixed_meta |           fixed_se |         fixed_l95 |         fixed_u95 |         rand_meta |            rand_se |           rand_l95 |          rand_u95 |
+|----------+--------+------+-------------------+--------------------+-------------------+-------------------+-------------------+--------------------+--------------------+-------------------|
+| d2       | c3     |   67 | 0.206766917293233 | 0.0248840140567181 | 0.157994249742066 | 0.255539584844401 | 0.206766917293233 | 0.0571543896429013 | 0.0947443135931466 |  0.31878952099332 |
+| d2       | c3     |   68 | 0.186131386861314 | 0.0235609294086768 | 0.139951965220307 |  0.23231080850232 | 0.186131386861314 |  0.056590878191439 | 0.0752132656060933 | 0.297049508116534 |
+| d2       | c3     |   69 | 0.171253822629969 |  0.020868350705315 | 0.130351855247552 | 0.212155790012387 | 0.171253822629969 | 0.0555238521811812 | 0.0624270723548543 | 0.280080572905084 |
+| d2       | c3     |   70 | 0.190812720848057 | 0.0234040173395249 | 0.144940846862588 | 0.236684594833525 | 0.190812720848057 | 0.0565257297830503 | 0.0800222904732779 | 0.301603151222835 |
+| d2       | c3     |   71 | 0.198019801980198 | 0.0229359245487009 | 0.153065389864744 | 0.242974214095652 | 0.198019801980198 | 0.0563335311762128 |  0.087606080874821 | 0.308433523085575 |
+| d2       | c3     |   72 | 0.195286195286195 |  0.023046009164782 | 0.150116017323223 | 0.240456373249168 | 0.195286195286195 | 0.0563784412546219 | 0.0847844504271364 | 0.305787940145254 |
+| d2       | c3     |   73 | 0.174603174603175 | 0.0214270419650415 | 0.132606172351693 | 0.216600176854656 | 0.174603174603175 | 0.0557362380076848 | 0.0653601481081123 | 0.283846201098237 |
+| d2       | c3     |   74 | 0.202572347266881 | 0.0228318265704829 | 0.157821967188734 | 0.247322727345027 | 0.202572347266881 | 0.0562912284856375 | 0.0922415394350314 |  0.31290315509873 |
+| d2       | c3     |   75 | 0.188356164383562 | 0.0229249863219361 | 0.143423191192567 | 0.233289137574556 | 0.188356164383562 | 0.0563290786160984 | 0.0779511702960087 | 0.298761158471115 |
+| d2       | c3     |   76 | 0.222602739726027 | 0.0243917405711237 | 0.174794928206625 |  0.27041055124543 | 0.222602739726027 | 0.0569417870106536 |  0.110996837185146 | 0.334208642266908 |
+
+** Heritability
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+meta$h2 |> tail(10)
+#+END_SRC
+
+#+RESULTS:
+| disorder |        fixed_meta |            fixed_se |         fixed_l95 |         fixed_u95 |         rand_meta |            rand_se |          rand_l95 |          rand_u95 |
+|----------+-------------------+---------------------+-------------------+-------------------+-------------------+--------------------+-------------------+-------------------|
+| d1       | 0.338116895164672 | 0.00913809850584279 |  0.32020622209322 | 0.356027568236124 | 0.413906252145833 | 0.0191365988979563 | 0.376398518305839 | 0.451413985985827 |
+| d2       | 0.357103610052348 | 0.00914835510928811 | 0.339172834038143 | 0.375034386066552 | 0.420574922174659 | 0.0189406480719614 | 0.383451251953615 | 0.457698592395704 |
+
+** Genetic correlation
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+meta$rg |> tail(10)
+#+END_SRC
+
+#+RESULTS:
+|         fixed_meta |           fixed_se |             fixed_l95 |          fixed_u95 |           rand_meta |            rand_se |            rand_l95 |           rand_u95 |
+|--------------------+--------------------+-----------------------+--------------------+---------------------+--------------------+---------------------+--------------------|
+| 0.0245466870710382 | 0.0129330691556319 | -0.000802128474000345 | 0.0498955026160768 | 0.00162305932204646 | 0.0406138438377496 | -0.0779800745999427 | 0.0812261932440356 |

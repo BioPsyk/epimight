@@ -1,6 +1,6 @@
 Package: epimight
-Title: A powerful R epidemiology analysis toolbox
-Version: 0.4.0
+Title: A powerful R epidemiology analysis pipeline
+Version: 1.0.0
 Authors@R:
     person(given = "Joeri",
            family = "Meijsen",
@@ -32,7 +32,8 @@ Imports:
     readr,
     tidyr,
     yaml,
-    rjson
+    rjson,
+    stringr
 VignetteBuilder: knitr
 RoxygenNote: 7.2.3
 Roxygen: list(markdown = TRUE)
@@ -43,6 +44,7 @@ Collate:
     'GeneticCorrelationAnalysis-class.R'
     'HeritabilityAnalysis-class.R'
     'TTERetriever-class.R'
+    'Pipeline-class.R'
 Depends:
     R (>= 2.10)
 Config/testthat/edition: 3

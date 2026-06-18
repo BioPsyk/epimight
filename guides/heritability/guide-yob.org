@@ -116,7 +116,7 @@ n_count <- 100000
 
 tte <- generate_random_tte(n_count)
 tte <- generate_failure(tte, 20, 10)
-tte <- generate_diagnosed_relatives(tte, "diagnosed_relatives") |>
+tte <- generate_relatives_diagnosed(tte, "relatives_diagnosed") |>
   select(-born_at_year, -dead_at_year) |>
   relocate(relatives, .after = failure_time) |>
   as.data.table()
@@ -140,18 +140,30 @@ print(tte)
 
 #+RESULTS:
 #+begin_example
-       person_id    born_at failure_status failure_time relatives diagnosed_relatives
-    1:        12 1995-12-01              0           29         3                   0
-    2:        14 1981-11-29              0           43         1                   0
-    3:        16 1985-12-24              0           39         1                   1
-    4:        19 1993-02-14              0           31         1                   0
-    5:        20 1993-08-20              0           31         4                   0
+       person_id gender    born_at failure_status failure_time relatives
+    1:         4      f 1986-03-12              0           40         1
+    2:         5      f 1990-10-10              0           36         2
+    3:         9      m 1993-11-17              0           33         3
+    4:        12      f 1992-04-02              0           34         6
+    5:        33      m 1993-10-30              0           33         1
    ---
-20249:     99990 1995-10-07              0           29         3                   0
-20250:     99992 1984-01-09              1           38         0                   0
-20251:     99997 1994-06-04              0           30         0                   0
-20252:     99999 1992-07-21              0           32         0                   0
-20253:    100000 1993-09-03              1            1         2                   2
+19804:     99977      f 1993-05-12              1           24         7
+19805:     99981      f 1989-11-17              0           37         2
+19806:     99982      m 1981-04-06              0           45         3
+19807:     99984      f 1985-11-06              0           41         1
+19808:    100000      f 1987-04-11              0           39         1
+       relatives_diagnosed
+    1:                   0
+    2:                   0
+    3:                   2
+    4:                   2
+    5:                   0
+   ---
+19804:                   7
+19805:                   0
+19806:                   1
+19807:                   0
+19808:                   0
 #+end_example
 
 * Analysis
@@ -219,7 +231,7 @@ tte <- tte |>
   mutate(cohort = "all") |>
   union_all(
     tte |>
-      filter(diagnosed_relatives > 0) |>
+      filter(relatives_diagnosed > 0) |>
       mutate(cohort = "affected_relatives")
   )
 #+END_SRC
@@ -234,30 +246,30 @@ print(tte)
 
 #+RESULTS:
 #+begin_example
-       person_id    born_at failure_status failure_time relatives diagnosed_relatives
-    1:        12 1995-12-01              0           29         3                   0
-    2:        14 1981-11-29              0           43         1                   0
-    3:        16 1985-12-24              0           39         1                   1
-    4:        19 1993-02-14              0           31         1                   0
-    5:        20 1993-08-20              0           31         4                   0
+       person_id gender    born_at failure_status failure_time relatives
+    1:         4      f 1986-03-12              0           40         4
+    2:         5      f 1990-10-10              0           36         1
+    3:         9      m 1993-11-17              0           33         4
+    4:        12      f 1992-04-02              0           34         3
+    5:        33      m 1993-10-30              0           33         4
    ---
-24811:     99949 1994-04-13              1           21         7                   4
-24812:     99973 1984-08-29              0           40         5                   2
-24813:     99979 1995-07-21              0           29         3                   3
-24814:     99981 1981-04-03              1           22         2                   2
-24815:    100000 1993-09-03              1            1         2                   2
-       born_at_year             cohort
-    1:         1995                all
-    2:         1981                all
-    3:         1985                all
-    4:         1993                all
-    5:         1993                all
+24320:     99957      f 1989-02-09              0           37         3
+24321:     99960      f 1988-02-10              0           38         2
+24322:     99964      m 1993-02-02              0           33         3
+24323:     99965      f 1995-10-27              0           31         4
+24324:     99990      m 1981-08-04              0           45         3
+       relatives_diagnosed born_at_year             cohort
+    1:                   0         1986                all
+    2:                   1         1990                all
+    3:                   0         1993                all
+    4:                   0         1992                all
+    5:                   0         1993                all
    ---
-24811:         1994 affected_relatives
-24812:         1984 affected_relatives
-24813:         1995 affected_relatives
-24814:         1981 affected_relatives
-24815:         1993 affected_relatives
+24320:                   3         1989 affected_relatives
+24321:                   1         1988 affected_relatives
+24322:                   3         1993 affected_relatives
+24323:                   1         1995 affected_relatives
+24324:                   3         1981 affected_relatives
 #+end_example
 
 Now when we run the analysis, we supply *both* the ~affected_relatives~ column and the
@@ -267,7 +279,7 @@ Now when we run the analysis, we supply *both* the ~affected_relatives~ column a
 estimates <- cif_analysis$run(
   tte = tte,
   earliest_onset_age = earliest_onset_age,
-  group_columns = list("born_at_year", "cohort")
+  stratify_columns = list("born_at_year", "cohort")
 )
 #+END_SRC
 
@@ -282,18 +294,18 @@ print(estimates)
 
 #+RESULTS:
 #+begin_example
-     time    estimate     variance           l95         u95 cases born_at_year
-  1:    2 0.003333333 1.111111e-05 -0.0031998799 0.009866547     1         1981
-  2:    3 0.006666667 2.214802e-05 -0.0025572547 0.015890588     2         1981
-  3:    6 0.010000000 3.311074e-05 -0.0012780117 0.021278012     3         1981
-  4:    7 0.013333333 4.399926e-05  0.0003325125 0.026334154     4         1981
-  5:    9 0.016666667 5.481358e-05  0.0021558393 0.031177494     6         1981
+     time         cif          se           l95         u95          var cases born_at_year
+  1:    3 0.003344482 0.003344482 -0.0032105819 0.009899545 1.118556e-05     1         1981
+  2:    4 0.006688963 0.004721882 -0.0025657554 0.015943682 2.229617e-05     3         1981
+  3:    6 0.013377926 0.006655256  0.0003338644 0.026421988 4.429243e-05     5         1981
+  4:    7 0.020066890 0.008123356  0.0041454042 0.035988375 6.598891e-05     6         1981
+  5:    8 0.023411371 0.008759270  0.0062435183 0.040579224 7.672480e-05     8         1981
  ---
-888:   25 0.076978940 5.163896e-05  0.0628945891 0.091063290   110         1995
-889:   26 0.081336238 5.430445e-05  0.0668929592 0.095779517   115         1995
-890:   27 0.084967320 5.650462e-05  0.0702343581 0.099700282   120         1995
-891:   28 0.088598402 5.868563e-05  0.0735837945 0.103613010   123         1995
-892:   29 0.090777052 5.998505e-05  0.0755971275 0.105956976   152         1995
+936:   27 0.075688073 0.007316302  0.0613483859 0.090027761 5.352827e-05   101         1995
+937:   28 0.078746177 0.007450292  0.0641438736 0.093348481 5.550685e-05   107         1995
+938:   29 0.083333333 0.007645122  0.0683491689 0.098317498 5.844790e-05   108         1995
+939:   30 0.084097859 0.007676910  0.0690513929 0.099144326 5.893494e-05   110         1995
+940:   31 0.085626911 0.007739919  0.0704569481 0.100796875 5.990635e-05   130         1995
                  cohort
   1: affected_relatives
   2: affected_relatives
@@ -301,11 +313,11 @@ print(estimates)
   4: affected_relatives
   5: affected_relatives
  ---
-888:                all
-889:                all
-890:                all
-891:                all
-892:                all
+936:                all
+937:                all
+938:                all
+939:                all
+940:                all
 #+end_example
 
 ** Heritability
@@ -332,12 +344,12 @@ cohorts, for all years:
 combined <- cohort1 |>
   inner_join(cohort2, by = join_by(time, born_at_year)) |>
   rename(
-    cohort1_estimates = estimate.x,
-    cohort1_cases     = cases.x,
-    cohort2_estimates = estimate.y,
-    cohort2_cases     = cases.y
+    c1_cif       = cif.x,
+    c1_cif_cases = cases.x,
+    c2_cif       = cif.y,
+    c2_cif_cases = cases.y
   ) |>
-  select(time, born_at_year, cohort1_estimates, cohort1_cases, cohort2_estimates, cohort2_cases)
+  select(time, born_at_year, c1_cif, c1_cif_cases, c2_cif, c2_cif_cases)
 #+END_SRC
 
 #+RESULTS:
@@ -367,22 +379,22 @@ print(combined |> arrange(born_at_year))
 
 #+RESULTS:
 #+begin_example
-    time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases
- 1:   43         1981        0.10639881           141         0.2300000            70
- 2:   42         1982        0.09763101           131         0.1829653            56
- 3:   41         1983        0.09335325           125         0.1621622            48
- 4:   40         1984        0.09816850           134         0.1488673            44
- 5:   39         1985        0.09417040           122         0.1593220            43
- 6:   38         1986        0.09747292           141         0.1672026            56
- 7:   37         1987        0.09351988           126         0.1861314            50
- 8:   36         1988        0.09940209           137         0.1931034            59
- 9:   35         1989        0.10015773           136         0.1900000            64
-10:   34         1990        0.08030888           115         0.1803279            58
-11:   33         1991        0.08339483           127         0.1726619            55
-12:   32         1992        0.09037472           134         0.1958763            64
-13:   31         1993        0.08504176           136         0.1646341            61
-14:   30         1994        0.09463277           146         0.1681416            60
-15:   29         1995        0.09077705           152         0.1646341            62
+    time born_at_year     c1_cif c1_cif_cases    c2_cif c2_cif_cases
+ 1:   45         1981 0.09252120          119 0.1872910           55
+ 2:   44         1982 0.09954407          128 0.1666667           51
+ 3:   43         1983 0.09628506          123 0.1557093           44
+ 4:   42         1984 0.10576222          146 0.1907692           63
+ 5:   41         1985 0.08275329          108 0.1578947           48
+ 6:   40         1986 0.10424710          131 0.1716172           50
+ 7:   39         1987 0.10510733          142 0.2056962           68
+ 8:   38         1988 0.08618128          117 0.1634615           51
+ 9:   37         1989 0.09450549          134 0.2255892           68
+10:   36         1990 0.10158014          136 0.2032787           62
+11:   35         1991 0.09274495          136 0.1846690           57
+12:   34         1992 0.09341501          129 0.2229730           67
+13:   33         1993 0.09357653          133 0.1818182           60
+14:   32         1994 0.09160305          130 0.1713287           52
+15:   31         1995 0.08562691          130 0.1967213           68
 #+end_example
 
 Now we can simply run the heritability calculation by passing in the the estimate and
@@ -391,10 +403,10 @@ cases columns from the combined dataset along with the relationship kind:
 #+BEGIN_SRC R :exports both :results output
 h2_analysis <- HeritabilityAnalysis$new()
 
-results <- h2_analysis$run(
+h2_estimates <- h2_analysis$run(
   relationship_kind = relationship_kind,
   estimates         = combined
-)
+) |> select(time, born_at_year, h2, se, l95, u95) # We don't need the risk estimate columns
 #+END_SRC
 
 #+RESULTS:
@@ -402,57 +414,45 @@ results <- h2_analysis$run(
 And here's what the results look like:
 
 #+BEGIN_SRC R :exports both :results output
-print(results)
+print(h2_estimates)
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
-    time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases
- 1:   43         1981        0.10639881           141         0.2300000            70
- 2:   42         1982        0.09763101           131         0.1829653            56
- 3:   41         1983        0.09335325           125         0.1621622            48
- 4:   40         1984        0.09816850           134         0.1488673            44
- 5:   39         1985        0.09417040           122         0.1593220            43
- 6:   38         1986        0.09747292           141         0.1672026            56
- 7:   37         1987        0.09351988           126         0.1861314            50
- 8:   36         1988        0.09940209           137         0.1931034            59
- 9:   35         1989        0.10015773           136         0.1900000            64
-10:   34         1990        0.08030888           115         0.1803279            58
-11:   33         1991        0.08339483           127         0.1726619            55
-12:   32         1992        0.09037472           134         0.1958763            64
-13:   31         1993        0.08504176           136         0.1646341            61
-14:   30         1994        0.09463277           146         0.1681416            60
-15:   29         1995        0.09077705           152         0.1646341            62
-           h2         se        l95       u95
- 1: 0.6228291 0.10027808 0.42628407 0.8193742
- 2: 0.4661971 0.10368062 0.26298304 0.6694111
- 3: 0.3924781 0.10736769 0.18203745 0.6029188
- 4: 0.2950882 0.11128449 0.07697062 0.5132058
- 5: 0.3733100 0.11268029 0.15245663 0.5941634
- 6: 0.3920222 0.10166302 0.19276270 0.5912817
- 7: 0.5051446 0.10772429 0.29400497 0.7162842
- 8: 0.5022918 0.10253288 0.30132735 0.7032563
- 9: 0.4838149 0.09924184 0.28930091 0.6783289
-10: 0.5596683 0.09644018 0.37064554 0.7486911
-11: 0.5050839 0.09839437 0.31223092 0.6979368
-12: 0.5673837 0.09624308 0.37874728 0.7560201
-13: 0.4566355 0.09369268 0.27299785 0.6402732
-14: 0.4138707 0.09755592 0.22266110 0.6050803
-15: 0.4205854 0.09424478 0.23586560 0.6053051
+    time born_at_year        h2         se       l95       u95
+ 1:   45         1981 0.5163613 0.10368868 0.3131315 0.7195911
+ 2:   44         1982 0.3768777 0.10732707 0.1665167 0.5872388
+ 3:   43         1983 0.3420142 0.11204020 0.1224154 0.5616130
+ 4:   42         1984 0.4551008 0.10132908 0.2564958 0.6537058
+ 5:   41         1985 0.4385638 0.10398391 0.2347553 0.6423722
+ 6:   40         1986 0.3730800 0.11026176 0.1569670 0.5891931
+ 7:   39         1987 0.5260970 0.09926756 0.3315325 0.7206614
+ 8:   38         1988 0.4437412 0.10257173 0.2427006 0.6447818
+ 9:   37         1989 0.6691666 0.09741995 0.4782235 0.8601097
+10:   36         1990 0.5352396 0.10206279 0.3351965 0.7352826
+11:   35         1991 0.5030909 0.10091145 0.3053045 0.7008773
+12:   34         1992 0.6645577 0.09773498 0.4729972 0.8561183
+13:   33         1993 0.4850061 0.09904147 0.2908848 0.6791274
+14:   32         1994 0.4477390 0.10364442 0.2445960 0.6508821
+15:   31         1995 0.5993152 0.09242238 0.4181674 0.7804631
 #+end_example
 
 Since the results are stratified by year of birth, we need to run a meta
 analysis to get a single value:
 
 #+BEGIN_SRC R :exports both :results output
-meta <- h2_analysis$run_meta(results)
+meta <- h2_analysis$run_meta(
+  estimates       = h2_estimates,
+  estimate_column = "h2",
+  se_column       = "se"
+)
 
 print(meta)
 #+END_SRC
 
 #+RESULTS:
-:    fixed_meta   fixed_se fixed_l95 fixed_u95 rand_meta    rand_se rand_l95  rand_u95
-: 1:  0.4680483 0.02609397 0.4169041 0.5191924 0.4664169 0.03419329 0.399398 0.5334357
+: fixed_meta   fixed_se fixed_l95 fixed_u95 rand_meta    rand_se  rand_l95  rand_u95
+: 1:  0.4993258 0.02631116  0.447756 0.5508957 0.4957042 0.03657211 0.4240229 0.5673855
 
 There are actually two results one for the fixed effects model and one for the random effects model.
 

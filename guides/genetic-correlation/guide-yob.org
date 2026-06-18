@@ -93,11 +93,11 @@ The same naming convention will be used as the previous pipeline:
   - ~c2~ = Individuals with at least 1 diagnosed relative of disorder 1
   - ~c3~ = Individuals with at least 1 diagnosed relative of disorder 2
 - Results:
-  - ~re_d1_c1~ = Risk estimates of disorder 1, cohort 1
-  - ~re_d1_c2~ = Risk estimates of disorder 1, cohort 2
-  - ~re_d1_c3~ = Risk estimates of disorder 1, cohort 3
-  - ~re_d2_c1~ = Risk estimates of disorder 2, cohort 1
-  - ~re_d2_c3~ = Risk estimates of disorder 2, cohort 3
+  - ~cif_d1_c1~ = Risk estimates of disorder 1, cohort 1
+  - ~cif_d1_c2~ = Risk estimates of disorder 1, cohort 2
+  - ~cif_d1_c3~ = Risk estimates of disorder 1, cohort 3
+  - ~cif_d2_c1~ = Risk estimates of disorder 2, cohort 1
+  - ~cif_d2_c3~ = Risk estimates of disorder 2, cohort 3
   - ~h2_d1~ = Heritability of disorder 1 (cohort 1 vs cohort 2)
   - ~h2_d2~ = Heritability of disorder 2 (cohort 1 vs cohort 3)
   - ~gc_d1_d2~ = Genetic correlation (disorder 1 vs disorder 2)
@@ -153,13 +153,13 @@ n_count <- 100000
 
 d1_tte <- generate_random_tte(n_count)
 d1_tte <- generate_failure(d1_tte, 20, 10)
-d1_tte <- generate_diagnosed_relatives(d1_tte, "diagnosed_relatives") |>
+d1_tte <- generate_relatives_diagnosed(d1_tte, "relatives_diagnosed") |>
   relocate(relatives, .after = failure_time)
 d1_tte <- data.table(d1_tte)
 
 d2_tte <- d1_tte
 d2_tte <- generate_failure(d2_tte, 25, 10)
-d2_tte <- generate_diagnosed_relatives(d2_tte, "diagnosed_relatives") |>
+d2_tte <- generate_relatives_diagnosed(d2_tte, "relatives_diagnosed") |>
   relocate(relatives, .after = failure_time)
 d2_tte <- data.table(d2_tte)
 
@@ -216,55 +216,55 @@ print(d2_tte)
 #+RESULTS:
 #+begin_example
 [1] "Disorder 1 survival data:"
-       person_id    born_at failure_status failure_time relatives diagnosed_relatives
-    1:        12 1995-12-01              0           29         3                   0
-    2:        14 1981-11-29              0           43         1                   0
-    3:        16 1985-12-24              0           39         1                   1
-    4:        19 1993-02-14              0           31         1                   0
-    5:        20 1993-08-20              0           31         4                   0
+person_id gender    born_at failure_status failure_time relatives
+    1:         4      f 1986-03-12              0           40         1
+    2:         5      f 1990-10-10              0           36         2
+    3:         9      m 1993-11-17              0           33         3
+    4:        12      f 1992-04-02              0           34         6
+    5:        33      m 1993-10-30              0           33         1
    ---
-20249:     99990 1995-10-07              0           29         3                   0
-20250:     99992 1984-01-09              1           38         0                   0
-20251:     99997 1994-06-04              0           30         0                   0
-20252:     99999 1992-07-21              0           32         0                   0
-20253:    100000 1993-09-03              1            1         2                   2
-       born_at_year
-    1:         1995
-    2:         1981
-    3:         1985
-    4:         1993
-    5:         1993
+19804:     99977      f 1993-05-12              1           24         7
+19805:     99981      f 1989-11-17              0           37         2
+19806:     99982      m 1981-04-06              0           45         3
+19807:     99984      f 1985-11-06              0           41         1
+19808:    100000      f 1987-04-11              0           39         1
+       relatives_diagnosed born_at_year
+    1:                   0         1986
+    2:                   0         1990
+    3:                   2         1993
+    4:                   2         1992
+    5:                   0         1993
    ---
-20249:         1995
-20250:         1984
-20251:         1994
-20252:         1992
-20253:         1993
+19804:                   7         1993
+19805:                   0         1989
+19806:                   1         1981
+19807:                   0         1985
+19808:                   0         1987
 [1] "Disorder 2 survival data:"
-       person_id    born_at failure_status failure_time relatives diagnosed_relatives
-    1:        12 1995-12-01              0           29         3                   0
-    2:        14 1981-11-29              0           43         1                   1
-    3:        16 1985-12-24              1           33         1                   1
-    4:        19 1993-02-14              0           31         1                   0
-    5:        20 1993-08-20              0           31         4                   4
+person_id gender    born_at failure_status failure_time relatives
+    1:         4      f 1986-03-12              0           40         1
+    2:         5      f 1990-10-10              0           36         2
+    3:         9      m 1993-11-17              0           33         3
+    4:        12      f 1992-04-02              0           34         6
+    5:        33      m 1993-10-30              0           33         1
    ---
-20249:     99990 1995-10-07              0           29         3                   3
-20250:     99992 1984-01-09              0           40         0                   0
-20251:     99997 1994-06-04              0           30         0                   0
-20252:     99999 1992-07-21              1           32         0                   0
-20253:    100000 1993-09-03              0           31         2                   2
-       born_at_year
-    1:         1995
-    2:         1981
-    3:         1985
-    4:         1993
-    5:         1993
+19804:     99977      f 1993-05-12              0           33         7
+19805:     99981      f 1989-11-17              0           37         2
+19806:     99982      m 1981-04-06              0           45         3
+19807:     99984      f 1985-11-06              0           41         1
+19808:    100000      f 1987-04-11              0           39         1
+       relatives_diagnosed born_at_year
+    1:                   0         1986
+    2:                   0         1990
+    3:                   0         1993
+    4:                   0         1992
+    5:                   1         1993
    ---
-20249:         1995
-20250:         1984
-20251:         1994
-20252:         1992
-20253:         1993
+19804:                   0         1993
+19805:                   2         1989
+19806:                   0         1981
+19807:                   0         1985
+19808:                   1         1987
 #+end_example
 
 We then need to create the 3 cohorts:
@@ -280,15 +280,15 @@ c1_tte <- inner_join(d1_tte, d2_tte, by = join_by(person_id)) |>
     relatives              = relatives.x,
     d1_failure_status      = failure_status.x,
     d1_failure_time        = failure_time.x,
-    d1_diagnosed_relatives = diagnosed_relatives.x,
+    d1_relatives_diagnosed = relatives_diagnosed.x,
     d2_failure_status      = failure_status.y,
     d2_failure_time        = failure_time.y,
-    d2_diagnosed_relatives = diagnosed_relatives.y
+    d2_relatives_diagnosed = relatives_diagnosed.y
   ) |>
   select(person_id, relatives, born_at_year, starts_with("d1_"), starts_with("d2_"))
 
-c2_tte <- c1_tte |> filter(d1_diagnosed_relatives > 0)
-c3_tte <- c1_tte |> filter(d2_diagnosed_relatives > 0)
+c2_tte <- c1_tte |> filter(d1_relatives_diagnosed > 0)
+c3_tte <- c1_tte |> filter(d2_relatives_diagnosed > 0)
 #+END_SRC
 
 #+RESULTS:
@@ -305,80 +305,80 @@ print(c3_tte)
 #+RESULTS:
 #+begin_example
 [1] "c1_tte:"
-       person_id relatives born_at_year d1_failure_status d1_failure_time
-    1:        12         3         1995                 0              29
-    2:        14         1         1981                 0              43
-    3:        16         1         1985                 0              39
-    4:        19         1         1993                 0              31
-    5:        20         4         1993                 0              31
+person_id relatives born_at_year d1_failure_status d1_failure_time
+    1:         4         1         1986                 0              40
+    2:         5         2         1990                 0              36
+    3:         9         3         1993                 0              33
+    4:        12         6         1992                 0              34
+    5:        33         1         1993                 0              33
    ---
-20249:     99990         3         1995                 0              29
-20250:     99992         0         1984                 1              38
-20251:     99997         0         1994                 0              30
-20252:     99999         0         1992                 0              32
-20253:    100000         2         1993                 1               1
-       d1_diagnosed_relatives d2_failure_status d2_failure_time d2_diagnosed_relatives
-    1:                      0                 0              29                      0
-    2:                      0                 0              43                      1
-    3:                      1                 1              33                      1
-    4:                      0                 0              31                      0
-    5:                      0                 0              31                      4
+19804:     99977         7         1993                 1              24
+19805:     99981         2         1989                 0              37
+19806:     99982         3         1981                 0              45
+19807:     99984         1         1985                 0              41
+19808:    100000         1         1987                 0              39
+       d1_relatives_diagnosed d2_failure_status d2_failure_time d2_relatives_diagnosed
+    1:                      0                 0              40                      0
+    2:                      0                 0              36                      0
+    3:                      2                 0              33                      0
+    4:                      2                 0              34                      0
+    5:                      0                 0              33                      1
    ---
-20249:                      0                 0              29                      3
-20250:                      0                 0              40                      0
-20251:                      0                 0              30                      0
-20252:                      0                 1              32                      0
-20253:                      2                 0              31                      2
+19804:                      7                 0              33                      0
+19805:                      0                 0              37                      2
+19806:                      1                 0              45                      0
+19807:                      0                 0              41                      0
+19808:                      0                 0              39                      1
 [1] "c2_tte:"
-      person_id relatives born_at_year d1_failure_status d1_failure_time
-   1:        16         1         1985                 0              39
-   2:        74         3         1981                 0              43
-   3:        81         1         1993                 0              31
-   4:        83         4         1986                 0              38
-   5:       108         3         1988                 0              36
+person_id relatives born_at_year d1_failure_status d1_failure_time
+   1:         9         3         1993                 0              33
+   2:        12         6         1992                 0              34
+   3:        56         2         1981                 1              20
+   4:        82         1         1994                 0              32
+   5:       117         2         1985                 0              41
   ---
-4558:     99949         7         1994                 1              21
-4559:     99973         5         1984                 0              40
-4560:     99979         3         1995                 0              29
-4561:     99981         2         1981                 1              22
-4562:    100000         2         1993                 1               1
-      d1_diagnosed_relatives d2_failure_status d2_failure_time d2_diagnosed_relatives
-   1:                      1                 1              33                      1
-   2:                      1                 0              43                      1
-   3:                      1                 0              31                      0
-   4:                      4                 0              38                      0
-   5:                      1                 0              36                      0
+4524:     99960         5         1994                 1              19
+4525:     99968         1         1988                 0              38
+4526:     99971         1         1993                 0              33
+4527:     99977         7         1993                 1              24
+4528:     99982         3         1981                 0              45
+      d1_relatives_diagnosed d2_failure_status d2_failure_time d2_relatives_diagnosed
+   1:                      2                 0              33                      0
+   2:                      2                 0              34                      0
+   3:                      2                 0              45                      1
+   4:                      1                 1              14                      0
+   5:                      2                 0              41                      0
   ---
-4558:                      4                 0              30                      0
-4559:                      2                 0              40                      5
-4560:                      3                 0              29                      0
-4561:                      2                 0              43                      0
-4562:                      2                 0              31                      2
+4524:                      5                 0              32                      0
+4525:                      1                 0              38                      0
+4526:                      1                 0              33                      0
+4527:                      7                 0              33                      0
+4528:                      1                 0              45                      0
 [1] "c3_tte:"
-      person_id relatives born_at_year d1_failure_status d1_failure_time
-   1:        14         1         1981                 0              43
-   2:        16         1         1985                 0              39
-   3:        20         4         1993                 0              31
-   4:        44         2         1995                 0              29
-   5:        74         3         1981                 0              43
+person_id relatives born_at_year d1_failure_status d1_failure_time
+   1:        33         1         1993                 0              33
+   2:        43         2         1984                 0              42
+   3:        56         2         1981                 1              20
+   4:        64         2         1988                 0              38
+   5:       129         1         1987                 0              39
   ---
-4714:     99870         3         1983                 0              41
-4715:     99887         4         1981                 0              43
-4716:     99973         5         1984                 0              40
-4717:     99990         3         1995                 0              29
-4718:    100000         2         1993                 1               1
-      d1_diagnosed_relatives d2_failure_status d2_failure_time d2_diagnosed_relatives
-   1:                      0                 0              43                      1
-   2:                      1                 1              33                      1
-   3:                      0                 0              31                      4
-   4:                      0                 0              29                      1
-   5:                      1                 0              43                      1
+4459:     99966         3         1991                 0              35
+4460:     99967         3         1992                 0              34
+4461:     99972         1         1981                 0              45
+4462:     99981         2         1989                 0              37
+4463:    100000         1         1987                 0              39
+      d1_relatives_diagnosed d2_failure_status d2_failure_time d2_relatives_diagnosed
+   1:                      0                 0              33                      1
+   2:                      0                 0              42                      1
+   3:                      2                 0              45                      1
+   4:                      0                 0              38                      2
+   5:                      0                 0              39                      1
   ---
-4714:                      3                 0              41                      3
-4715:                      0                 0              43                      3
-4716:                      2                 0              40                      5
-4717:                      0                 0              29                      3
-4718:                      2                 0              31                      2
+4459:                      0                 1              35                      2
+4460:                      0                 0              34                      1
+4461:                      0                 1              27                      1
+4462:                      0                 0              37                      2
+4463:                      0                 0              39                      1
 #+end_example
 
 ** Risk estimates
@@ -394,11 +394,11 @@ cif_analysis <- CumulativeIncidenceAnalysis$new()
 
 Like the non-stratified pipeline, we need to create the 5 risk estimates:
 
-- re_d1_c1 :: Risk estimates of disorder 1, cohort 1
-- re_d1_c2 :: Risk estimates of disorder 1, cohort 2
-- re_d1_c3 :: Risk estimates of disorder 1, cohort 3
-- re_d2_c1 :: Risk estimates of disorder 2, cohort 1
-- re_d2_c3 :: Risk estimates of disorder 2, cohort 3
+- cif_d1_c1 :: Risk estimates of disorder 1, cohort 1
+- cif_d1_c2 :: Risk estimates of disorder 1, cohort 2
+- cif_d1_c3 :: Risk estimates of disorder 1, cohort 3
+- cif_d2_c1 :: Risk estimates of disorder 2, cohort 1
+- cif_d2_c3 :: Risk estimates of disorder 2, cohort 3
 
 But this time we will supply the column ~born_at_year~ as a grouping column, in order
 to stratify the analysis on birth year:
@@ -415,15 +415,15 @@ run_cif_stratified <- function(disorder, cohort) {
   cif_analysis$run(
     tte = tte,
     earliest_onset = onset,
-    group_columns = list("born_at_year")
+    stratify_columns = list("born_at_year")
   )
 }
 
-re_d1_c1 <- run_cif_stratified("d1", "c1")
-re_d1_c2 <- run_cif_stratified("d1", "c2")
-re_d1_c3 <- run_cif_stratified("d1", "c3")
-re_d2_c1 <- run_cif_stratified("d2", "c1")
-re_d2_c3 <- run_cif_stratified("d2", "c3")
+cif_d1_c1 <- run_cif_stratified("d1", "c1")
+cif_d1_c2 <- run_cif_stratified("d1", "c2")
+cif_d1_c3 <- run_cif_stratified("d1", "c3")
+cif_d2_c1 <- run_cif_stratified("d2", "c1")
+cif_d2_c3 <- run_cif_stratified("d2", "c3")
 #+END_SRC
 
 #+RESULTS:
@@ -431,85 +431,85 @@ re_d2_c3 <- run_cif_stratified("d2", "c3")
 Now we can see that the results have been stratified by birth year:
 
 #+BEGIN_SRC R :exports both :results output
-print("re_d1_c1:")
-print(re_d1_c1)
-print("re_d1_c2:")
-print(re_d1_c2)
-print("re_d1_c3:")
-print(re_d1_c3)
-print("re_d2_c1:")
-print(re_d2_c1)
-print("re_d2_c3:")
-print(re_d2_c3)
+print("cif_d1_c1:")
+print(cif_d1_c1)
+print("cif_d1_c2:")
+print(cif_d1_c2)
+print("cif_d1_c3:")
+print(cif_d1_c3)
+print("cif_d2_c1:")
+print(cif_d2_c1)
+print("cif_d2_c3:")
+print(cif_d2_c3)
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
-[1] "re_d1_c1:"
-     time   estimate     variance        l95        u95 cases born_at_year
-  1:   10 0.01264881 9.299231e-06 0.00667197 0.01862565     6         1981
-  2:   11 0.01711310 1.252445e-05 0.01017680 0.02404939     9         1981
-  3:   12 0.01934524 1.412593e-05 0.01197882 0.02671166    11         1981
-  4:   13 0.02083333 1.518946e-05 0.01319464 0.02847203    13         1981
-  5:   14 0.02232143 1.624970e-05 0.01442063 0.03022222    18         1981
+[1] "cif_d1_c1:"
+time        cif          se         l95        u95          var cases born_at_year
+  1:   10 0.01233616 0.003066147 0.006326622 0.01834570 9.401258e-06     6         1981
+  2:   11 0.01696222 0.003586949 0.009931930 0.02399251 1.286620e-05    11         1981
+  3:   12 0.02081727 0.003965910 0.013044231 0.02859031 1.572844e-05    14         1981
+  4:   13 0.02313030 0.004175497 0.014946476 0.03131413 1.743478e-05    19         1981
+  5:   14 0.02698535 0.004501148 0.018163263 0.03580744 2.026033e-05    21         1981
  ---
-387:   25 0.07697894 5.163896e-05 0.06289459 0.09106329    89         1995
-388:   26 0.08133624 5.430445e-05 0.06689296 0.09577952    94         1995
-389:   27 0.08496732 5.650462e-05 0.07023436 0.09970028    99         1995
-390:   28 0.08859840 5.868563e-05 0.07358379 0.10361301   102         1995
-391:   29 0.09077705 5.998505e-05 0.07559713 0.10595698   131         1995
-[1] "re_d1_c2:"
-     time   estimate     variance         l95        u95 cases born_at_year
-  1:   10 0.02333333 7.621950e-05 0.006222107 0.04044456     2         1981
-  2:   11 0.03000000 9.732863e-05 0.010663922 0.04933608     3         1981
-  3:   13 0.03333333 1.077720e-04 0.012986305 0.05368036     5         1981
-  4:   14 0.04000000 1.284359e-04 0.017787813 0.06221219     6         1981
-  5:   15 0.04333333 1.386567e-04 0.020254256 0.06641241    11         1981
+408:   27 0.07568807 0.007316302 0.061348386 0.09002776 5.352827e-05    87         1995
+409:   28 0.07874618 0.007450292 0.064143874 0.09334848 5.550685e-05    93         1995
+410:   29 0.08333333 0.007645122 0.068349169 0.09831750 5.844790e-05    94         1995
+411:   30 0.08409786 0.007676910 0.069051393 0.09914433 5.893494e-05    96         1995
+412:   31 0.08562691 0.007739919 0.070456948 0.10079687 5.990635e-05   116         1995
+[1] "cif_d1_c2:"
+time        cif          se        l95        u95          var cases born_at_year
+  1:   10 0.03010033 0.009898061 0.01070049 0.04950018 9.797162e-05     1         1981
+  2:   11 0.03344482 0.010415502 0.01303081 0.05385882 1.084827e-04     4         1981
+  3:   12 0.04347826 0.011813796 0.02032365 0.06663287 1.395658e-04     6         1981
+  4:   13 0.05016722 0.012645681 0.02538215 0.07495230 1.599132e-04    10         1981
+  5:   14 0.06354515 0.014131819 0.03584730 0.09124301 1.997083e-04    12         1981
  ---
-318:   24 0.12804878 3.415145e-04 0.091828430 0.16426913    36         1995
-319:   25 0.14634146 3.821275e-04 0.108027930 0.18465500    39         1995
-320:   26 0.15548780 4.016682e-04 0.116206871 0.19476874    41         1995
-321:   27 0.16158537 4.144116e-04 0.121686178 0.20148455    42         1995
-322:   29 0.16463415 4.206983e-04 0.124433462 0.20483483    52         1995
-[1] "re_d1_c3:"
-     time   estimate     variance         l95        u95 cases born_at_year
-  1:   10 0.01993355 6.512229e-05 0.004116963 0.03575015     2         1981
-  2:   15 0.02657807 8.624199e-05 0.008376561 0.04477959     3         1981
-  3:   17 0.02990033 9.669172e-05 0.010627625 0.04917304     4         1981
-  4:   18 0.03322259 1.070680e-04 0.012942126 0.05350306     7         1981
-  5:   20 0.04318937 1.377556e-04 0.020185399 0.06619334     9         1981
+348:   27 0.18360656 0.022209138 0.14007745 0.22713567 4.932458e-04    46         1995
+349:   28 0.18688525 0.022361613 0.14305729 0.23071320 5.000417e-04    47         1995
+350:   29 0.19016393 0.022511487 0.14604223 0.23428564 5.067671e-04    48         1995
+351:   30 0.19344262 0.022658813 0.14903217 0.23785308 5.134218e-04    49         1995
+352:   31 0.19672131 0.022803638 0.15202700 0.24141562 5.200059e-04    59         1995
+[1] "cif_d1_c3:"
+time         cif          se          l95         u95          var cases born_at_year
+  1:   10 0.003322259 0.003322259 -0.003189249 0.009833767 1.103741e-05     2         1981
+  2:   11 0.009966777 0.005735130 -0.001273870 0.021207425 3.289171e-05     5         1981
+  3:   12 0.019933555 0.008069823  0.004116993 0.035750117 6.512204e-05     6         1981
+  4:   13 0.023255814 0.008701648  0.006200896 0.040310732 7.571869e-05     7         1981
+  5:   14 0.026578073 0.009286650  0.008376573 0.044779573 8.624187e-05     9         1981
  ---
-245:   25 0.05572755 1.634357e-04 0.030670985 0.08078412    17         1995
-246:   26 0.06191950 1.804064e-04 0.035594160 0.08824485    19         1995
-247:   27 0.06811146 1.971393e-04 0.040592324 0.09563059    21         1995
-248:   28 0.07430341 2.136345e-04 0.045656103 0.10295071    22         1995
-249:   29 0.07739938 2.217929e-04 0.048210199 0.10658856    29         1995
-[1] "re_d2_c1:"
-     time     estimate     variance           l95         u95 cases born_at_year
-  1:    5 0.0000000000 0.000000e+00  0.000000e+00 0.000000000     1         1981
-  2:    7 0.0007440476 5.536069e-07 -7.142589e-04 0.002202354     2         1981
-  3:    8 0.0014880952 1.106390e-06 -5.734940e-04 0.003549684     4         1981
-  4:    9 0.0029761905 2.209482e-06  6.283579e-05 0.005889545     6         1981
-  5:   10 0.0044642857 3.309279e-06  8.988324e-04 0.008029739     7         1981
+245:   26 0.090909091 0.016710712  0.058156698 0.123661484 2.792479e-04    22         1995
+246:   27 0.094276094 0.016985874  0.060984393 0.127567796 2.885199e-04    23         1995
+247:   28 0.097643098 0.017254434  0.063825029 0.131461167 2.977155e-04    26         1995
+248:   29 0.107744108 0.018023399  0.072418895 0.143069320 3.248429e-04    27         1995
+249:   31 0.111111111 0.018268349  0.075305804 0.146916418 3.337326e-04    30         1995
+[1] "cif_d2_c1:"
+time        cif          se           l95         u95          var cases born_at_year
+  1:    5 0.00000000 0.000000000  0.0000000000 0.000000000 0.000000e+00     1         1981
+  2:    6 0.00077101 0.000771010 -0.0007401419 0.002282162 5.944565e-07     2         1981
+  3:    7 0.00154202 0.001089952 -0.0005942471 0.003678287 1.187996e-06     5         1981
+  4:    8 0.00385505 0.001721369  0.0004812290 0.007228871 2.963111e-06     6         1981
+  5:    9 0.00462606 0.001884936  0.0009316541 0.008320466 3.552982e-06     7         1981
  ---
-458:   27 0.0566448802 3.883526e-05  4.443079e-02 0.068858973    80         1995
-459:   28 0.0580973130 3.976974e-05  4.573714e-02 0.070457484    88         1995
-460:   29 0.0639070443 4.347698e-05  5.098361e-02 0.076830474   138         1995
-461:   22 0.0000000000 0.000000e+00  0.000000e+00 0.000000000     1         1996
-462:   28 0.2500000000 6.250000e-02 -2.399910e-01 0.739990996     1         1996
-[1] "re_d2_c3:"
-     time    estimate     variance           l95         u95 cases born_at_year
-  1:    7 0.000000000 0.000000e+00  0.0000000000 0.000000000     1         1981
-  2:    9 0.003322259 1.103741e-05 -0.0031892491 0.009833767     2         1981
-  3:   11 0.006644518 2.200135e-05 -0.0025488101 0.015837847     4         1981
-  4:   12 0.013289037 4.370874e-05  0.0003312081 0.026246865     7         1981
-  5:   14 0.023255814 7.571868e-05  0.0062008971 0.040310731     9         1981
+498:   29 0.05810398 0.006471000  0.0454210481 0.070786903 4.187384e-05    80         1995
+499:   30 0.06116208 0.006628324  0.0481708031 0.074153356 4.393468e-05    86         1995
+500:   31 0.06574924 0.006855590  0.0523125268 0.079185944 4.699911e-05   126         1995
+501:   17 0.00000000 0.000000000  0.0000000000 0.000000000 0.000000e+00     1         1996
+502:   30 0.25000000 0.250000000 -0.2399909961 0.739990996 6.250000e-02     2         1996
+[1] "cif_d2_c3:"
+time         cif          se          l95         u95          var cases born_at_year
+  1:    5 0.000000000 0.000000000  0.000000000 0.000000000 0.000000e+00     1         1981
+  2:    6 0.003322259 0.003322259 -0.003189249 0.009833767 1.103741e-05     2         1981
+  3:    8 0.006644518 0.004690560 -0.002548810 0.015837847 2.200135e-05     3         1981
+  4:   11 0.009966777 0.005735141 -0.001273892 0.021207446 3.289184e-05     6         1981
+  5:   13 0.019933555 0.008069830  0.004116978 0.035750131 6.512216e-05     7         1981
  ---
-375:   25 0.089783282 2.538314e-04  0.0585569645 0.121009599    33         1995
-376:   26 0.102167183 2.849191e-04  0.0690838788 0.135250487    37         1995
-377:   27 0.114551084 3.150557e-04  0.0797620969 0.149340070    38         1995
-378:   28 0.117647059 3.224415e-04  0.0824526621 0.152841456    41         1995
-379:   29 0.126934985 3.442416e-04  0.0905703034 0.163299666    57         1995
+389:   29 0.094276094 0.016985874  0.060984392 0.127567797 2.885199e-04    29         1995
+390:   30 0.097643098 0.017254434  0.063825028 0.131461167 2.977155e-04    31         1995
+391:   31 0.104377104 0.017772931  0.069542800 0.139211409 3.158771e-04    53         1995
+392:   17 0.000000000 0.000000000  0.000000000 0.000000000 0.000000e+00     1         1996
+393:   30 0.333333333 0.333333333 -0.319987995 0.986654662 1.111111e-01     2         1996
 #+end_example
 
 ** Heritability
@@ -526,9 +526,9 @@ h2_analysis <- HeritabilityAnalysis$new()
 Like the non-stratified pipeline, we need to create the two heritability estimates:
 
 - h_d1 :: Heritability of disorder 1 (cohort 1 vs cohort 2)
-  - Inputs :: ~re_d1_c1~ and ~re_d1_c2~
+  - Inputs :: ~cif_d1_c1~ and ~cif_d1_c2~
 - h_d2 :: Heritability of disorder 2 (cohort 1 vs cohort 3)
-  - Inputs :: ~re_d2_c1~ and ~re_d2_c3~
+  - Inputs :: ~cif_d2_c1~ and ~cif_d2_c3~
 
 But this time when combining the risk estimates into a single dataset, we need to group
 everything on both time and birth year (This is needed to get the last risk estimate
@@ -539,21 +539,21 @@ run_h2_stratified <- function(c1_estimates, c2_estimates) {
   combined_estimates <- c1_estimates |>
     inner_join(c2_estimates, by = join_by(time, born_at_year)) |>
     rename(
-      cohort1_estimates = estimate.x,
-      cohort1_cases     = cases.x,
-      cohort2_estimates = estimate.y,
-      cohort2_cases     = cases.y
+      c1_cif       = cif.x,
+      c1_cif_cases = cases.x,
+      c2_cif       = cif.y,
+      c2_cif_cases = cases.y
     ) |>
-    select(time, born_at_year, starts_with("cohort"))
+    select(time, born_at_year, starts_with(c("c1", "c2")))
 
   h2_analysis$run(
     relationship_kind = relationship_kind,
     estimates         = combined_estimates
-  )
+  ) |> select(time, born_at_year, h2, se)
 }
 
-h2_d1 <- run_h2_stratified(re_d1_c1, re_d1_c2)
-h2_d2 <- run_h2_stratified(re_d2_c1, re_d2_c3)
+h2_d1 <- run_h2_stratified(cif_d1_c1, cif_d1_c2)
+h2_d2 <- run_h2_stratified(cif_d2_c1, cif_d2_c3)
 #+END_SRC
 
 #+RESULTS:
@@ -571,55 +571,31 @@ print(h2_d2)
 #+RESULTS:
 #+begin_example
 [1] "h2_d1:"
-     time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases
-  1:   10         1981        0.01264881             6        0.02333333             2
-  2:   11         1981        0.01711310             9        0.03000000             3
-  3:   13         1981        0.02083333            13        0.03333333             5
-  4:   14         1981        0.02232143            18        0.04000000             6
-  5:   15         1981        0.02604167            24        0.04333333            11
+time born_at_year        h2         se
+  1:   10         1981 0.2976864 0.35099513
+  2:   11         1981 0.2423438 0.19802134
+  3:   12         1981 0.2832651 0.17571184
+  4:   13         1981 0.3104244 0.14433941
+  5:   14         1981 0.3675254 0.14077037
  ---
-318:   24         1995        0.07189542            83        0.12804878            36
-319:   25         1995        0.07697894            89        0.14634146            39
-320:   26         1995        0.08133624            94        0.15548780            41
-321:   27         1995        0.08496732            99        0.16158537            42
-322:   29         1995        0.09077705           131        0.16463415            52
-            h2        se         l95       u95
-  1: 0.1983523 0.2541157 -0.29971443 0.6964190
-  2: 0.1976232 0.2249370 -0.24325335 0.6384998
-  3: 0.1738062 0.1860055 -0.19076457 0.5383769
-  4: 0.2244367 0.1727039 -0.11406303 0.5629364
-  5: 0.2041822 0.1376503 -0.06561231 0.4739768
- ---
-318: 0.3585250 0.1114091  0.14016305 0.5768869
-319: 0.4191777 0.1113696  0.20089329 0.6374622
-320: 0.4359427 0.1114460  0.21750855 0.6543768
-321: 0.4423553 0.1120424  0.22275207 0.6619584
-322: 0.4205854 0.1026677  0.21935664 0.6218141
+347:   27         1995 0.6035861 0.10693133
+348:   28         1995 0.5986370 0.10702624
+349:   29         1995 0.5846268 0.10825254
+350:   30         1995 0.5943060 0.10773600
+351:   31         1995 0.5993152 0.09899422
 [1] "h2_d2:"
-     time born_at_year cohort1_estimates cohort1_cases cohort2_estimates cohort2_cases
-  1:    9         1981       0.002976190             6       0.003322259             2
-  2:   11         1981       0.005208333             9       0.006644518             4
-  3:   12         1981       0.006696429            14       0.013289037             7
-  4:   14         1981       0.011160714            20       0.023255814             9
-  5:   15         1981       0.014880952            24       0.029900332            12
+time born_at_year         h2         se
+  1:    6         1981 0.27746475 0.17126626
+  2:    8         1981 0.13009087 0.16313828
+  3:   11         1981 0.06979836 0.13132859
+  4:   13         1981 0.17042873 0.13584836
+  5:   14         1981 0.20449550 0.12235659
  ---
-363:   25         1995       0.045751634            69       0.089783282            33
-364:   26         1995       0.050108932            78       0.102167183            37
-365:   27         1995       0.056644880            80       0.114551084            38
-366:   28         1995       0.058097313            88       0.117647059            41
-367:   29         1995       0.063907044           138       0.126934985            57
-             h2         se          l95       u95
-  1: 0.02386303 0.17599106 -0.321079457 0.3688055
-  2: 0.06028565 0.14616068 -0.226189290 0.3467606
-  3: 0.18905971 0.12161789 -0.049311354 0.4274308
-  4: 0.23317180 0.12067189 -0.003345097 0.4696887
-  5: 0.23987651 0.11416734  0.016108526 0.4636445
- ---
-363: 0.34567817 0.09867817  0.152268954 0.5390874
-364: 0.38287390 0.09684779  0.193052239 0.5726956
-365: 0.39965970 0.10031877  0.203034912 0.5962845
-366: 0.40533044 0.09742379  0.214379812 0.5962811
-367: 0.41113464 0.08487002  0.244789411 0.5774799
+374:   28         1995 0.28983809 0.10880239
+375:   29         1995 0.26613218 0.11022751
+376:   30         1995 0.26256611 0.10863148
+377:   31         1995 0.26815901 0.08693909
+378:   30         1996 0.39356923 1.05330771
 #+end_example
 
 ** Genetic correlation
@@ -629,28 +605,28 @@ produce a table that contains all the risk estimates and heritabilities, which f
 can be passed to the genetic correlation analysis:
 
 #+BEGIN_SRC R :exports both :results output
-re_combined <- inner_join(re_d1_c1, re_d1_c3, by = join_by(time, born_at_year)) |>
+re_combined <- inner_join(cif_d1_c1, cif_d1_c3, by = join_by(time, born_at_year)) |>
   rename(
-    re_d1_c1_estimates = estimate.x,
-    re_d1_c1_cases     = cases.x,
-    re_d1_c3_estimates = estimate.y,
-    re_d1_c3_cases     = cases.y,
+    d1_c1_cif       = cif.x,
+    d1_c1_cif_cases = cases.x,
+    d1_c3_cif       = cif.y,
+    d1_c3_cif_cases = cases.y
   ) |>
-  select(time, born_at_year, starts_with("re_")) |>
-  inner_join(re_d2_c1, by = join_by(time, born_at_year)) |>
+  select(time, born_at_year, starts_with("d1_")) |>
+  inner_join(cif_d2_c1, by = join_by(time, born_at_year)) |>
   rename(
-    re_d2_c1_estimates = estimate,
-    re_d2_c1_cases     = cases
+    d2_c1_cif       = cif,
+    d2_c1_cif_cases = cases
   ) |>
-  select(time, born_at_year, starts_with("re_"))
+  select(time, born_at_year, starts_with("d1_"), starts_with("d2_"))
 
 # Join both h2 estimates into a single estimate
 h2_combined <- inner_join(h2_d1, h2_d2, by = join_by(time, born_at_year)) |>
   rename(
-    h2_d1 = h2.x,
-    h2_d2 = h2.y
+    d1_h2 = h2.x,
+    d2_h2 = h2.y
   ) |>
-  select(time, born_at_year, starts_with("h2_"))
+  select(time, born_at_year, starts_with("d1_"), starts_with("d2_"))
 
 # Join cumulative incidence and heritability estimates into a single dataset
 combined <- inner_join(re_combined, h2_combined, by = join_by(time, born_at_year)) |>
@@ -673,38 +649,38 @@ print(combined)
 
 #+RESULTS:
 #+begin_example
-    time born_at_year re_d1_c1_estimates re_d1_c1_cases re_d1_c3_estimates re_d1_c3_cases
- 1:   43         1981         0.10639881            128         0.11960133             30
- 2:   42         1982         0.09763101            112         0.10897436             30
- 3:   41         1983         0.09335325            112         0.10031348             32
- 4:   40         1984         0.09816850            120         0.09846154             27
- 5:   39         1985         0.09417040            100         0.08641975             23
- 6:   38         1986         0.09747292            123         0.12158055             31
- 7:   37         1987         0.09351988            107         0.08041958             22
- 8:   36         1988         0.09940209            119         0.13183280             34
- 9:   35         1989         0.10015773            118         0.12455516             33
-10:   34         1990         0.08030888            102         0.07046980             17
-11:   33         1991         0.08339483            116         0.08049536             24
-12:   32         1992         0.09037472            119         0.09226190             36
-13:   31         1993         0.08504176            125         0.09090909             32
-14:   30         1994         0.09463277            124         0.06969697             19
-15:   29         1995         0.09077705            131         0.07739938             29
-    re_d2_c1_estimates re_d2_c1_cases     h2_d1     h2_d2
- 1:         0.09300595            125 0.6228291 0.5228708
- 2:         0.08542714            128 0.4661971 0.4011782
- 3:         0.09634055            136 0.3924781 0.4830165
- 4:         0.08644689            129 0.2950882 0.4401927
- 5:         0.09566517            139 0.3733100 0.5973026
- 6:         0.09025271            141 0.3920222 0.5487255
- 7:         0.08983800            142 0.5051446 0.5392457
- 8:         0.08370703            133 0.5022918 0.3490062
- 9:         0.06940063            110 0.4838149 0.4514606
-10:         0.07799228            133 0.5596683 0.5632091
-11:         0.08118081            142 0.5050839 0.3544966
-12:         0.07494489            140 0.5673837 0.3843871
-13:         0.06226272            116 0.4566355 0.4809841
-14:         0.06355932            134 0.4138707 0.2582616
-15:         0.06390704            138 0.4205854 0.4111346
+    time born_at_year  d1_c1_cif d1_c1_cif_cases  d1_c3_cif d1_c3_cif_cases  d2_c1_cif
+ 1:   45         1981 0.09252120             104 0.08970100              26 0.09714726
+ 2:   44         1982 0.09954407             116 0.11186441              27 0.11398176
+ 3:   43         1983 0.09628506             101 0.10702341              27 0.09476876
+ 4:   42         1984 0.10576222             131 0.11371237              32 0.10138585
+ 5:   41         1985 0.08275329              96 0.08441558              23 0.10827533
+ 6:   40         1986 0.10424710             114 0.10035842              20 0.08880309
+ 7:   39         1987 0.10510733             110 0.09427609              22 0.09104367
+ 8:   38         1988 0.08618128             101 0.07641196              21 0.08618128
+ 9:   37         1989 0.09450549             121 0.08437500              28 0.08278388
+10:   36         1990 0.10158014             118 0.08695652              22 0.09029345
+11:   35         1991 0.09274495             120 0.08247423              23 0.08900524
+12:   34         1992 0.09341501             111 0.08695652              27 0.08575804
+13:   33         1993 0.09357653             118 0.07857143              25 0.06344171
+14:   32         1994 0.09160305             117 0.08135593              20 0.07557252
+15:   31         1995 0.08562691             116 0.11111111              30 0.06574924
+    d2_c1_cif_cases     d1_h2     d2_h2
+ 1:             131 0.5163613 0.5283936
+ 2:             146 0.3768777 0.4819343
+ 3:             129 0.3420142 0.5181707
+ 4:             145 0.4551008 0.4487154
+ 5:             148 0.4385638 0.6680112
+ 6:             122 0.3730800 0.5018623
+ 7:             133 0.5260970 0.5755895
+ 8:             134 0.4437412 0.4242519
+ 9:             140 0.6691666 0.5900120
+10:             142 0.5352396 0.4991935
+11:             145 0.5030909 0.4660861
+12:             137 0.6645577 0.3821570
+13:             110 0.4850061 0.5493024
+14:             129 0.4477390 0.4763444
+15:             126 0.5993152 0.2681590
 #+end_example
 
 Now, we can simply pass in the relationship kind and the combined dataset
@@ -724,40 +700,44 @@ gc_d1_d2 <- gc_analysis$run(
 Which produces a single genetic correlation per year:
 
 #+BEGIN_SRC R :exports both :results output
-print(gc_d1_d2 |> select(born_at_year, rhh, rhog, se, l95, u95) |> arrange(born_at_year))
+print(gc_d1_d2 |> select(born_at_year, rg, se, l95, u95) |> arrange(born_at_year))
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
-    born_at_year          rhh         rhog        se         l95       u95
- 1:         1981  0.077887466  0.136485318 0.1369456 -0.19052598 0.3463009
- 2:         1982  0.069785053  0.161364867 0.1326554 -0.19021956 0.3297897
- 3:         1983  0.046149407  0.105993056 0.1321236 -0.21281275 0.3051116
- 4:         1984  0.001855363  0.005147917 0.1356845 -0.26408622 0.2677969
- 5:         1985 -0.053192375 -0.112646414 0.1466451 -0.34061677 0.2342320
- 6:         1986  0.145937364  0.314654247 0.1329973 -0.11473730 0.4066120
- 7:         1987 -0.090480811 -0.173362556 0.1440639 -0.37284596 0.1918843
- 8:         1988  0.186409293  0.445218261 0.1283512 -0.06515902 0.4379776
- 9:         1989  0.135691830  0.290338167 0.1243236 -0.10798247 0.3793661
-10:         1990 -0.073238300 -0.130448189 0.1498641 -0.36697185 0.2204952
-11:         1991 -0.020620794 -0.048732373 0.1339641 -0.28319044 0.2419488
-12:         1992  0.012202615  0.026129438 0.1162188 -0.21558624 0.2399915
-13:         1993  0.037532811  0.080086792 0.1156739 -0.18918803 0.2642536
-14:         1994 -0.164288407 -0.502509898 0.1355936 -0.43005194 0.1014751
-15:         1995 -0.087472347 -0.210354432 0.1169552 -0.31670449 0.1417598
+    born_at_year          rg        se         l95       u95
+ 1:         1981 -0.03714437 0.1416605 -0.29705668 0.2582525
+ 2:         1982  0.18940602 0.1488442 -0.21101341 0.3724559
+ 3:         1983  0.16307671 0.1424635 -0.21057688 0.3478800
+ 4:         1984  0.10799266 0.1348131 -0.21543210 0.3130352
+ 5:         1985  0.02332977 0.1504016 -0.28215957 0.3074147
+ 6:         1986 -0.05544349 0.1545200 -0.32684996 0.2788685
+ 7:         1987 -0.12376527 0.1487479 -0.35965234 0.2234395
+ 8:         1988 -0.16229287 0.1443863 -0.35341403 0.2125805
+ 9:         1989 -0.10720238 0.1289621 -0.32012568 0.1854057
+10:         1990 -0.18424590 0.1452818 -0.37998948 0.1895152
+11:         1991 -0.14575399 0.1403246 -0.34561540 0.2044570
+12:         1992 -0.08572569 0.1333701 -0.30460683 0.2182039
+13:         1993 -0.18631353 0.1264912 -0.34408932 0.1517563
+14:         1994 -0.14796996 0.1422442 -0.34713423 0.2104632
+15:         1995  0.38632100 0.1227815 -0.08577998 0.3955235
 #+end_example
 
 The genetic correlations can then be passed to the meta analysis function, which
 produces a single result for all years combined:
 
 #+BEGIN_SRC R :exports both :results output
-meta <- gc_analysis$run_meta(gc_d1_d2)
+meta <- gc_analysis$run_meta(
+  estimates       = gc_d1_d2,
+  estimate_column = "rg",
+  se_column       = "se"
+)
 
 print(meta)
 #+END_SRC
 
 #+RESULTS:
-:    fixed_meta   fixed_se   fixed_l95  fixed_u95  rand_meta   rand_se  rand_l95  rand_u95
-: 1: 0.01868003 0.03380838 -0.04758439 0.08494446 0.01756866 0.0425034 -0.065738 0.1008753
+:     fixed_meta   fixed_se   fixed_l95  fixed_u95  rand_meta    rand_se  rand_l95   rand_u95
+: 1: -0.01908785 0.03600755 -0.08966266 0.05148695 -0.0225409 0.05635005 -0.132987 0.08790519
 
 All done!

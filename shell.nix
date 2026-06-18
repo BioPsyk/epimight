@@ -9,6 +9,7 @@ with pkgs; mkShell {
     python3Packages.jinja2
     python3Packages.behave
     python3Packages.tabulate
+    python3Packages.numpy
     wrappedEmacs
     wrappedTexlive
     wrappedR

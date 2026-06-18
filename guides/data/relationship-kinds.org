@@ -68,7 +68,23 @@ devtools::load_all(".")
 
 #+RESULTS:
 
-A "relationship kind" refers to
+When analyzing time-to-event data, ~epimight~ needs to know what coefficient of relationship
+(~r~) to use in it's heritability and genetic correlation calculations.
+
+Each distinct relationship kind and coefficient is encoded in the named list
+~epimight:::relationship_kinds~, where the item name is the
+unique code and the value is the coefficient of relationship (~r~).
+
+All codes are named according to this table:
+
+[[file:../diagrams/relationship-kinds.png]]
+
+With these additional prefixes:
+
+- ~m~ = Maternal
+- ~p~ = Paternal
+
+These are the distinct relationship kinds and their ~r~ values:
 
 #+BEGIN_SRC R :exports results :results output
 print(epimight:::relationship_kinds)

@@ -9,3 +9,6 @@ cd "${project_dir}"
 
 echo ">> Building singularity image"
 nix build .#singularityImage
+
+echo ">> Building docker image"
+nix build .#dockerImage

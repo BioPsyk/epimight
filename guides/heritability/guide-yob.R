@@ -46,7 +46,7 @@ print(tte)
 estimates <- cif_analysis$run(
   tte = tte,
   earliest_onset_age = earliest_onset_age,
-  group_columns = list("born_at_year", "cohort")
+  stratify_columns = list("born_at_year", "cohort")
 )
 
 print(estimates)

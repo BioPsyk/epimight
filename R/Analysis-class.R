@@ -10,11 +10,58 @@
 #' @export
 Analysis <- R6::R6Class( #nolint
   "Analysis",
-  private = list(),
+  private = list(
+    validator = NULL
+  ),
   public = list(
     #' @description
-    #' Creates an analysis instance. Doesn't do anything, since this is an abstract class.
+    #' Creates an analysis instance and sets up a validator for the meta functions.
     initialize = function() {
+      private$validator <- ArgumentsValidator$new(
+        estimates = list(
+          required = TRUE,
+          type     = "data.table",
+          columns  = list()
+        ),
+        estimate_column = list(required = TRUE, type = "string"),
+        se_column       = list(required = TRUE, type = "string"),
+        stratify_columns   = list(
+          type    = "list",
+          items   = list(required = TRUE, type = "string"),
+          default = list()
+        )
+      )
+
+      # Makes sure the meta column actually exists in the results
+      # and that it has the right type.
+      private$validator$add_post_validation(function(args, rules) {
+        rule <- rules$estimates
+        rule$columns[[args$estimate_column]] <- list(
+          required = TRUE,
+          type     = "numeric"
+        )
+        rule$columns[[args$se_column]] <- list(
+          required = TRUE,
+          type     = "numeric"
+        )
+
+        if (!("stratify_columns" %in% rules && is.list(rules$stratify_columns))) {
+          private$validator$check_type("estimates", rule, args$estimates)
+
+          return(args)
+        }
+
+        for (gcol in rules$stratify_columns) {
+          rule$columns[[args$se_column]] <- list(
+            required = TRUE,
+            type     = "any"
+          )
+        }
+
+        private$validator$check_type("estimates", rule, args$estimates)
+
+        return(args)
+      })
     },
     #' @description
     #' Helper for converting a relationship kind into a relationship coefficient.
@@ -31,49 +78,27 @@ Analysis <- R6::R6Class( #nolint
     #'
     #' @return Meta analysis result
     run_meta = function(...) {
-      validator <- ArgumentsValidator$new(
-        results = list(
-          required = TRUE,
-          type     = "data.table",
-          columns  = list(
-            se = list(required = TRUE, type = "numeric")
-          )
-        ),
-        meta_column = list(required = TRUE, type = "string")
-      )
+      args             <- private$validator$run(...)
+      stratify_symbols <- rlang::syms(args$stratify_columns)
 
-      # Makes sure the meta column actually exists in the results
-      # and that it has the right type.
-      validator$add_post_validation(function(args, rules) {
-        rule <- rules$results
-        rule$columns[[args$meta_column]] <- list(
-          required = TRUE,
-          type     = "numeric"
-        )
-
-        validator$check_type("results", rule, args$results)
-
-        return(args)
-      })
-
-      args <- validator$run(...)
-
-      meta_results <- args$results |>
+      args$estimates |>
         filter_all(
           all_vars(!is.infinite(.) & !is.na(.))
         ) |>
         rename(
-          meta = !!as.name(args$meta_column)
+          estimate = !!as.name(args$estimate_column),
+          se       = !!as.name(args$se_column)
         ) |>
         mutate(
           fixed_se = 1 / (se ^ 2),
-          rand_se  = 1 / ((se ^ 2) + var(meta))
+          rand_se  = 1 / ((se ^ 2) + var(estimate))
         ) |>
+        group_by(!!!stratify_symbols) |>
         summarise(
           fixed_se_sum = sum(fixed_se),
-          fixed_meta   = sum(meta * fixed_se) / fixed_se_sum,
+          fixed_meta   = sum(estimate * fixed_se) / fixed_se_sum,
           rand_se_sum  = sum(rand_se),
-          rand_meta    = sum(meta * rand_se) / rand_se_sum
+          rand_meta    = sum(estimate * rand_se) / rand_se_sum
         ) |>
         mutate(
           fixed_se  = sqrt(1 / fixed_se_sum),
@@ -86,8 +111,6 @@ Analysis <- R6::R6Class( #nolint
         select(-fixed_se_sum, -rand_se_sum) |>
         relocate(rand_meta, .before = rand_se) |>
         as.data.table()
-
-      return(meta_results)
     }
   )
 )

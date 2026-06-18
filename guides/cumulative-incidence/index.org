@@ -84,7 +84,7 @@ Then you use that instance to run one of the 3 functions it exposes:
 This function accepts 4 named arguments:
 
 - tte (required) :: A ~data.table~ that contains the TTE data.
-- group_columns (optional) :: A ~list~ that contains names of the columns to stratify the results on.
+- stratify_columns (optional) :: A ~list~ that contains names of the columns to stratify the results on.
 - earliest_onset (optional, defaults to 1) :: Positive integer that represents earliest age of onset to allow. Result rows with a ~time~ value less than this value will be removed.
 - latest_onset (optional, defaults to 100) :: Positive integer that represents latest age of onset to allow. Result rows with a ~time~ value larger than this value will be removed.
 
@@ -170,7 +170,7 @@ column:
 #+BEGIN_SRC R
 estimates <- analysis$run(
   tte           = read_csv("./tmp/data/tte_SCZ.csv") |> as.data.table(),
-  group_columns = list("born_at_year")
+  stratify_columns = list("born_at_year")
 )
 #+END_SRC
 
@@ -201,7 +201,7 @@ file tte [
 | 99993         |              2     | 35               | 1994             |
 ]
 
-file group_columns [
+file stratify_columns [
 <color:#255ba7><$ma_format_list_bulleted{scale=0.35}></color>  **Group columns**
 
 ---
@@ -223,7 +223,7 @@ file estimates [
 Rectangle(analysis, "run")
 
 Arrow(tte, analysis, "Argument: tte")
-Arrow(group_columns, analysis, "Argument: group_columns")
+Arrow(stratify_columns, analysis, "Argument: stratify_columns")
 Arrow(analysis, estimates, "Outputs")
 
 legend right
@@ -236,11 +236,3 @@ endlegend
 #+CAPTION: Stratified arguments and output
 #+RESULTS: fig:run_stratified_args_output
 [[file:../diagrams/cumulative-incidence-run-stratified-args-output.png]]
-
-** Using function ~get_group_values~
-
-TBD
-
-** Using function ~make_group_summary~
-
-TBD
