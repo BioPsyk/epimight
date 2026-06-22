@@ -64,7 +64,7 @@ Pipeline <- R6::R6Class( #nolint
         ),
         use_weighted_cif = list(
           type    = "logical",
-          default = FALSE
+          default = TRUE
         )
       )
     }
@@ -411,11 +411,11 @@ Pipeline <- R6::R6Class( #nolint
       return(list(
         args = args,
         cif = rbindlist(list(
-          self$remove_cif_prefix(cif_d1_c1, "d1", "c1", args$stratify_columns),
-          self$remove_cif_prefix(cif_d1_c2, "d1", "c2", args$stratify_columns),
-          self$remove_cif_prefix(cif_d1_c3, "d1", "c3", args$stratify_columns),
-          self$remove_cif_prefix(cif_d2_c1, "d2", "c1", args$stratify_columns),
-          self$remove_cif_prefix(cif_d2_c3, "d2", "c3", args$stratify_columns)
+          self$remove_cif_prefix(cif_d1_c1, "d1", "c1", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95),
+          self$remove_cif_prefix(cif_d1_c2, "d1", "c2", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95),
+          self$remove_cif_prefix(cif_d1_c3, "d1", "c3", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95),
+          self$remove_cif_prefix(cif_d2_c1, "d2", "c1", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95),
+          self$remove_cif_prefix(cif_d2_c3, "d2", "c3", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95)
         )),
         h2 = rbindlist(list(
           self$remove_h2_prefix(h2_d1, "d1", args$stratify_columns),
@@ -431,40 +431,40 @@ Pipeline <- R6::R6Class( #nolint
           type       = "named_list",
           properties = private$mk_run_validator_rules()
         ),
-        cif = list(
-          required = TRUE,
-          type     = "data.table",
-          columns  = list(
-            disorder = list(
-              type     = "string",
-              required = TRUE
-            ),
-            cohort = list(
-              type     = "string",
-              required = TRUE
-            ),
-            cif = list(
-              type     = "numeric",
-              required = TRUE
-            ),
-            cif_var = list(
-              type = "numeric"
-            ),
-            cif_se = list(
-              type = "numeric"
-            ),
-            cif_l95 = list(
-              type = "numeric"
-            ),
-            cif_u95 = list(
-              type = "numeric"
-            ),
-            cif_cases = list(
-              type     = "numeric",
-              required = TRUE
-            )
-          )
-        ),
+        #cif = list(
+        #  required = TRUE,
+        #  type     = "data.table",
+        #  columns  = list(
+        #    disorder = list(
+        #      type     = "string",
+        #      required = TRUE
+        #    ),
+        #    cohort = list(
+        #      type     = "string",
+        #      required = TRUE
+        #    ),
+        #    cif = list(
+        #      type     = "numeric",
+        #      required = TRUE
+        #    ),
+        #    cif_var = list(
+        #      type = "numeric"
+        #    ),
+        #    cif_se = list(
+        #      type = "numeric"
+        #    ),
+        #    cif_l95 = list(
+        #      type = "numeric"
+        #    ),
+        #    cif_u95 = list(
+        #      type = "numeric"
+        #    ),
+        #    cif_cases = list(
+        #      type     = "numeric",
+        #      required = TRUE
+        #    )
+        #  )
+        #),
         h2 = list(
           required = TRUE,
           type     = "data.table",
@@ -519,13 +519,13 @@ Pipeline <- R6::R6Class( #nolint
       #---------------------------------------------------------------------------------
       # Cumulative incidence
 
-      cif_meta <- private$sub_analyses$core$run_meta(
-        estimates        = args$cif,
-        estimate_column  = "cif",
-        se_column        = "cif_se",
-        stratify_columns = list("disorder", "cohort", "time")
-      ) |>
-        select(disorder, cohort, everything())
+      #cif_meta <- private$sub_analyses$core$run_meta(
+      #  estimates        = args$cif,
+      #  estimate_column  = "cif",
+      #  se_column        = "cif_se",
+      #  stratify_columns = list("disorder", "cohort", "time")
+      #) |>
+      #  select(disorder, cohort, everything())
 
       #---------------------------------------------------------------------------------
       # Heritability
@@ -548,7 +548,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       return(list(
-        cif = cif_meta,
+        #cif = cif_meta,
         h2  = h2_meta,
         rg  = rg_meta
       ))

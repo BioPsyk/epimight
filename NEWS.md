@@ -1,3 +1,9 @@
+# IbpRegistryRiskEstimations 1.0.1
+
+## Changed
+
+- `Pipeline-class$run` now defaults to using weighted CIF method
+
 # IbpRegistryRiskEstimations 1.0.0
 
 ## Changed
