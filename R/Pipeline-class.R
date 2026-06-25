@@ -334,8 +334,18 @@ Pipeline <- R6::R6Class( #nolint
       )
       if (is.null(cif_d1_c2)) stop("Disorder 1, cohort 2 had no TTE events")
 
+      # Cohort c3 is defined by d2-affected relatives, so the disorder-1 CIF
+      # over it must be enriched along the d2 axis. `run_cif(.., "d1", ..)`
+      # strips the `d1_` prefix and would pick up `d1_weight`, contaminating
+      # the cross-cohort risk Krc with disorder 1's OWN familial recurrence
+      # (collapsing rg toward 1). Weight by d2_weight instead, matching the
+      # downsampling semantics of the feature-pipeline (v2.0) release, where
+      # c3 membership was set by the d2 indicator. Regression from #20
+      # (weighted-cif-default), which made the weighted CIF the default.
+      tte_c3_cross <- copy(tte_c3)
+      tte_c3_cross[, d1_weight := d2_weight]
       cif_d1_c3 <- self$run_cif(
-        tte_c3, "d1", "c3",
+        tte_c3_cross, "d1", "c3",
         args$stratify_columns,
         args$disorder1$earliest_onset,
         args$disorder1$latest_onset
