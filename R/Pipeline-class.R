@@ -304,11 +304,18 @@ Pipeline <- R6::R6Class( #nolint
         args$use_weighted_cif
       )
 
-      tte_c2 <- tte_c1[d1_relatives_diagnosed > 0]
+      tte_c2 <- copy(tte_c1)[d1_relatives_diagnosed > 0]
       if (nrow(tte_c2) == 0) stop("TTE cohort 2 had no rows")
+      # Weights are not touched for this cohort, because it is not needed,
+      # due to cif_d2_c2 not being produced.
 
-      tte_c3 <- tte_c1[d2_relatives_diagnosed > 0]
+      tte_c3 <- copy(tte_c1)[d2_relatives_diagnosed > 0]
       if (nrow(tte_c3) == 0) stop("TTE cohort 3 had no rows")
+      if (args$use_weighted_cif) {
+        # Since relatives from disorder 2 was used in the cohort filter, we must make
+        # sure that all weights comes from relatives of disorder 2.
+        tte_c3 <- tte_c3[, d1_weight := d2_weight]
+      }
 
       cif_d1_c1 <- self$run_cif(
         tte_c1, "d1", "c1",
@@ -343,9 +350,7 @@ Pipeline <- R6::R6Class( #nolint
       if (is.null(cif_d1_c3)) stop("Disorder 1, cohort 3 had no TTE events")
 
       cif_d2_c3 <- self$run_cif(
-        tte_c3,
-        "d2",
-        "c3",
+        tte_c3, "d2", "c3",
         args$stratify_columns,
         args$disorder2$earliest_onset,
         args$disorder2$latest_onset

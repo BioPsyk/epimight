@@ -1,3 +1,9 @@
+# IbpRegistryRiskEstimations 1.0.2
+
+## Fixed
+
+- `Pipeline-class$run` weighted CIF method uses weights for wrong set of relatives
+
 # IbpRegistryRiskEstimations 1.0.1
 
 ## Changed

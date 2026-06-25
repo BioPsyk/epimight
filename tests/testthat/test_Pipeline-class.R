@@ -209,7 +209,8 @@ describe("run", {
         id = "CAD"
       ),
       relationship_kind = "PO",
-      stratify_columns  = list("born_at_year")
+      stratify_columns  = list("born_at_year"),
+      use_weighted_cif  = FALSE
     )
 
     weighted_results <- pipeline$run(
@@ -224,7 +225,6 @@ describe("run", {
       use_weighted_cif  = TRUE
     )
 
-    print(results)
-    print(weighted_results)
+    expect_dataframe_not_equal(results$rg, weighted_results$rg)
   })
 })
