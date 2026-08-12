@@ -1,3 +1,10 @@
+# IbpRegistryRiskEstimations 1.1.0
+
+## Changed
+
+- `Pipeline-class$run` allows the user to specify different relationship kinds for h2 d1, h2 d2 and rg
+- `CumulativeIncidenceAnalysis-class$run` now checks that each person only appears once in the given TTE data
+
 # IbpRegistryRiskEstimations 1.0.2
 
 ## Fixed

@@ -32,10 +32,6 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
     #' @param rc Relationship coefficient.
     #' @returns Data.table with results
     calculate_rg = function(id, kc, krc, kf, ac, arc, af, h2_d1, h2_d2, rc) {
-      if (is.character(rc)) {
-        rc <- self$relationship_coefficient_from_kind(rc)
-      }
-
       tc  <- qnorm(kc, lower.tail = FALSE)
       yc  <- dnorm(tc)
       trc <- qnorm(krc, lower.tail = FALSE)
@@ -77,24 +73,24 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
     #' @returns Data.table with genetic correlations.
     run = function(...) {
       validator <- ArgumentsValidator$new(
-        relationship_kind = list(
-          required = TRUE,
-          type = "string",
-          enum = names(epimight:::relationship_kinds)
-        ),
         estimates = list(
           required = TRUE,
           type = "data.table",
           columns = list(
-            d1_c1_cif       = list(type = "numeric", required = TRUE),
-            d1_c1_cif_cases = list(type = "numeric", required = TRUE),
-            d1_c3_cif       = list(type = "numeric", required = TRUE),
-            d1_c3_cif_cases = list(type = "numeric", required = TRUE),
-            d2_c1_cif       = list(type = "numeric", required = TRUE),
-            d2_c1_cif_cases = list(type = "numeric", required = TRUE),
-            d1_h2           = list(type = "numeric", required = TRUE),
-            d2_h2           = list(type = "numeric", required = TRUE)
+            d1_pop_cif   = list(type = "numeric", required = TRUE),
+            d1_pop_cases = list(type = "numeric", required = TRUE),
+            d1_fh2_cif   = list(type = "numeric", required = TRUE),
+            d1_fh2_cases = list(type = "numeric", required = TRUE),
+            d2_pop_cif   = list(type = "numeric", required = TRUE),
+            d2_pop_cases = list(type = "numeric", required = TRUE),
+            d1_h2        = list(type = "numeric", required = TRUE),
+            d2_h2        = list(type = "numeric", required = TRUE)
           )
+        ),
+        relationship_coefficient = list(
+          required = TRUE,
+          type     = "numeric",
+          minimum  = 0
         )
       )
 
@@ -108,15 +104,15 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
       suppressWarnings({
         results <- self$calculate_rg(
           estimates$id,
-          estimates$d1_c1_cif,
-          estimates$d1_c3_cif,
-          estimates$d2_c1_cif,
-          estimates$d1_c1_cif_cases,
-          estimates$d1_c3_cif_cases,
-          estimates$d2_c1_cif_cases,
+          estimates$d1_pop_cif,
+          estimates$d1_fh2_cif,
+          estimates$d2_pop_cif,
+          estimates$d1_pop_cases,
+          estimates$d1_fh2_cases,
+          estimates$d2_pop_cases,
           estimates$d1_h2,
           estimates$d2_h2,
-          args$relationship_kind
+          args$relationship_coefficient
         ) |>
           filter_all(
             all_vars(!is.infinite(.) & !is.na(.))

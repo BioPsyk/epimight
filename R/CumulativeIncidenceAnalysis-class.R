@@ -12,6 +12,7 @@
 #' @export
 CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
   "CumulativeIncidenceAnalysis",
+  inherit = Analysis,
   private = list(
     args = NULL,
     #' @description
@@ -101,7 +102,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         ) |>
         arrange(failure_time)
 
-      estimates <- weights |>
+      weights |>
         filter(weight_event_n > 0.0) |>
         mutate(
           surv = ifelse(
@@ -129,14 +130,13 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         rename(time = failure_time) |>
         select(time, cif, cases) |>
         mutate(
-          var = 0.0,
           se  = 0.0,
           l95 = 0.0,
-          u95 = 0.0
+          u95 = 0.0,
+          var = 0.0
         ) |>
+        relocate(cases, .after = var) |>
         as.data.table()
-
-      return(estimates)
     },
     #' @description
     #' Runs CIF on the given TTE data as a single group.
@@ -259,6 +259,8 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       )
 
       args <- validator$run(...)
+
+      self$assert_unique_individuals_tte(args$tte)
 
       if (!exists("stratify_columns", where = args) || length(args$stratify_columns) == 0) {
         return(

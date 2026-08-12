@@ -27,19 +27,19 @@ describe("initialize", {
 
   it("doesn't allow wrong tte type", {
     expect_error(Pipeline$new(
-      tte = "hello"
+      pool = "hello"
     ))
 
     expect_error(Pipeline$new(
-      tte = 21
+      pool = 21
     ))
 
     expect_error(Pipeline$new(
-      tte = FALSE
+      pool = FALSE
     ))
   })
 
-  it("doesn't allow unknown relationship kinds", {
+  it("doesn't allow wrong typed relative kinds", {
     expect_error(Pipeline$new(
       pool = data.table(
         person_id           = c("p1", "p1"),
@@ -47,22 +47,9 @@ describe("initialize", {
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 10),
-        relationship_kind   = c(10, 20), # Wrong type
         relatives           = c(1, 1),
-        relatives_diagnosed = c(0, 0)
-      )
-    ))
-
-    expect_error(Pipeline$new(
-      pool = data.table(
-        person_id           = c("p1", "p1"),
-        born_at_year        = c(1950, 1951),
-        disorder            = c("SCZ", "CAD"),
-        failure_status      = c(0, 1),
-        failure_time        = c(10, 10),
-        relationship_kind   = c("parent-offspring", "cousins"), # Unknown value
-        relatives           = c(1, 1),
-        relatives_diagnosed = c(0, 0)
+        relatives_diagnosed = c(0, 0),
+        relatives_kind      = c(10, 20) # Wrong type
       )
     ))
   })
@@ -75,9 +62,9 @@ describe("initialize", {
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
-        relationship_kind   = c("PO", "PO"),
         relatives           = c(2, 2),
-        relatives_diagnosed = c(0, 1)
+        relatives_diagnosed = c(0, 1),
+        relatives_kind      = c("p", "p")
       )
     ))
   })
@@ -90,46 +77,71 @@ describe("initialize", {
         disorder            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
-        relationship_kind   = c("PO", "PO"),
         relatives           = c(2, 2),
-        relatives_diagnosed = c(0, 1)
+        relatives_diagnosed = c(0, 1),
+        relatives_kind      = c("p", "p")
       )
     )
   })
 })
 
 describe("get_tte", {
-  it("fails on unknown disorders", {
-    expect_error(
-      pipeline$get_tte("PO", "unknown", "CAD", list("born_at_year"))
-    )
-
-    expect_error(
-      pipeline$get_tte("PO", "SCZ", "unknown", list("born_at_year"))
-    )
+  it("fails on unknown stratify_columns", {
+    expect_error(pipeline$get_tte(
+      list(id = "SCZ"),
+      NA,
+      list("unknown")
+    ))
   })
 
-  it("fails on unknown relationship kind", {
-    expect_error(
-      pipeline$get_tte("unknown", "SCZ", "CAD", list("born_at_year"))
-    )
+  it("fails on unknown relatives disorder", {
+    expect_error(pipeline$get_tte(
+      list(id = "SCZ"),
+      list(
+        id             = "unknown",
+        relatives_kind = "fs"
+      ),
+      list("born_at_year")
+    ))
   })
 
-  it("fails on invalid stratify column", {
-    expect_error(
-      pipeline$get_tte("PO", "SCZ", "CAD", list(123))
-    )
-
-    expect_error(
-      pipeline$get_tte("PO", "SCZ", "CAD", list("unknown"))
-    )
+  it("fails on unknown family history relationship kind", {
+    expect_error(pipeline$get_tte(
+      list(id = "SCZ"),
+      list(
+        id             = "CAD",
+        relatives_kind = "unknown"
+      ),
+      list("born_at_year")
+    ))
   })
 
-  it("doesn't change the output when stratify columns are given", {
-    tte_no_strat <- pipeline$get_tte("PO", "SCZ", "CAD")
-    tte_strat    <- pipeline$get_tte("PO", "SCZ", "CAD", list("born_at_year"))
+  it("doesn't add relatives columns when population is requested", {
+    tte <- pipeline$get_tte(
+      list(id = "SCZ"),
+      NA,
+      list("born_at_year")
+    )
 
-    expect_equal(tte_no_strat, tte_strat)
+    expect_true(!("relatives" %in% colnames(tte)))
+    expect_true(!("relatives_diagnosed" %in% colnames(tte)))
+    expect_true(!("weight" %in% colnames(tte)))
+  })
+
+  it("adds relatives columns when relatives are requested", {
+    tte <- pipeline$get_tte(
+      list(id = "SCZ"),
+      list(
+        id             = "SCZ",
+        relatives_kind = "p"
+      ),
+      list("born_at_year"),
+      TRUE
+    )
+
+    expect_true("relatives" %in% colnames(tte))
+    expect_true("relatives_diagnosed" %in% colnames(tte))
+    expect_true("weight" %in% colnames(tte))
   })
 })
 
@@ -138,91 +150,88 @@ describe("run", {
     expect_error(pipeline$run())
   })
 
-  it("fails when disorder 1 is not found", {
+  it("fails when disorders are not found", {
     expect_error(pipeline$run(
       disorder1 = list(
-        id             = "unknown",
-        earliest_onset = 1,
-        latest_onset   = 100
+        id                    = "unknown",
+        earliest_onset        = 1,
+        latest_onset          = 100,
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
       ),
       disorder2 = list(
-        id             = "CAD",
-        earliest_onset = 0,
-        latest_onset   = 100
+        id                    = "CAD",
+        earliest_onset        = 0,
+        latest_onset          = 100,
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
       ),
-      relationship_kind = "PO"
+    ))
+
+    expect_error(pipeline$run(
+      disorder1 = list(
+        id                    = "SCZ",
+        earliest_onset        = 1,
+        latest_onset          = 100,
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
+      ),
+      disorder2 = list(
+        id                    = "unknown",
+        earliest_onset        = 0,
+        latest_onset          = 100,
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
+      ),
     ))
   })
 
-  it("fails when disorder 2 is not found", {
+  it("fails when stratify column cannot be found in TTE dataset", {
     expect_error(pipeline$run(
       disorder1 = list(
-        id             = "SCZ",
-        earliest_onset = 1,
-        latest_onset   = 100
+        id                    = "SCZ",
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
       ),
       disorder2 = list(
-        id             = "unknown",
-        earliest_onset = 0,
-        latest_onset   = 100
+        id                    = "CAD",
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
       ),
-      relationship_kind = "PO"
-    ))
-  })
-
-  it("fails when relationship_kind is not found", {
-    expect_error(pipeline$run(
-      disorder1 = list(
-        id             = "SCZ",
-        earliest_onset = 1,
-        latest_onset   = 100
-      ),
-      disorder2 = list(
-        id             = "CAD",
-        earliest_onset = 0,
-        latest_onset   = 100
-      ),
-      relationship_kind = "unknown"
-    ))
-  })
-
-  it("fails when group column cannot be found in TTE dataset", {
-    expect_error(pipeline$run(
-      disorder1 = list(
-        id = "SCZ"
-      ),
-      disorder2 = list(
-        id = "CAD"
-      ),
-      relationship_kind = "PO",
       draws = 2,
       stratify_columns = list("born_at_year", "unknown")
     ))
   })
 
-  it("produces different results when weighted CIF is used", {
+  it("produces different result when using weighted cif", {
     results <- pipeline$run(
       disorder1 = list(
-        id = "SCZ"
+        id                    = "SCZ",
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
       ),
       disorder2 = list(
-        id = "CAD"
+        id                    = "CAD",
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
       ),
-      relationship_kind = "PO",
-      stratify_columns  = list("born_at_year"),
-      use_weighted_cif  = FALSE
+      stratify_columns = list("born_at_year"),
+      use_weighted_cif = FALSE
     )
 
     weighted_results <- pipeline$run(
       disorder1 = list(
-        id = "SCZ"
+        id                    = "SCZ",
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
       ),
       disorder2 = list(
-        id = "CAD"
+        id                    = "CAD",
+        relatives_kind        = "p",
+        relatives_coefficient = 0.5
       ),
-      relationship_kind = "PO",
-      stratify_columns  = list("born_at_year"),
-      use_weighted_cif  = TRUE
+      stratify_columns = list("born_at_year"),
+      use_weighted_cif = TRUE
     )
 
     expect_dataframe_not_equal(results$rg, weighted_results$rg)

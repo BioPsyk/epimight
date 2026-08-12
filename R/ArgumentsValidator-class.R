@@ -6,18 +6,16 @@
 #' @import R6
 ArgumentsValidator <- R6::R6Class( #nolint
   "ArgumentsValidator",
-  private = list(
-    rules = NULL,
-    post_validation = NULL
-  ),
   public = list(
+    rules = NULL,
+    post_validation = NULL,
     #' @description
     #' Initializes the validator with the given rules.
     initialize = function(...) {
-      private$rules <- list(...)
+      self$rules <- list(...)
 
-      if (!self$is_named_list(private$rules)) {
-        stop("Given rules were not a named list")
+      if (!is.list(self$rules) && !self$is_named_list(self$rules)) {
+        stop("Given rules was not a list")
       }
     },
     #' @description
@@ -26,7 +24,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param value Numeric value to check.
     #' @return True/false
     is_integer = function(value) {
-      if (is.null(value)) {
+      if (is.null(value) || !is.numeric(value)) {
         return(FALSE)
       }
 
@@ -303,7 +301,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of argument to validate.
     #' @returns Arguments after validation of key was done.
     handle_rule = function(args, key) {
-      rule <- private$rules[[key]]
+      rule <- self$rules[[key]]
 
       if (is.null(rule)) {
         stop("Rule for key '", key, "' is NULL")
@@ -332,15 +330,24 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Rule for key '", key, "' has unknown type: ", rule$type)
       }
 
-      value <- args[[key]]
-
-      if (is.null(value)) {
+      if (self$is_integer(key) && key > length(args)) {
         if (isTRUE(rule$required)) {
           stop("Required argument '", key, "' was NULL")
         }
 
+        args[[key]] <- NA
+
+        return(args)
+      }
+
+      value <- args[[key]]
+
+      if (is.null(value) || all(is.na(value))) {
+        if (isTRUE(rule$required)) stop("Required argument '", key, "' was NULL")
         if (!is.null(rule$default)) {
-          value <- rule$default
+          args[[key]] <- rule$default
+
+          return(args)
         }
       }
 
@@ -348,7 +355,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         value <- rule$custom_handler(args, value)
       }
 
-      if (!is.null(value)) {
+      if (!is.null(value) && all(!is.na(value))) {
         value <- self$check_type(key, rule, value)
       }
 
@@ -361,7 +368,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #'
     #' @param f Function to use in post-validation.
     add_post_validation = function(f) {
-      private$post_validation <- f
+      self$post_validation <- f
     },
     #' @description
     #' Runs the validation on the given arguments.
@@ -370,12 +377,18 @@ ArgumentsValidator <- R6::R6Class( #nolint
     run = function(...) {
       args <- list(...)
 
-      for (key in names(private$rules)) {
-        args <- self$handle_rule(args, key)
+      if (self$is_named_list(self$rules)) {
+        for (key in names(self$rules)) {
+          args <- self$handle_rule(args, key)
+        }
+      } else {
+        for (i in seq_along(self$rules)) {
+          args <- self$handle_rule(args, i)
+        }
       }
 
-      if (is.function(private$post_validation)) {
-        new_args <- private$post_validation(args, private$rules)
+      if (is.function(self$post_validation)) {
+        new_args <- self$post_validation(args, self$rules)
 
         if (!is.null(new_args)) {
           args <- new_args

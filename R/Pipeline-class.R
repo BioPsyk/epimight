@@ -10,10 +10,12 @@
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
-    pool                   = NULL,
-    sub_analyses           = NULL,
-    mk_run_validator_rules = function() {
-      list(
+    pool      = NULL,
+    analyses  = NULL
+  ),
+  public = list(
+    validation_rules = list(
+      run = list(
         disorder1 = list(
           required   = TRUE,
           type       = "named_list",
@@ -30,6 +32,14 @@ Pipeline <- R6::R6Class( #nolint
             latest_onset = list(
               type    = "integer",
               minimum = 1
+            ),
+            relatives_kind = list(
+              required = TRUE,
+              type     = "string"
+            ),
+            relatives_coefficient = list(
+              required = TRUE,
+              type     = "numeric"
             )
           )
         ),
@@ -49,13 +59,16 @@ Pipeline <- R6::R6Class( #nolint
             latest_onset = list(
               type    = "integer",
               minimum = 1
+            ),
+            relatives_kind = list(
+              required = TRUE,
+              type     = "string"
+            ),
+            relatives_coefficient = list(
+              required = TRUE,
+              type     = "numeric"
             )
           )
-        ),
-        relationship_kind = list(
-          type     = "string",
-          enum     = names(epimight:::relationship_kinds),
-          required = TRUE
         ),
         stratify_columns = list(
           type    = "list",
@@ -67,9 +80,7 @@ Pipeline <- R6::R6Class( #nolint
           default = TRUE
         )
       )
-    }
-  ),
-  public = list(
+    ),
     #' @description
     #' Creates an pipeline instance that stores the given time-to-event data.
     initialize = function(...) {
@@ -96,11 +107,6 @@ Pipeline <- R6::R6Class( #nolint
               minimum  = 0,
               required = TRUE
             ),
-            relationship_kind = list(
-              type     = "string",
-              enum     = names(epimight:::relationship_kinds),
-              required = TRUE
-            ),
             relatives = list(
               type     = "integer",
               minimum  = 0,
@@ -110,79 +116,135 @@ Pipeline <- R6::R6Class( #nolint
               type     = "integer",
               minimum  = 0,
               required = TRUE
+            ),
+            relatives_kind = list(
+              required = TRUE,
+              type     = "string"
             )
           )
         )
       )
 
-      args <- validator$run(...)
-      private$pool <- args$pool
-      private$sub_analyses <- list(
+      args             <- validator$run(...)
+      private$pool     <- args$pool
+      private$analyses <- list(
         core = Analysis$new(),
         h2   = HeritabilityAnalysis$new(),
         cif  = CumulativeIncidenceAnalysis$new(),
-        gc   = GeneticCorrelationAnalysis$new()
+        rg   = GeneticCorrelationAnalysis$new()
       )
+
     },
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given disorders, relationship kind and
     #' straitfy columns. Makes sure that the retrieved data fulfills the requirements of carrying out
     #' a single pipeline run.
-    get_tte = function(relkind, disorder1_id, disorder2_id, stratify_columns = NULL, use_weighted_cif = FALSE) {
-      tte <- private$pool |>
-        filter(relationship_kind == relkind) |>
-        select(-relationship_kind)
+    get_tte = function(...) {
+      validator <- ArgumentsValidator$new(
+        list(
+          required   = TRUE,
+          type       = "named_list",
+          properties = list(
+            id = list(
+              required = TRUE,
+              type     = "string"
+            ),
+            earliest_onset = list(
+              type    = "integer",
+              minimum = 1,
+              default = 1
+            ),
+            latest_onset = list(
+              type    = "integer",
+              minimum = 1
+            )
+          )
+        ),
+        list(
+          required   = FALSE,
+          type       = "named_list",
+          properties = list(
+            id = list(
+              required = TRUE,
+              type     = "string"
+            ),
+            relatives_kind = list(
+              required = TRUE,
+              type     = "string"
+            )
+          )
+        ),
+        self$validation_rules$run$stratify_columns,
+        self$validation_rules$run$use_weighted_cif
+      )
 
-      tte_d1 <- tte |>
-        filter(disorder == disorder1_id) |>
-        select(-disorder) |>
-        rename(
-          d1_failure_status      = failure_status,
-          d1_failure_time        = failure_time,
-          d1_relatives_diagnosed = relatives_diagnosed
-        )
+      args <- validator$run(...)
 
-      tte_d2 <- tte |>
-        filter(disorder == disorder2_id) |>
-        select(-disorder) |>
-        rename(
-          d2_failure_status      = failure_status,
-          d2_failure_time        = failure_time,
-          d2_relatives_diagnosed = relatives_diagnosed
-        ) |>
-        select(person_id, d2_failure_status, d2_failure_time, d2_relatives_diagnosed)
+      proband_disorder   <- args[[1]]
+      relatives_disorder <- args[[2]]
+      stratify_columns   <- args[[3]]
+      use_weighted_cif   <- args[[4]]
 
-      d1_nrow <- tte_d1 |> nrow()
-      d2_nrow <- tte_d2 |> nrow()
+      columns <- c("person_id", "failure_status", "failure_time")
 
-      if (d1_nrow == 0) {
-        stop("No rows left after filter: disorder == \"", disorder1_id, "\" && relationship_kind == \"", relkind, "\")")
-      } else if (d2_nrow == 0) {
-        stop("No rows left after filter: disorder == \"", disorder2_id, "\" && relationship_kind == \"", relkind, "\")")
-      } else if (d1_nrow != d2_nrow) {
-        stop("Sample imbalance found, d1 had ", d1_nrow, " individuals, d2 had ", d2_nrow, " individuals")
+      if (!is.null(stratify_columns) && is.list(stratify_columns)) {
+        columns <- c(columns, unlist(stratify_columns))
       }
 
-      combined <- inner_join(tte_d1, tte_d2, by = join_by(person_id))
-
-      if (use_weighted_cif == TRUE) {
-        combined <- combined |>
-          mutate(
-            d1_weight = ifelse(d1_relatives_diagnosed > 0.0, d1_relatives_diagnosed / relatives, 0.0),
-            d2_weight = ifelse(d2_relatives_diagnosed > 0.0, d2_relatives_diagnosed / relatives, 0.0)
-          ) |>
-          as.data.table()
-      }
-
-      if (!is.list(stratify_columns)) return(combined)
-
-      for (col in stratify_columns) {
-        if (!(col %in% colnames(combined))) {
-          stop("group_column \"", col, "\" was not found in TTE dataset: ", paste(colnames(combined), collapse = ", "))
+      for (col in columns) {
+        if (!(col %in% colnames(private$pool))) {
+          stop("Column \"", col, "\" was not found in the TTE pool: ", paste(colnames(private$pool), collapse = ", "))
         }
       }
 
-      return(combined)
+      tte <- private$pool[
+        disorder == proband_disorder$id
+      ][
+        , .SD[1], by = "person_id"
+      ][
+        , ..columns
+      ]
+
+      if (nrow(tte) == 0) stop(paste0("No proband TTE data found for disorder", proband_disorder))
+
+      if (is.list(relatives_disorder)) {
+        relative_tte <- private$pool[
+          disorder == relatives_disorder$id & relatives_kind == relatives_disorder$relatives_kind
+        ][
+          , .SD[1], by = "person_id"
+        ][
+          , c("person_id", "relatives", "relatives_diagnosed", "relatives_kind")
+        ]
+
+        if (nrow(relative_tte) == 0) {
+          stop(paste0(
+            "No family history TTE data found for disorder \"", relatives_disorder$id,
+            "\" and relationship kind \"", relatives_disorder$relatives_kind, "\""
+          ))
+        }
+
+        tte <- tte[
+          relative_tte,
+          on = .(person_id = person_id)
+        ][
+          relatives_diagnosed > 0
+        ]
+
+        if (isTRUE(use_weighted_cif)) {
+          tte <- tte[
+            , weight := ifelse(relatives_diagnosed > 0.0, relatives_diagnosed / relatives, 0.0)
+          ]
+        }
+
+        if (nrow(tte) == 0) {
+          stop(paste0(
+            "No probands with at least 1 relative (of kind \"",
+            relatives_disorder$relatives_kind, "\") diagnosed with \"", relatives_disorder$id, "\""
+          ))
+        }
+      }
+
+      return(tte)
     },
     #' @description
     #' Helper that aggregates the given estimates dataset down to a single row per stratification
@@ -221,220 +283,130 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given disorder and cohort naming.
-    run_cif = function(tte, disorder, cohort, stratify_columns, earliest_onset, latest_onset) {
-      tte_renamed <- tte |>
-        rename_with(
-          ~ str_remove(., sprintf("^%s_", disorder)),
-          starts_with(sprintf("%s_", disorder))
-        ) |>
-        as.data.table()
-
-      if ("weight" %in% colnames(tte_renamed) && cohort == "c1") {
-        tte_renamed <- tte_renamed |> mutate(weight = 1.0)
-      }
-
-      private$sub_analyses$cif$run(
-        tte              = tte_renamed,
+    run_cif = function(disorder_key, cohort_key, proband_disorder, relatives_disorder, stratify_columns, use_weighted_cif) {
+      tte <- self$get_tte(proband_disorder, relatives_disorder, stratify_columns, use_weighted_cif)
+      cif <- private$analyses$cif$run(
+        tte              = tte,
         stratify_columns = stratify_columns,
-        earliest_onset   = earliest_onset,
-        latest_onset     = latest_onset
+        earliest_onset   = proband_disorder$earliest_onset,
+        latest_onset     = proband_disorder$latest_onset
       ) |>
-        select(!!!stratify_columns, time, cif, cases, var, se, l95, u95) |>
-        rename_with(~ paste0(cohort, "_", .), .cols = c(cif)) |>
-        rename_with(~ paste0(cohort, "_cif_", .), .cols = c(cases, var, se, l95, u95))
+        mutate(disorder = disorder_key, cohort = cohort_key) |>
+        select(disorder, cohort, all_of(unlist(stratify_columns)), time, everything())
+
+      if (is.null(cif)) stop(paste0("No TTE events found when producing cif_", disorder_key, "_", cohort_key))
+
+      return(cif)
     },
     #' @description
     #' Helper that runs h2 on the given time-to-event data and handles prefixing columns according to
     #' given disorder and cohort naming.
-    run_h2 = function(disorder, cif_c1, cif_c2, relationship_kind, stratify_columns) {
-      cif <-  cif_c1 |>
-        inner_join(cif_c2, by = join_by(time, !!!stratify_columns)) |>
+    run_h2 = function(disorder_key, relationship_coefficient, stratify_columns, cif_pop, cif_fh) {
+      stratify_symbols <- rlang::syms(stratify_columns)
+
+      cif <- cif_pop |>
+        inner_join(cif_fh, by = join_by(time, !!!stratify_columns)) |>
+        rename(
+          pop_cif   = cif.x,
+          pop_cases = cases.x,
+          fh_cif    = cif.y,
+          fh_cases  = cases.y
+        ) |>
+        select(time, !!!stratify_symbols, pop_cif, pop_cases, fh_cif, fh_cases) |>
         self$max_time_by_stratification(stratify_columns)
 
-      curr_prefix <- paste0(disorder, "_h2")
-
-      private$sub_analyses$h2$run(
-        relationship_kind = relationship_kind,
-        estimates         = cif
+      h2 <- private$analyses$h2$run(
+        cif                      = cif,
+        relationship_coefficient = relationship_coefficient
       ) |>
-        rename_with(~ curr_prefix, .cols = c(h2)) |>
-        rename_with(~ paste0(curr_prefix, "_", .), .cols = c(se, l95, u95)) |>
-        select(time, !!!stratify_columns, starts_with(curr_prefix))
-    },
-    #' @description
-    #' Helper that removes prefixes from column names that the function `run_cif` adds
-    #' to its results.
-    remove_cif_prefix = function(dt, disorder, cohort, stratify_columns) {
-      prefix <- paste0(disorder, "_", cohort, "_")
+        mutate(disorder = disorder_key) |>
+        select(disorder, time, !!!stratify_symbols, h2, se, l95, u95)
 
-      dt |>
-        mutate(disorder = disorder, cohort = cohort) |>
-        rename_with(
-          ~ str_remove(., paste0("^", prefix)),
-          .cols = starts_with(prefix)
-        ) |>
-        select(disorder, cohort, !!!stratify_columns, everything())
+      if (is.null(h2)) stop(paste0("No valid results found when producing h2_", disorder_key))
+
+      return(h2)
+    },
+    add_cif_prefix = function(cif, disorder_key, cohort_key, stratify_columns) {
+      cif |>
+        select(!!!stratify_columns, time, cif, cases) |>
+        rename_with(~ paste0(disorder_key, "_", cohort_key, "_", .), .cols = c(cif, cases))
     },
     #' @description
     #' Helper that removes prefixes from column names that the function `run_h2` adds
     #' to its results.
-    remove_h2_prefix = function(dt, disorder, stratify_columns) {
-      prefix <- paste0(disorder, "_")
-
-      dt |>
-        mutate(disorder = disorder) |>
-        rename_with(
-          ~ str_remove(., paste0("^", prefix)),
-          .cols = starts_with(prefix)
-        ) |>
-        select(disorder, !!!stratify_columns, everything())
+    add_h2_prefix = function(h2, disorder_key, stratify_columns) {
+      h2 |>
+        select(!!!stratify_columns, time, h2) |>
+        rename_with(~ paste0(disorder_key, "_", .), .cols = c(h2))
     },
     #' @description
     #' Runs a single analysis using the given two disorders, relationship kind, straitfy colums
     #' and amount of draws.
     run = function(...) {
-      validator <- do.call(ArgumentsValidator$new, private$mk_run_validator_rules())
-      args      <- validator$run(...)
+      validator <- do.call(ArgumentsValidator$new, self$validation_rules$run)
 
-      tte_c1 <- self$get_tte(
-        args$relationship_kind,
-        args$disorder1$id,
-        args$disorder2$id,
-        args$stratify_columns,
-        args$use_weighted_cif
-      )
+      args <- validator$run(...)
 
-      tte_c2 <- copy(tte_c1)[d1_relatives_diagnosed > 0]
-      if (nrow(tte_c2) == 0) stop("TTE cohort 2 had no rows")
-      # Weights are not touched for this cohort, because it is not needed,
-      # due to cif_d2_c2 not being produced.
+      cif_d1_pop <- self$run_cif("d1", "pop", args$disorder1, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_d1_fh1 <- self$run_cif("d1", "fh1", args$disorder1, args$disorder1, args$stratify_columns, args$use_weighted_cif)
+      cif_d1_fh2 <- self$run_cif("d1", "fh2", args$disorder1, args$disorder2, args$stratify_columns, args$use_weighted_cif)
+      cif_d2_pop <- self$run_cif("d2", "pop", args$disorder2, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_d2_fh2 <- self$run_cif("d2", "fh2", args$disorder2, args$disorder2, args$stratify_columns, args$use_weighted_cif)
 
-      tte_c3 <- copy(tte_c1)[d2_relatives_diagnosed > 0]
-      if (nrow(tte_c3) == 0) stop("TTE cohort 3 had no rows")
-      if (args$use_weighted_cif) {
-        # Since relatives from disorder 2 was used in the cohort filter, we must make
-        # sure that all weights comes from relatives of disorder 2.
-        tte_c3 <- tte_c3[, d1_weight := d2_weight]
-      }
+      h2_d1 <- self$run_h2("d1", args$disorder1$relatives_coefficient, args$stratify_columns, cif_d1_pop, cif_d1_fh1)
+      h2_d2 <- self$run_h2("d1", args$disorder2$relatives_coefficient, args$stratify_columns, cif_d2_pop, cif_d2_fh2)
 
-      cif_d1_c1 <- self$run_cif(
-        tte_c1, "d1", "c1",
-        args$stratify_columns,
-        args$disorder1$earliest_onset,
-        args$disorder1$latest_onset
-      )
-      if (is.null(cif_d1_c1)) stop("Disorder 1, cohort 1 had no TTE events")
-
-      cif_d2_c1 <- self$run_cif(
-        tte_c1, "d2", "c1",
-        args$stratify_columns,
-        args$disorder2$earliest_onset,
-        args$disorder2$latest_onset
-      )
-      if (is.null(cif_d2_c1)) stop("Disorder 2, cohort 1 had no TTE events")
-
-      cif_d1_c2 <- self$run_cif(
-        tte_c2, "d1", "c2",
-        args$stratify_columns,
-        args$disorder1$earliest_onset,
-        args$disorder1$latest_onset
-      )
-      if (is.null(cif_d1_c2)) stop("Disorder 1, cohort 2 had no TTE events")
-
-      cif_d1_c3 <- self$run_cif(
-        tte_c3, "d1", "c3",
-        args$stratify_columns,
-        args$disorder1$earliest_onset,
-        args$disorder1$latest_onset
-      )
-      if (is.null(cif_d1_c3)) stop("Disorder 1, cohort 3 had no TTE events")
-
-      cif_d2_c3 <- self$run_cif(
-        tte_c3, "d2", "c3",
-        args$stratify_columns,
-        args$disorder2$earliest_onset,
-        args$disorder2$latest_onset
-      )
-      if (is.null(cif_d2_c3)) stop("Disorder 2, cohort 3 had no TTE events")
-
-      h2_d1 <- self$run_h2("d1", cif_d1_c1, cif_d1_c2, args$relationship_kind, args$stratify_columns)
-      if (is.null(h2_d1)) stop("Disorder 1 had no h2 results")
-
-      h2_d2 <- self$run_h2(
-        "d2",
-        cif_d2_c1,
-        cif_d2_c3 |> rename(c2_cif = c3_cif, c2_cif_cases = c3_cif_cases),
-        args$relationship_kind,
-        args$stratify_columns
-      )
-      if (is.null(h2_d1)) stop("Disorder 2 had no h2 results")
-
-      cif_d1_c1 <- cif_d1_c1 |> rename_with(~ paste0("d1_", .), .cols = starts_with("c1_"))
-      cif_d1_c2 <- cif_d1_c2 |> rename_with(~ paste0("d1_", .), .cols = starts_with("c2_"))
-      cif_d1_c3 <- cif_d1_c3 |> rename_with(~ paste0("d1_", .), .cols = starts_with("c3_"))
-      cif_d2_c1 <- cif_d2_c1 |> rename_with(~ paste0("d2_", .), .cols = starts_with("c1_"))
-      cif_d2_c3 <- cif_d2_c3 |> rename_with(~ paste0("d2_", .), .cols = starts_with("c3_"))
-
-      join_columns <- list("time")
-
-      if ("stratify_columns" %in% names(args) && is.list(args$stratify_columns)) {
-        join_columns <- c(join_columns, args$stratify_columns)
-      }
-
+      join_columns <- c(list("time"), args$stratify_columns)
       join_symbols <- rlang::syms(join_columns)
 
-      combined <- cif_d1_c1 |>
-        inner_join(cif_d1_c3, by = join_by(!!!join_columns)) |>
-        inner_join(cif_d2_c1, by = join_by(!!!join_columns)) |>
-        inner_join(h2_d1, by = join_by(!!!join_columns)) |>
-        inner_join(h2_d2, by = join_by(!!!join_columns)) |>
-        select(all_of(unlist(join_columns)), everything()) |>
-        self$max_time_by_stratification(args$stratify_columns) |>
-        select(
-          d1_c1_cif,
-          d1_c3_cif,
-          d2_c1_cif,
-          d1_c1_cif_cases,
-          d1_c3_cif_cases,
-          d2_c1_cif_cases,
-          d1_h2,
-          d2_h2,
-          !!!join_columns
-        )
+      combined <- self$add_cif_prefix(cif_d1_pop, "d1", "pop", args$stratify_columns) |>
+        inner_join(
+          self$add_cif_prefix(cif_d1_fh2, "d1", "fh2", args$stratify_columns),
+          by = join_by(!!!join_columns)
+        ) |>
+        inner_join(
+          self$add_cif_prefix(cif_d2_pop, "d2", "pop", args$stratify_columns),
+          by = join_by(!!!join_columns)
+        ) |>
+        inner_join(
+          self$add_h2_prefix(h2_d1, "d1", args$stratify_columns),
+          by = join_by(!!!join_columns)
+        ) |>
+        inner_join(
+          self$add_h2_prefix(h2_d2, "d2", args$stratify_columns),
+          by = join_by(!!!join_columns)
+        ) |>
+        self$max_time_by_stratification(args$stratify_columns)
 
       if (nrow(combined) == 0) stop("After joining h2 results for both disorders no data was left")
 
-      rg <- private$sub_analyses$gc$run(
-        relationship_kind = args$relationship_kind,
-        estimates         = combined
+      rg <- private$analyses$rg$run(
+        estimates                = combined,
+        relationship_coefficient = args$disorder2$relatives_coefficient
       ) |>
-        select(!!!args$stratify_columns, rg, se, rg_l95, rg_u95) |>
-        rename(rg_se = se)
+        select(!!!args$stratify_columns, rg, se, l95, u95)
 
       if (nrow(rg) == 0) stop("No genetic correlation results produced")
 
-      return(list(
+      list(
         args = args,
         cif = rbindlist(list(
-          self$remove_cif_prefix(cif_d1_c1, "d1", "c1", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95),
-          self$remove_cif_prefix(cif_d1_c2, "d1", "c2", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95),
-          self$remove_cif_prefix(cif_d1_c3, "d1", "c3", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95),
-          self$remove_cif_prefix(cif_d2_c1, "d2", "c1", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95),
-          self$remove_cif_prefix(cif_d2_c3, "d2", "c3", args$stratify_columns) |> select(-cif_var, -cif_se, -cif_l95, -cif_u95)
-        )),
-        h2 = rbindlist(list(
-          self$remove_h2_prefix(h2_d1, "d1", args$stratify_columns),
-          self$remove_h2_prefix(h2_d2, "d2", args$stratify_columns)
-        )),
+          cif_d1_pop,
+          cif_d1_fh1,
+          cif_d1_fh2,
+          cif_d2_pop,
+          cif_d2_fh2
+        )) |> select(-var, -se, -l95, -u95), # We do not produce these statistics with the weighted method.
+        h2 = rbindlist(list(h2_d1, h2_d2)),
         rg = rg
-      ))
+      )
     },
     run_meta = function(results) {
       validator <- ArgumentsValidator$new(
         args = list(
           required   = TRUE,
           type       = "named_list",
-          properties = private$mk_run_validator_rules()
+          properties = self$validation_rules$run
         ),
         #cif = list(
         #  required = TRUE,
@@ -482,15 +454,15 @@ Pipeline <- R6::R6Class( #nolint
               type     = "numeric",
               required = TRUE
             ),
-            h2_se = list(
+            se = list(
               type     = "numeric",
               required = TRUE
             ),
-            h2_l95 = list(
+            l95 = list(
               type     = "numeric",
               required = TRUE
             ),
-            h2_u95 = list(
+            u95 = list(
               type     = "numeric",
               required = TRUE
             )
@@ -504,15 +476,15 @@ Pipeline <- R6::R6Class( #nolint
               type     = "numeric",
               required = TRUE
             ),
-            rg_se = list(
+            se = list(
               type     = "numeric",
               required = TRUE
             ),
-            rg_l95 = list(
+            l95 = list(
               type     = "numeric",
               required = TRUE
             ),
-            rg_u95 = list(
+            u95 = list(
               type     = "numeric",
               required = TRUE
             )
@@ -524,7 +496,7 @@ Pipeline <- R6::R6Class( #nolint
       #---------------------------------------------------------------------------------
       # Cumulative incidence
 
-      #cif_meta <- private$sub_analyses$core$run_meta(
+      #cif_meta <- private$analyses$core$run_meta(
       #  estimates        = args$cif,
       #  estimate_column  = "cif",
       #  se_column        = "cif_se",
@@ -535,10 +507,10 @@ Pipeline <- R6::R6Class( #nolint
       #---------------------------------------------------------------------------------
       # Heritability
 
-      h2_meta <- private$sub_analyses$core$run_meta(
+      h2_meta <- private$analyses$core$run_meta(
         estimates        = args$h2,
         estimate_column  = "h2",
-        se_column        = "h2_se",
+        se_column        = "se",
         stratify_columns = list("disorder")
       ) |>
         select(disorder, everything())
@@ -546,10 +518,10 @@ Pipeline <- R6::R6Class( #nolint
       #---------------------------------------------------------------------------------
       # Genetic correlation
 
-      rg_meta <- private$sub_analyses$core$run_meta(
+      rg_meta <- private$analyses$core$run_meta(
         estimates       = args$rg,
         estimate_column = "rg",
-        se_column       = "rg_se"
+        se_column       = "se"
       )
 
       return(list(

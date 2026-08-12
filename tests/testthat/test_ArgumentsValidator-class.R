@@ -6,6 +6,112 @@ library(data.table, quietly = TRUE, warn.conflicts = FALSE)
 # Tests
 #=================================================================================
 
+describe("non-named lists arguments", {
+  validator <- ArgumentsValidator$new(
+    list(
+      required   = TRUE,
+      type       = "named_list",
+      properties = list(
+        id = list(
+          required = TRUE,
+          type     = "string"
+        ),
+        earliest_onset = list(
+          type    = "integer",
+          minimum = 1,
+          default = 1
+        ),
+        latest_onset = list(
+          type    = "integer",
+          minimum = 1
+        ),
+        relatives_kind = list(
+          required = TRUE,
+          type     = "string",
+          enum     = list("p", "fs")
+        )
+      )
+    ),
+    list(
+      required   = FALSE,
+      type       = "named_list",
+      properties = list(
+        id = list(
+          required = TRUE,
+          type     = "string"
+        ),
+        earliest_onset = list(
+          type    = "integer",
+          minimum = 1,
+          default = 1
+        ),
+        latest_onset = list(
+          type    = "integer",
+          minimum = 1
+        ),
+        relatives_kind = list(
+          required = TRUE,
+          type     = "string",
+          enum     = list("p", "fs")
+        )
+      )
+    ),
+    list(
+      type    = "list",
+      items   = list(type = "string"),
+      default = list()
+    )
+  )
+
+  it("handles all values given", {
+    d1_id      <- "SCZ"
+    d1_relkind <- "fs"
+    d2_id      <- "CAD"
+    d2_relkind <- "p"
+
+    args <- validator$run(
+      list(
+        id             = d1_id,
+        relatives_kind = d1_relkind
+      ),
+      list(
+        id             = d2_id,
+        relatives_kind = d2_relkind
+      ),
+      list("born_at")
+    )
+
+    proband_disorder   <- args[[1]]
+    relatives_disorder <- args[[2]]
+    stratify_columns   <- args[[3]]
+
+    expect_equal(proband_disorder$id, d1_id)
+    expect_equal(proband_disorder$relatives_kind, d1_relkind)
+    expect_equal(relatives_disorder$id, d2_id)
+    expect_equal(relatives_disorder$relatives_kind, d2_relkind)
+  })
+
+  it("handles missing values in the middle", {
+    d1_id      <- "SCZ"
+    d1_relkind <- "fs"
+    d2_id      <- "CAD"
+    d2_relkind <- "p"
+
+    args <- validator$run(
+      list(
+        id             = d1_id,
+        relatives_kind = d1_relkind
+      ),
+      NA,
+      list("born_at")
+    )
+
+    expect_true(is.list(args[[1]]))
+    expect_true(is.na(args[[2]]))
+    expect_true(is.list(args[[3]]))
+  })
+})
+
 describe("gen_pop_risk_validator", {
   gen_pop_risk_validator <- ArgumentsValidator$new(
     phenotype_icd_codes = list(

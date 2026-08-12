@@ -11,13 +11,13 @@
 Analysis <- R6::R6Class( #nolint
   "Analysis",
   private = list(
-    validator = NULL
+    meta_validator = NULL
   ),
   public = list(
     #' @description
     #' Creates an analysis instance and sets up a validator for the meta functions.
     initialize = function() {
-      private$validator <- ArgumentsValidator$new(
+      private$meta_validator <- ArgumentsValidator$new(
         estimates = list(
           required = TRUE,
           type     = "data.table",
@@ -34,7 +34,7 @@ Analysis <- R6::R6Class( #nolint
 
       # Makes sure the meta column actually exists in the results
       # and that it has the right type.
-      private$validator$add_post_validation(function(args, rules) {
+      private$meta_validator$add_post_validation(function(args, rules) {
         rule <- rules$estimates
         rule$columns[[args$estimate_column]] <- list(
           required = TRUE,
@@ -46,7 +46,7 @@ Analysis <- R6::R6Class( #nolint
         )
 
         if (!("stratify_columns" %in% rules && is.list(rules$stratify_columns))) {
-          private$validator$check_type("estimates", rule, args$estimates)
+          private$meta_validator$check_type("estimates", rule, args$estimates)
 
           return(args)
         }
@@ -58,7 +58,7 @@ Analysis <- R6::R6Class( #nolint
           )
         }
 
-        private$validator$check_type("estimates", rule, args$estimates)
+        private$meta_validator$check_type("estimates", rule, args$estimates)
 
         return(args)
       })
@@ -74,11 +74,26 @@ Analysis <- R6::R6Class( #nolint
       )
     },
     #' @description
+    #' Helper for checking that each distinct individual only appears once in the given TTE data.
+    #'
+    #' @param tte TTE data to check.
+    assert_unique_individuals_tte = function(tte) {
+      plicates <- tte |>
+        group_by(person_id) |>
+        summarise(amount = n()) |>
+        filter(amount > 1) |>
+        nrow()
+
+      if (plicates > 0) {
+        stop(paste0(plicates, " individuals appeared more than once in the given TTE dataset"))
+      }
+    },
+    #' @description
     #' Runs a meta analysis on the value of the given column of the given analysis results.
     #'
     #' @return Meta analysis result
     run_meta = function(...) {
-      args             <- private$validator$run(...)
+      args             <- private$meta_validator$run(...)
       stratify_symbols <- rlang::syms(args$stratify_columns)
 
       args$estimates |>

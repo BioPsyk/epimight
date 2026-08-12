@@ -132,42 +132,42 @@ generate_pipeline_tte <- function(n_count) {
     relocate(failure_status, .after = failure_time) |>
     relocate(relatives, .after = failure_status) |>
     relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "FS") |>
+    mutate(person_id = as.character(person_id), disorder = "SCZ", relatives_kind = "fs") |>
     as.data.table()
 
-  d2_fs_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
+  d2_fs_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relatives_kind))
   d2_fs_tte <- generate_failure(d2_fs_tte, 19, 11)
   d2_fs_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
     relocate(failure_time, .after = person_id) |>
     relocate(failure_status, .after = failure_time) |>
     relocate(relatives, .after = failure_status) |>
     relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "FS") |>
+    mutate(person_id = as.character(person_id), disorder = "CAD", relatives_kind = "fs") |>
     as.data.table()
 
-  d1_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
+  d1_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relatives_kind))
   d1_po_tte <- generate_failure(d2_fs_tte, 20, 10)
   d1_po_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
     relocate(failure_time, .after = person_id) |>
     relocate(failure_status, .after = failure_time) |>
     relocate(relatives, .after = failure_status) |>
     relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
+    mutate(person_id = as.character(person_id), disorder = "SCZ", relatives_kind = "p") |>
     as.data.table()
 
-  d2_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
+  d2_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relatives_kind))
   d2_po_tte <- generate_failure(d2_fs_tte, 19, 11)
   d2_po_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
     relocate(failure_time, .after = person_id) |>
     relocate(failure_status, .after = failure_time) |>
     relocate(relatives, .after = failure_status) |>
     relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
+    mutate(person_id = as.character(person_id), disorder = "CAD", relatives_kind = "p") |>
     as.data.table()
 
   tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-born_at, -dead_at_year) |>
-    arrange(person_id, disorder, relationship_kind) |>
-    select(person_id, born_at_year, disorder, failure_status, failure_time, relationship_kind, relatives, relatives_diagnosed)
+    arrange(person_id, disorder, relatives_kind) |>
+    select(person_id, born_at_year, disorder, failure_status, failure_time, relatives_kind, relatives, relatives_diagnosed)
 
   return(tte)
 }
