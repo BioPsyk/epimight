@@ -6,18 +6,16 @@
 #' @import R6
 ArgumentsValidator <- R6::R6Class( #nolint
   "ArgumentsValidator",
-  private = list(
-    rules = NULL,
-    post_validation = NULL
-  ),
   public = list(
+    rules = NULL,
+    post_validation = NULL,
     #' @description
     #' Initializes the validator with the given rules.
     initialize = function(...) {
-      private$rules <- list(...)
+      self$rules <- list(...)
 
-      if (!self$is_named_list(private$rules)) {
-        stop("Given rules were not a named list")
+      if (!is.list(self$rules) && !self$is_named_list(self$rules)) {
+        stop("Given rules was not a list")
       }
     },
     #' @description
@@ -26,14 +24,14 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param value Numeric value to check.
     #' @return True/false
     is_integer = function(value) {
-      if (is.null(value)) {
+      if (is.null(value) || !is.numeric(value)) {
         return(FALSE)
       }
 
       tol     <- .Machine$double.eps^0.5
       results <- abs(value - round(value)) < tol
 
-      return(all(results))
+      all(results)
     },
     #' @description
     #' Determines if the given list only contains named elements.
@@ -55,10 +53,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         return(FALSE)
       }
 
-      return(
-        # Makes sure all elements are named
-        properties == sum(names(value) != "", na.rm = TRUE)
-      )
+      properties == sum(names(value) != "", na.rm = TRUE)
     },
     #' @description
     #' Checks that the given list against the given ruleset.
@@ -95,7 +90,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         index <- index + 1
       }
 
-      return(value)
+      value
     },
     #' @description
     #' Checks that the given named list against the given ruleset.
@@ -112,22 +107,36 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Rule for argument '", key, "' did not have 'properties' specified")
       }
 
-      for (prop_key in names(rule$properties)) {
-        prop_rule <- rule$properties[[prop_key]]
-        full_key <- sprintf("%s[[%s]]", key, prop_key)
+      value_names <- names(value)
+      prop_names  <- names(rule$properties)
 
-        if (isTRUE(prop_rule$required) && !(prop_key %in% names(value))) {
-          stop("Named property '", full_key, "' did not exist")
-        } else if (!isTRUE(prop_rule$required) && !(prop_key %in% names(value))) {
-          next
-        }
+      strict <- TRUE
 
-        prop_value <- value[[prop_key]]
-
-        value[[prop_key]] <- self$check_type(full_key, prop_rule, prop_value)
+      if ("strict" %in% names(rule) && isFALSE(rule$strict)) {
+        strict <- FALSE
       }
 
-      return(value)
+      diff_names  <- value_names[!(value_names %in% prop_names)]
+
+      if (isTRUE(strict) && length(diff_names) > 0) {
+        stop("Argument '", key, "' contained unknown members: ", paste(diff_names, sep = ", "))
+      }
+
+      for (prop_key in prop_names) {
+        prop_rule <- rule$properties[[prop_key]]
+        full_key  <- sprintf("%s[[%s]]", key, prop_key)
+
+        if (!(prop_key %in% names(value))) {
+          if (isTRUE(prop_rule$required)) stop("Named property '", full_key, "' did not exist")
+          if (!("default" %in% names(prop_rule))) next
+
+          value[[prop_key]] <- prop_rule$default
+        }
+
+        value[[prop_key]] <- self$check_type(full_key, prop_rule, value[[prop_key]])
+      }
+
+      value
     },
     #' @description
     #' Checks that the given generic named list against the given ruleset.
@@ -163,7 +172,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         value[[prop_key]] <- self$check_type(full_key, prop_rule, prop_value)
       }
 
-      return(value)
+      value
     },
     #' @description
     #' Checks that the given data.table against the given ruleset.
@@ -195,7 +204,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         value[[col_key]] <- self$check_type(full_key, col_rule, col_value)
       }
 
-      return(value)
+      value
     },
     #' @description
     #' Checks that the given numeric value falls within the range of the given ruleset.
@@ -212,7 +221,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Argument '", key, "' was larger than maximum value: ", rule$maximum)
       }
 
-      return(value)
+      value
     },
     #' @description
     #' Checks that the given value exists in the enum of the given rule.
@@ -246,7 +255,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Argument '", key, "' was not a Date (see `as.Date` for details) or date formatted string")
       }
 
-      return(as.Date(value))
+      as.Date(value)
     },
     #' @description
     #' Checks that the given value is the type that the given ruleset specifies.
@@ -294,7 +303,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
       value <- self$check_range(key, rule, value)
       value <- self$check_enum(key, rule, value)
 
-      return(value)
+      value
     },
     #' @description
     #' Applies the rule for the argument of the given key.
@@ -303,7 +312,7 @@ ArgumentsValidator <- R6::R6Class( #nolint
     #' @param key Key of argument to validate.
     #' @returns Arguments after validation of key was done.
     handle_rule = function(args, key) {
-      rule <- private$rules[[key]]
+      rule <- self$rules[[key]]
 
       if (is.null(rule)) {
         stop("Rule for key '", key, "' is NULL")
@@ -332,15 +341,24 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Rule for key '", key, "' has unknown type: ", rule$type)
       }
 
-      value <- args[[key]]
-
-      if (is.null(value)) {
+      if (self$is_integer(key) && key > length(args)) {
         if (isTRUE(rule$required)) {
           stop("Required argument '", key, "' was NULL")
         }
 
+        args[[key]] <- NA
+
+        return(args)
+      }
+
+      value <- args[[key]]
+
+      if (is.null(value) || all(is.na(value))) {
+        if (isTRUE(rule$required)) stop("Required argument '", key, "' was NULL")
         if (!is.null(rule$default)) {
-          value <- rule$default
+          args[[key]] <- rule$default
+
+          return(args)
         }
       }
 
@@ -348,20 +366,20 @@ ArgumentsValidator <- R6::R6Class( #nolint
         value <- rule$custom_handler(args, value)
       }
 
-      if (!is.null(value)) {
+      if (!is.null(value) && all(!is.na(value))) {
         value <- self$check_type(key, rule, value)
       }
 
       args[[key]] <- value
 
-      return(args)
+      args
     },
     #' @description
     #' Adds a post validation function that is applied to the arguments after validation.
     #'
     #' @param f Function to use in post-validation.
     add_post_validation = function(f) {
-      private$post_validation <- f
+      self$post_validation <- f
     },
     #' @description
     #' Runs the validation on the given arguments.
@@ -370,19 +388,42 @@ ArgumentsValidator <- R6::R6Class( #nolint
     run = function(...) {
       args <- list(...)
 
-      for (key in names(private$rules)) {
-        args <- self$handle_rule(args, key)
-      }
+      caller <- rlang::caller_env()
 
-      if (is.function(private$post_validation)) {
-        new_args <- private$post_validation(args, private$rules)
+      rlang::try_fetch(
+        {
+          if (self$is_named_list(self$rules)) {
+            for (key in names(self$rules)) {
+              args <- self$handle_rule(args, key)
+            }
+          } else {
+            for (i in seq_along(self$rules)) {
+              args <- self$handle_rule(args, i)
+            }
+          }
 
-        if (!is.null(new_args)) {
-          args <- new_args
+          if (is.function(self$post_validation)) {
+            new_args <- self$post_validation(args, self$rules)
+
+            if (!is.null(new_args)) {
+              args <- new_args
+            }
+          }
+        },
+        error = function(err) {
+          # We catch all validation errors and rethrow them as new
+          # errors with the context of the function that the validation was performed in.
+          # We do this so that the error only gives you a stacktrace to that function
+          # and not to the whole validation chain.
+          rlang::abort(
+            err$message,
+            call   = caller,
+            trace  = rlang::trace_back(bottom = caller)
+          )
         }
-      }
+      )
 
-      return(args)
+      args
     }
   )
 )

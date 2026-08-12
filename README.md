@@ -21,35 +21,24 @@
 
 ## Quick Start 🚀
 
-1. Create a directory to work in
-2. Enter the newly created directory and run all commands inside this directory in the following steps
-3. Download [this R script](./guides/pipeline/guide.R), name it `run-epimight.R`
-4. Download [this TTE test data](./tests/data/pipeline-tte.csv), name it `test-tte.csv`
-6. Run `singularity shell docker://biopsyk/epimight:latest`
-7. Inside the singularity shell, run `Rscript run-epimight.R`
+Create a directory to work in and perform the following steps inside that direction:
 
-You should see genetic correlations of two disorders that has been stratified by birth year and
-meta-analyzed using a fixed and random model.
+1. Download [this R script](./guides/pipeline/guide.R), name it `run-epimight.R`
+2. Download [this time-to-event data](./tests/data/pipeline-tte.csv), name it `pipeline-tte.csv`
+3. Run `singularity shell docker://biopsyk/epimight:latest`
+4. Inside the singularity shell, run `Rscript run-epimight.R`
+
+You should see the following output in the console:
+
+```
+   fixed_meta fixed_se fixed_l95 fixed_u95 rand_meta rand_se rand_l95 rand_u95
+        <num>    <num>     <num>     <num>     <num>   <num>    <num>    <num>
+1:    -2.1972   0.0347   -2.2652   -2.1292   -4.3634  2.6943  -9.6442   0.9174
+```
 
 This guide explains how the pipeline works and what each line of code in `run-epimight.R` does:
 
 - [Guide: running the pipeline](./guides/pipeline/guide.org)
-
-## Advanced usage
-
-If you want to use each individual analysis by itself or implement your own pipeline, these guides explains how each analysis works, step-by-step (reading them in order is recommended):
-
-- [Guide: estimate cumulative incidence of disorder](./guides/cumulative-incidence/guide.org)
-- [Guide: estimate heritability of disorder](./guides/heritability/guide.org)
-- [Guide: estimate heritability of disorder stratified by year of birth](./guides/heritability/guide-yob.org)
-- [Guide: estimate genetic correlation between two disorders](./guides/genetic-correlation/guide.org)
-- [Guide: estimate genetic correlation between two disorders stratified by year of birth](./guides/genetic-correlation/guide-yob.org)
-
-You can also view the reference documentation for each analysis here:
-
-- [Reference: Cumulative incidence](./guides/cumulative-incidence/index.org)
-- [Reference: Heritability](./guides/heritability/index.org)
-- [Reference: Genetic correlation](./guides/genetic-correlation/index.org)
 
 ## Support 💬
 

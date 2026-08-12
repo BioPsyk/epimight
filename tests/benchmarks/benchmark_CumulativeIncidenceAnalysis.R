@@ -24,11 +24,11 @@ tte <- read_csv(
   col_types = cols(person_id = col_character()),
 ) |>
   mutate(
-    weight = ifelse(relatives_diagnosed > 0.0, relatives_diagnosed / relatives, 0.0)
+    weight = ifelse(relatives_n_trait > 0.0, relatives_n_trait / relatives_n, 0.0)
   ) |>
   filter(
-    disorder          == "SCZ",
-    relationship_kind == "PO"
+    trait          == "SCZ",
+    relatives_kind == "parents"
   ) |>
   as.data.table()
 
@@ -51,7 +51,7 @@ benchmarks <- list(
   "CIF (1 strat)" = function() {
     results <- analysis$run(
       tte              = tte |> select(-weight),
-      stratify_columns = list("born_at_year")
+      stratify_columns = list("birth_year")
     )
 
     if (nrow(results) == 0) {
@@ -70,7 +70,7 @@ benchmarks <- list(
   "weighted CIF (1 strat)" = function() {
     results <- analysis$run(
       tte              = tte,
-      stratify_columns = list("born_at_year")
+      stratify_columns = list("birth_year")
     )
 
     if (nrow(results) == 0) {

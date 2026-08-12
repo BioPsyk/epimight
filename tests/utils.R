@@ -4,40 +4,38 @@ library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 # Generators
 #=================================================================================
 
-generate_relatives_diagnosed_prob <- function(failure_status, relatives) {
-  if (failure_status == 1) {
+trait_1_probability <- function(trait_status, relatives_n) {
+  if (trait_status == 1) {
     unaffected_prob <- 0.45
   } else {
     unaffected_prob <- 0.75
   }
 
-  rest_prob <- 1.0 - unaffected_prob
-  prob_per_relative <- rest_prob / relatives
+  rest_prob         <- 1.0 - unaffected_prob
+  prob_per_relative <- rest_prob / relatives_n
 
   prob <- append(
     c(unaffected_prob),
-    rep(prob_per_relative, relatives)
+    rep(prob_per_relative, relatives_n)
   )
 
   return(prob)
 }
 
-generate_relatives_diagnosed <- function(tte, column_name) {
-  survival_data <- tte |>
+tte_random_relatives_n_trait <- function(tte, probs_func) {
+  tte |>
     rowwise() |>
     mutate(
-      !!column_name := sample(
-        0:relatives,
+      relatives_n_trait := sample(
+        0:relatives_n,
         1,
         replace = TRUE,
-        prob = generate_relatives_diagnosed_prob(failure_status, relatives)
+        prob = probs_func(trait_status, relatives_n)
       )
     )
-
-  return(survival_data)
 }
 
-generate_failure <- function(tte, mean, sd, end_of_study) {
+tte_random_trait <- function(tte, trait_name, trait_prob, trait_age_mean, trait_age_sd, end_of_study) {
   if (missing(end_of_study)) {
     end_of_study <- Sys.Date()
   }
@@ -50,28 +48,29 @@ generate_failure <- function(tte, mean, sd, end_of_study) {
     rowwise() |>
     mutate(
       max_age = ifelse(
-        dead_at_year > end_of_study_year,
-        end_of_study_year - born_at_year,
-        dead_at_year - born_at_year
+        death_year > end_of_study_year,
+        end_of_study_year - birth_year,
+        death_year - birth_year
       ),
-      failure_status = ifelse(
-        dead_at_year > end_of_study_year,
+      trait = trait_name,
+      trait_status = ifelse(
+        death_year > end_of_study_year,
         sample(
-          seq(0, 1),
+          c(1, 0),
           1,
           replace = TRUE,
-          prob = c(0.9, 0.1)
+          prob = c(trait_prob, 1.0 - trait_prob)
         ),
         sample(
-          seq(1, 2),
+          c(1, 2),
           1,
           replace = TRUE,
-          prob = c(0.1, 0.9)
+          prob = c(trait_prob, 1.0 - trait_prob)
         )
       ),
-      onset_age = round(rnorm(1, mean = mean, sd = sd)),
-      failure_time = ifelse(
-        failure_status == 1,
+      onset_age = round(rnorm(1, mean = trait_age_mean, sd = trait_age_sd)),
+      trait_age = ifelse(
+        trait_status == 1,
         case_when(
           onset_age < 0 ~ 0,
           onset_age > max_age ~ max_age,
@@ -80,12 +79,15 @@ generate_failure <- function(tte, mean, sd, end_of_study) {
         max_age
       )
     ) |>
+    mutate(
+      trait_age = abs(trait_age) # Sometimes the onset is -0
+    ) |>
     select(-max_age, -onset_age)
 
   return(survival_data)
 }
 
-generate_random_tte <- function(n_count, period_start, period_end) {
+tte_random_probands <- function(n_count, period_start, period_end) {
   if (missing(period_start)) {
     period_start <- as.Date("1950-01-01")
   }
@@ -101,13 +103,13 @@ generate_random_tte <- function(n_count, period_start, period_end) {
   )
 
   survival_data <- data.frame(
-    person_id      = 1:n_count,
-    gender         = sample(c("m", "f"), n_count, replace = TRUE),
-    born_at        = sample(birth_dates, n_count, replace = TRUE),
+    person_id      = as.character(1:n_count),
+    sex            = sample(c("m", "f"), n_count, replace = TRUE),
+    birth_date     = sample(birth_dates, n_count, replace = TRUE),
     death_age      = round(
       rnorm(n_count, mean = 68.9, sd = 8.2)
     ),
-    relatives = sample(
+    relatives_n = sample(
       seq(0, 9),
       n_count,
       replace = TRUE,
@@ -115,8 +117,8 @@ generate_random_tte <- function(n_count, period_start, period_end) {
     )
   ) |>
     mutate(
-      born_at_year = as.numeric(format(born_at, "%Y")),
-      dead_at_year = born_at_year + death_age
+      birth_year = as.numeric(format(birth_date, "%Y")),
+      death_year = birth_year + death_age
     ) |>
     select(-death_age) |>
     distinct(person_id, .keep_all = TRUE)
@@ -124,50 +126,54 @@ generate_random_tte <- function(n_count, period_start, period_end) {
   return(survival_data)
 }
 
+generate_analysis_tte <- function(n_count, trait, trait_mean, trait_sd, relkind) {
+  tte_random_probands(n_count) |>
+    tte_add_random_trait(trait, trait_mean, trait_sd) |>
+    tte_add_random_relatives_n_trait("relatives_n_trait") |>
+    relocate(trait_age, .after = person_id) |>
+    relocate(trait_status, .after = trait_age) |>
+    relocate(relatives_n, .after = trait_status) |>
+    relocate(relatives_n_trait, .after = relatives_n) |>
+    mutate(person_id = as.character(person_id), relatives_kind = relkind) |>
+    as.data.table()
+}
+
 generate_pipeline_tte <- function(n_count) {
-  d1_fs_tte <- generate_random_tte(n_count)
-  d1_fs_tte <- generate_failure(d1_fs_tte, 20, 10)
-  d1_fs_tte <- generate_relatives_diagnosed(d1_fs_tte, "relatives_diagnosed") |>
-    relocate(failure_time, .after = person_id) |>
-    relocate(failure_status, .after = failure_time) |>
-    relocate(relatives, .after = failure_status) |>
-    relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "FS") |>
+  t1_fs_tte <- generate_analysis_tte(n_count, "SCZ", 20, 10, "half_siblings")
+
+  t2_fs_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
+  t2_fs_tte <- tte_add_random_trait(t2_fs_tte, "CAD", 19, 11)
+  t2_fs_tte <- tte_add_random_relatives_n_trait(t2_fs_tte, "relatives_n_trait") |>
+    relocate(trait_age, .after = person_id) |>
+    relocate(trait_status, .after = trait_age) |>
+    relocate(relatives_n, .after = trait_status) |>
+    relocate(relatives_n_trait, .after = relatives_n) |>
+    mutate(person_id = as.character(person_id), relatives_kind = "half_siblings") |>
     as.data.table()
 
-  d2_fs_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
-  d2_fs_tte <- generate_failure(d2_fs_tte, 19, 11)
-  d2_fs_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
-    relocate(failure_time, .after = person_id) |>
-    relocate(failure_status, .after = failure_time) |>
-    relocate(relatives, .after = failure_status) |>
-    relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "FS") |>
+  t1_p_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
+  t1_p_tte <- tte_add_random_trait(t1_p_tte, "SCZ", 20, 10)
+  t1_p_tte <- tte_add_random_relatives_n_trait(t1_p_tte, "relatives_n_trait") |>
+    relocate(trait_age, .after = person_id) |>
+    relocate(trait_status, .after = trait_age) |>
+    relocate(relatives_n, .after = trait_status) |>
+    relocate(relatives_n_trait, .after = relatives_n) |>
+    mutate(person_id = as.character(person_id), relatives_kind = "parents") |>
     as.data.table()
 
-  d1_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
-  d1_po_tte <- generate_failure(d2_fs_tte, 20, 10)
-  d1_po_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
-    relocate(failure_time, .after = person_id) |>
-    relocate(failure_status, .after = failure_time) |>
-    relocate(relatives, .after = failure_status) |>
-    relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "SCZ", relationship_kind = "PO") |>
+  t2_p_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
+  t2_p_tte <- tte_add_random_trait(t2_p_tte, "CAD", 19, 11)
+  t2_p_tte <- tte_add_random_relatives_n_trait(t2_p_tte, "relatives_n_trait") |>
+    relocate(trait_age, .after = person_id) |>
+    relocate(trait_status, .after = trait_age) |>
+    relocate(relatives_n, .after = trait_status) |>
+    relocate(relatives_n_trait, .after = relatives_n) |>
+    mutate(person_id = as.character(person_id), relatives_kind = "parents") |>
     as.data.table()
 
-  d2_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relationship_kind))
-  d2_po_tte <- generate_failure(d2_fs_tte, 19, 11)
-  d2_po_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
-    relocate(failure_time, .after = person_id) |>
-    relocate(failure_status, .after = failure_time) |>
-    relocate(relatives, .after = failure_status) |>
-    relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "CAD", relationship_kind = "PO") |>
-    as.data.table()
-
-  tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-born_at, -dead_at_year) |>
-    arrange(person_id, disorder, relationship_kind) |>
-    select(person_id, born_at_year, disorder, failure_status, failure_time, relationship_kind, relatives, relatives_diagnosed)
+  tte <- rbindlist(list(t1_fs_tte, t2_fs_tte, t1_p_tte, t2_p_tte)) |> select(-birth_date, -death_year) |>
+    arrange(person_id, trait, relatives_kind) |>
+    select(person_id, birth_year, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait)
 
   return(tte)
 }
@@ -176,30 +182,24 @@ generate_pipeline_tte <- function(n_count) {
 # Expect handlers
 #=================================================================================
 
-expect_dataframe_equal <- function(a, b, ignore_cols = NULL) {
+are_dataframes_equal <- function(a, b, ignore_cols = NULL) {
   colnames_diff <- setdiff(colnames(a), colnames(b))
 
   if (length(colnames_diff) > 0) {
-    fail(
-      message = sprintf(
-        "columns differ: %s",
-        paste(
-          colnames_diff,
-          collapse = ", "
-        )
+    return(sprintf(
+      "columns differ: %s",
+      paste(
+        colnames_diff,
+        collapse = ", "
       )
-    )
-    return()
+    ))
   }
 
   if (nrow(a) != nrow(b)) {
-    fail(
-      message = sprintf(
+    return(sprintf(
         "numbers of rows differ: %d == %d",
         nrow(a), nrow(b)
-      )
-    )
-    return()
+    ))
   }
 
   if (is.null(ignore_cols)) {
@@ -240,22 +240,34 @@ expect_dataframe_equal <- function(a, b, ignore_cols = NULL) {
   failures_count <- length(failures)
 
   if (failures_count > 0) {
-    fail(
-      message = sprintf(
-        "found %d mismatches: \n\n%s",
-        failures_count,
-        paste(failures, collapse = "\n")
-      )
-    )
+    return(sprintf(
+      "found %d mismatches: \n\n%s",
+      failures_count,
+      paste(failures, collapse = "\n")
+    ))
   }
 
-  succeed()
+  return(TRUE)
+}
+
+expect_dataframe_equal <- function(a, b, ignore_cols = NULL) {
+  results <- are_dataframes_equal(a, b, ignore_cols)
+
+  if (results == TRUE) {
+    succeed()
+  } else {
+    fail(message = results)
+  }
 }
 
 expect_dataframe_not_equal <- function(a, b, ignore_cols = NULL) {
-  expect_failure(
-    expect_dataframe_equal(a, b, ignore_cols)
-  )
+  results <- are_dataframes_equal(a, b, ignore_cols)
+
+  if (results == TRUE) {
+    fail(message = "Expected dataframes to not be equal")
+  } else {
+    succeed()
+  }
 }
 
 #=================================================================================

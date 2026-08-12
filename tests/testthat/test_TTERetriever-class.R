@@ -77,6 +77,8 @@ describe("run_from_file", {
     tte_retriever$write_args(args, args_path)
 
     paths <- tte_retriever$run_from_file(output_prefix, args_path)
+
+    succeed()
   })
 
   it("works with more advanced args", {
@@ -103,6 +105,8 @@ describe("run_from_file", {
     tte_retriever$write_args(args, args_path)
 
     paths <- tte_retriever$run_from_file(output_prefix, args_path)
+
+    succeed()
   })
 })
 

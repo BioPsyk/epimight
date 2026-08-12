@@ -2,7 +2,7 @@
 
 with pkgs; mkShell {
   buildInputs = [
-    postgresql_13
+    postgresql
     python3
     python3Packages.watchdog
     python3Packages.psycopg2

@@ -12,6 +12,7 @@
 #' @export
 CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
   "CumulativeIncidenceAnalysis",
+  inherit = Analysis,
   private = list(
     args = NULL,
     #' @description
@@ -41,7 +42,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         }
       }
 
-      return(results)
+      results
     },
     #' @description
     #' Dynamically builds a dplyr mutate expression for the given columns.
@@ -63,47 +64,44 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         }
       }
 
-      results <- rlang::call2("mutate", as.symbol("group_results"), !!!results)
-
-      return(results)
+      rlang::call2("mutate", as.symbol("group_results"), !!!results)
     },
-    run_weighted_single = function(tte, earliest_onset, latest_onset) {
-      failure_time_max <- max(tte$failure_time)
+    run_weighted_single = function(tte) {
+      trait_age_max <- max(tte$trait_age)
 
-      weights <- tte |>
+      tte |>
         mutate(
-          weight_event_1 = ifelse(failure_status == 1, weight, 0.0),
-          weight_event_n = ifelse(failure_status != 0, weight, 0.0),
+          weight_event_1 = ifelse(trait_status == 1, weight, 0.0),
+          weight_event_n = ifelse(trait_status != 0, weight, 0.0),
         ) |>
-        group_by(failure_time) |>
+        group_by(trait_age) |>
         summarise(
           weight_all     = sum(weight),
           weight_event_1 = sum(weight_event_1),
           weight_event_n = sum(weight_event_n)
         ) |>
         ungroup() |>
-        # Make sure we have a row for `failure_time` from 0 up to `failure_time_max`
+        # Make sure we have a row for `trait_age` from 0 up to `trait_age_max`
         right_join(
           data.table(
-            failure_time = seq(0, failure_time_max)
+            trait_age = seq(0, trait_age_max)
           ),
-          by = join_by(failure_time)
+          by = join_by(trait_age)
         ) |>
         # The failure times that were filled in will have NA's in missing columns,
         # so we make sure to replace them with 0.0
         mutate(
           across(everything(), ~ replace_na(.x, 0.0))
         ) |>
-        # Risk needs to be accumulated starting from the largest failure_time value
-        arrange(desc(failure_time)) |>
+        # Risk needs to be accumulated starting from the largest trait_age value
+        arrange(desc(trait_age)) |>
         mutate(
           at_risk = cumsum(weight_all)
         ) |>
-        arrange(failure_time)
-
-      estimates <- weights |>
+        arrange(trait_age) |>
         filter(weight_event_n > 0.0) |>
         mutate(
+          # Kaplan-Meier survival estimate
           surv = ifelse(
             at_risk > 0.0,
             cumprod(1.0 - weight_event_n / at_risk),
@@ -116,76 +114,80 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
             ),
             cif_acc
           ),
-          cif = replace_na(lag(cif_acc), 0.0),
+          # Greenwoods formula
+          var = ifelse(
+            at_risk > 0.0,
+            (surv * surv) * cumsum(
+              weight_event_1 / (at_risk * (at_risk - weight_event_1))
+            ),
+            0.0
+          )
         ) |>
         filter(
-          failure_time   >= earliest_onset,
-          failure_time   <= latest_onset,
           weight_event_1 > 0.0
         ) |>
         mutate(
-          cases = cumsum(weight_event_1)
+          cif   = ifelse(trait_age == 0, 0, lag(cif_acc)),
+          cases = cumsum(weight_event_1),
+          var   = ifelse(trait_age == 0, 0, lag(var))
         ) |>
-        rename(time = failure_time) |>
-        select(time, cif, cases) |>
+        rename(age = trait_age) |>
+        select(age, cif, cases, var) |>
         mutate(
-          var = 0.0,
-          se  = 0.0,
-          l95 = 0.0,
-          u95 = 0.0
+          se  = sqrt(var),
+          l95 = cif - qnorm(0.975) * sqrt(var),
+          u95 = cif + qnorm(0.975) * sqrt(var),
         ) |>
+        relocate(var, .after = u95) |>
+        relocate(cases, .after = var) |>
         as.data.table()
-
-      return(estimates)
     },
     #' @description
     #' Runs CIF on the given TTE data as a single group.
     #'
     #' @param tte Data.table of TTE data to use.
-    #' @param earliest_onset Integer with the earliest age of onset to use.
-    #' @param latest_onset Integer with the latest age of onset to use.
     #' @returns Risk estimations.
-    run_single = function(tte, earliest_onset, latest_onset) {
+    run_single = function(tte) {
       if (!is.data.table(tte)) {
         stop("Given TTE was not a data.table")
       }
 
-      counts <- tte[, .N, by = .(failure_status, failure_time)]
+      counts <- tte[, .N, by = .(trait_status, trait_age)]
 
       # This check is needed because if we only have censored invidivuals
       # then cuminc will fail with an internal error.
-      events_amount <- counts[failure_status != 0]
+      events_amount <- counts[trait_status != 0]
 
       if (nrow(events_amount) == 0) return(NULL)
 
       if ("weight" %in% colnames(tte)) {
         return(
-          private$run_weighted_single(tte, earliest_onset, latest_onset)
+          private$run_weighted_single(tte)
         )
       }
 
       # We want to use the results from group 1 and for the status 1 (affected),
       # therefor we use the name `1 1` when selecting the data from the cuminc results:
       cuminc_results <- cuminc(
-        ftime   = tte$failure_time,
-        fstatus = tte$failure_status,
+        ftime   = tte$trait_age,
+        fstatus = tte$trait_status,
         cencode = 0
       )$`1 1`
 
       if (is.null(cuminc_results)) return(NULL)
 
       results <- data.table(
-        time = cuminc_results$time,
-        cif  = cuminc_results$est,
-        var  = cuminc_results$var
+        age = cuminc_results$time,
+        cif = cuminc_results$est,
+        var = cuminc_results$var
       )[
-        time >= earliest_onset & time <= latest_onset,
+        ,
         head(.SD, 1),
-        by = time
+        by = age
       ][
         ,
         .(
-          time,
+          age,
           cif,
           se  = sqrt(var),
           l95 = cif - qnorm(0.975) * sqrt(var),
@@ -195,25 +197,25 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       ]
 
       results <- counts[
-        failure_status == 1,
+        trait_status == 1,
         .(
-          time         = failure_time,
+          age          = trait_age,
           cases_amount = N
         )
       ][
         results,
-        on = .(time)
+        on = .(age)
       ][
         ,
         .(
-          time, cif, se, l95, u95, var,
+          age, cif, se, l95, u95, var,
           cases = cumsum(
             ifelse(is.na(cases_amount), 0, cases_amount)
           )
         )
       ]
 
-      return(results)
+      results
     }
   ),
   public = list(
@@ -229,44 +231,40 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           type     = "data.table",
           required = TRUE,
           columns  = list(
-            failure_status = list(
-              type     = "integer",
+            person_id = list(
+              type     = "string",
               required = TRUE
             ),
-            failure_time = list(
+            trait_status = list(
               type     = "integer",
-              required = TRUE
+              required = TRUE,
+              minimum  = 0
+            ),
+            trait_age = list(
+              type     = "integer",
+              required = TRUE,
+              minimum  = 0
             ),
             weight = list(
-              type = "numeric"
+              type    = "numeric",
+              minimum = 0,
+              maximum = 1
             )
           )
         ),
         stratify_columns = list(
           type  = "list",
           items = list(type = "string")
-        ),
-        earliest_onset = list(
-          type    = "integer",
-          default = 1,
-          minimum = 0
-        ),
-        latest_onset = list(
-          type    = "integer",
-          default = 100,
-          minimum = 0
         )
       )
 
       args <- validator$run(...)
 
+      self$assert_unique_individuals_tte(args$tte)
+
       if (!exists("stratify_columns", where = args) || length(args$stratify_columns) == 0) {
         return(
-          private$run_single(
-            tte            = args$tte,
-            earliest_onset = args$earliest_onset,
-            latest_onset   = args$latest_onset
-          )
+          private$run_single(args$tte)
         )
       }
 
@@ -287,11 +285,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
         if (nrow(group_tte) == 0) return(NULL)
 
-        group_results <- private$run_single(
-          tte            = group_tte,
-          earliest_onset = args$earliest_onset,
-          latest_onset   = args$latest_onset
-        )
+        group_results <- private$run_single(group_tte)
 
         if (is.null(group_results)) return(NULL)
 
@@ -299,16 +293,13 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           args$stratify_columns, permutations[idx, ]
         )
 
-        group_results <- rlang::eval_tidy(mutate_expr) |> collect()
-
-        return(group_results)
+        rlang::eval_tidy(mutate_expr) |> collect()
       }
 
       indexes       <- seq_len(nrow(permutations))
       group_results <- mclapply(indexes, runner)
-      results       <- rbindlist(group_results)
 
-      return(results)
+      rbindlist(group_results)
     }
   )
 )
