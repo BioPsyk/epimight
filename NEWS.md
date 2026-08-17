@@ -2,7 +2,7 @@
 
 ## Changed
 
-- `Pipeline-class$run` allows the user to specify different relationship kinds for h2 d1, h2 d2 and rg
+- `Pipeline-class$run` allows the user to specify different relative kinds for cohorts `fh1` and `fh2`
 - `CumulativeIncidenceAnalysis-class$run` now checks that each person only appears once in the given TTE data
 
 # IbpRegistryRiskEstimations 1.0.2
