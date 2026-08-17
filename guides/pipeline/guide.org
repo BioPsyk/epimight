@@ -435,6 +435,53 @@ results <- pipeline$run(
 This will give us the genetic correlation between the two disorders and all the intermediate results (cif and h2)
 in a named list with the members ~cif~, ~h2~ and ~rg~ that contain the results as ~data.tables~.
 
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:pipeline-dag
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/pipeline-dag.png :exports results
+@startuml
+!include <material7.4.47/Database/DatabaseClock>
+!include <material7.4.47/Science/Flask>
+!include <material/account>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ../diagrams/ibp.puml
+
+skinparam nodesep 80
+skinparam ranksep 80
+
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 1\nPopulation" as cif_d1_pop
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 1\nFamily history 1" as cif_d1_fh1
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 2\nPopulation" as cif_d2_pop
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 2\nFamily history 2" as cif_d2_fh2
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 1\nFamily history 2" as cif_d1_fh2
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **H2**\nDisorder 1" as h2_d1
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **H2**\nDisorder 2" as h2_d2
+rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **RG**" as rg
+
+
+cif_d2_pop -UP-> h2_d2
+cif_d2_fh2 --> h2_d2
+
+cif_d1_pop -UP-> h2_d1
+cif_d1_fh1 --> h2_d1
+
+cif_d1_pop -RIGHT-> rg
+cif_d1_fh2 -UP-> rg
+cif_d2_pop -LEFT-> rg
+h2_d1 --> rg
+h2_d2 --> rg
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Pipeline data flow
+#+RESULTS: fig:pipeline-dag
+[[file:../diagrams/pipeline-dag.png]]
+
 ** Cumulative incidence
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
