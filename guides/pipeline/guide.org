@@ -391,17 +391,20 @@ It accepts any additional columns used for stratification.
 
 * Running the pipeline
 
-After creating the pipeline instance, we run analyses by supplying the ~run~ function with:
+After creating the pipeline instance, we run the pipeline by supplying the ~run~ function with:
 
 - Disorder 1
   - Identifier
   - Earliest onset
   - Latest onset
+  - What kind of relatives to use for ~fh1~ cohort
+  - What coefficient of relationship to use for heritability
 - Disorder 2
   - Identifier
   - Earliest onset
   - Latest onset
-- Relationship kind
+  - What kind of relatives to use for ~fh2~ cohort
+  - What coefficient of relationship to use for heritability and genetic correlation
 - What stratification columns to use (if any)
 
 For example, if we want to run an analysis between schizophrenia and coronary artery disease of full siblings,
