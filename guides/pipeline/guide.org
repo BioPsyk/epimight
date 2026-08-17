@@ -237,14 +237,16 @@ The most work you have to do is to format the data in a way that the pipeline ex
 
 * Glossary
 
-- ~d1~ :: Disorder 1
-- ~d2~ :: Disorder 2
-- ~pop~ :: Population or "target cohort"
-- ~fh1~ :: Family history of disorder 1, individuals with at least 1 relative diagnosed with ~d1~
-- ~fh2~ :: Family history of disorder 2, individuals with at least 1 relative diagnosed with ~d2~
-- ~cif~ :: Cumulative incidence function
-- ~h2~ :: Heritability
-- ~rg~ :: Genetic correlation
+| Term  | Description                                                                            |
+|-------+----------------------------------------------------------------------------------------|
+| ~d1~  | Disorder 1                                                                             |
+| ~d2~  | Disorder 2                                                                             |
+| ~pop~ | Population or "target cohort"                                                          |
+| ~fh1~ | Family history of disorder 1, individuals with at least 1 relative diagnosed with ~d1~ |
+| ~fh2~ | Family history of disorder 2, individuals with at least 1 relative diagnosed with ~d2~ |
+| ~cif~ | Cumulative incidence function                                                          |
+| ~h2~  | Heritability                                                                           |
+| ~rg~  | Genetic correlation                                                                    |
 
 * Creating the time-to-event data
 
