@@ -478,7 +478,7 @@ cif_d1_pop -UP-> h2_d1
 cif_d1_fh1 --> h2_d1
 
 cif_d1_pop -RIGHT-> rg
-cif_d1_fh2 -UP-> rg
+cif_d1_fh2 ---> rg
 cif_d2_pop -LEFT-> rg
 h2_d1 --> rg
 h2_d2 --> rg
