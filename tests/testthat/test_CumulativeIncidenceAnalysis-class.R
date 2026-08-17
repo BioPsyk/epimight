@@ -20,7 +20,7 @@ tte <- read_csv(
   ) |>
   filter(
     disorder       == "SCZ",
-    relatives_kind == "p"
+    relatives_kind == "parents"
   ) |>
   select(person_id, failure_status, failure_time, weight, relatives, relatives_diagnosed) |>
   as.data.table()

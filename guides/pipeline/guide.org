@@ -282,7 +282,7 @@ tte |>
 |     99999 |         1983 |
 
 Then for each kind of relative, we need to know many relatives each individual has. In the test data
-of this guide, there are two kinds of relatives labeled ~p~ (parents) and ~fs~ (full siblings):
+of this guide, there are two kinds of relatives:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
@@ -293,17 +293,17 @@ tte |>
 #+RESULTS:
 | person_id | born_at_year | relatives_kind | relatives |
 |-----------+--------------+----------------+-----------|
-|     99996 |         2013 | fs             |         0 |
-|     99996 |         2013 | p              |         0 |
-|     99997 |         1961 | fs             |         4 |
-|     99997 |         1961 | p              |         4 |
-|     99998 |         2011 | fs             |         3 |
-|     99998 |         2011 | p              |         3 |
-|     99999 |         1983 | fs             |         0 |
-|     99999 |         1983 | p              |         0 |
+|     99996 |         2013 | full_siblings  |         0 |
+|     99996 |         2013 | parents        |         0 |
+|     99997 |         1961 | full_siblings  |         4 |
+|     99997 |         1961 | parents        |         4 |
+|     99998 |         2011 | full_siblings  |         3 |
+|     99998 |         2011 | parents        |         3 |
+|     99999 |         1983 | full_siblings  |         0 |
+|     99999 |         1983 | parents        |         0 |
 
 Note that you are free to use whatever label you want in the ~relatives_kind~ column.
-The label is only used to filter out rows for the two family history cohorts.
+The label is only used to filter out rows for cohorts selection.
 
 Then for each disorder, we need to know:
 
@@ -320,22 +320,25 @@ tte |> tail(4 * 4)
 #+RESULTS:
 | person_id | born_at_year | disorder | failure_status | failure_time | relatives_kind | relatives | relatives_diagnosed |
 |-----------+--------------+----------+----------------+--------------+----------------+-----------+---------------------|
-|     99996 |         2013 | CAD      |              0 |           13 | fs             |         0 |                   0 |
-|     99996 |         2013 | CAD      |              0 |           13 | p              |         0 |                   0 |
-|     99996 |         2013 | SCZ      |              1 |            4 | fs             |         0 |                   0 |
-|     99996 |         2013 | SCZ      |              0 |           13 | p              |         0 |                   0 |
-|     99997 |         1961 | CAD      |              1 |           31 | fs             |         4 |                   2 |
-|     99997 |         1961 | CAD      |              1 |           31 | p              |         4 |                   2 |
-|     99997 |         1961 | SCZ      |              2 |           50 | fs             |         4 |                   0 |
-|     99997 |         1961 | SCZ      |              1 |           31 | p              |         4 |                   0 |
-|     99998 |         2011 | CAD      |              1 |            1 | fs             |         3 |                   2 |
-|     99998 |         2011 | CAD      |              1 |            1 | p              |         3 |                   0 |
-|     99998 |         2011 | SCZ      |              0 |           15 | fs             |         3 |                   1 |
-|     99998 |         2011 | SCZ      |              1 |            1 | p              |         3 |                   2 |
-|     99999 |         1983 | CAD      |              0 |           43 | fs             |         0 |                   0 |
-|     99999 |         1983 | CAD      |              0 |           43 | p              |         0 |                   0 |
-|     99999 |         1983 | SCZ      |              0 |           43 | fs             |         0 |                   0 |
-|     99999 |         1983 | SCZ      |              0 |           43 | p              |         0 |                   0 |
+|     99996 |         2013 | CAD      |              0 |           13 | full_siblings  |         0 |                   0 |
+|     99996 |         2013 | CAD      |              0 |           13 | parents        |         0 |                   0 |
+|     99996 |         2013 | SCZ      |              1 |            4 | full_siblings  |         0 |                   0 |
+|     99996 |         2013 | SCZ      |              0 |           13 | parents        |         0 |                   0 |
+|     99997 |         1961 | CAD      |              1 |           31 | full_siblings  |         4 |                   2 |
+|     99997 |         1961 | CAD      |              1 |           31 | parents        |         4 |                   2 |
+|     99997 |         1961 | SCZ      |              2 |           50 | full_siblings  |         4 |                   0 |
+|     99997 |         1961 | SCZ      |              1 |           31 | parents        |         4 |                   0 |
+|     99998 |         2011 | CAD      |              1 |            1 | full_siblings  |         3 |                   2 |
+|     99998 |         2011 | CAD      |              1 |            1 | parents        |         3 |                   0 |
+|     99998 |         2011 | SCZ      |              0 |           15 | full_siblings  |         3 |                   1 |
+|     99998 |         2011 | SCZ      |              1 |            1 | parents        |         3 |                   2 |
+|     99999 |         1983 | CAD      |              0 |           43 | full_siblings  |         0 |                   0 |
+|     99999 |         1983 | CAD      |              0 |           43 | parents        |         0 |                   0 |
+|     99999 |         1983 | SCZ      |              0 |           43 | full_siblings  |         0 |                   0 |
+|     99999 |         1983 | SCZ      |              0 |           43 | parents        |         0 |                   0 |
+
+Note that you are free to use whatever label you want in the ~disorder~ column.
+The label is only used to filter out rows for disorder selection.
 
 * Setting up the pipeline
 
@@ -377,8 +380,8 @@ The supplied pool must be a ~data.table~ with the following required columns:
     - ~2~ (competing risk)
 - ~failure_time~
   - Must be numeric, minimum ~0.0~
-- ~relationship_kind~
-  - Must be one of these strings: [[../data/relationship-kinds.org][names(epimight:::relationship_kinds)]]
+- ~relatives_kind~
+  - Must be a string
 - ~relatives~
   - Must be an integer, minimum ~0~
 - ~relatives_diagnosed~
@@ -410,14 +413,14 @@ results <- pipeline$run(
     id                    = "SCZ",
     earliest_onset        = 1,
     latest_onset          = 100,
-    relatives_kind        = "p",
+    relatives_kind        = "parents",
     relatives_coefficient = 0.5
   ),
   disorder2 = list(
     id                    = "CAD",
     earliest_onset        = 1,
     latest_onset          = 100,
-    relatives_kind        = "p",
+    relatives_kind        = "full_siblings",
     relatives_coefficient = 0.5
   ),
   stratify_columns = list("born_at_year")

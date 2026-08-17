@@ -64,7 +64,7 @@ describe("initialize", {
         failure_time        = c(10, 20),
         relatives           = c(2, 2),
         relatives_diagnosed = c(0, 1),
-        relatives_kind      = c("p", "p")
+        relatives_kind      = c("parents", "parents")
       )
     ))
   })
@@ -79,7 +79,7 @@ describe("initialize", {
         failure_time        = c(10, 20),
         relatives           = c(2, 2),
         relatives_diagnosed = c(0, 1),
-        relatives_kind      = c("p", "p")
+        relatives_kind      = c("parents", "parents")
       )
     )
   })
@@ -99,7 +99,7 @@ describe("get_tte", {
       list(id = "SCZ"),
       list(
         id             = "unknown",
-        relatives_kind = "fs"
+        relatives_kind = "full_siblings"
       ),
       list("born_at_year")
     ))
@@ -133,7 +133,7 @@ describe("get_tte", {
       list(id = "SCZ"),
       list(
         id             = "SCZ",
-        relatives_kind = "p"
+        relatives_kind = "parents"
       ),
       list("born_at_year"),
       TRUE
@@ -156,14 +156,14 @@ describe("run", {
         id                    = "unknown",
         earliest_onset        = 1,
         latest_onset          = 100,
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
       disorder2 = list(
         id                    = "CAD",
         earliest_onset        = 0,
         latest_onset          = 100,
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
     ))
@@ -173,14 +173,14 @@ describe("run", {
         id                    = "SCZ",
         earliest_onset        = 1,
         latest_onset          = 100,
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
       disorder2 = list(
         id                    = "unknown",
         earliest_onset        = 0,
         latest_onset          = 100,
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
     ))
@@ -190,12 +190,12 @@ describe("run", {
     expect_error(pipeline$run(
       disorder1 = list(
         id                    = "SCZ",
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
       disorder2 = list(
         id                    = "CAD",
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
       draws = 2,
@@ -207,12 +207,12 @@ describe("run", {
     results <- pipeline$run(
       disorder1 = list(
         id                    = "SCZ",
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
       disorder2 = list(
         id                    = "CAD",
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
       stratify_columns = list("born_at_year"),
@@ -222,12 +222,12 @@ describe("run", {
     weighted_results <- pipeline$run(
       disorder1 = list(
         id                    = "SCZ",
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
       disorder2 = list(
         id                    = "CAD",
-        relatives_kind        = "p",
+        relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
       stratify_columns = list("born_at_year"),

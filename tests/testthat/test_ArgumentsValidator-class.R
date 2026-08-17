@@ -28,7 +28,7 @@ describe("non-named lists arguments", {
         relatives_kind = list(
           required = TRUE,
           type     = "string",
-          enum     = list("p", "fs")
+          enum     = list("parents", "full_siblings")
         )
       )
     ),
@@ -52,7 +52,7 @@ describe("non-named lists arguments", {
         relatives_kind = list(
           required = TRUE,
           type     = "string",
-          enum     = list("p", "fs")
+          enum     = list("parents", "full_siblings")
         )
       )
     ),
@@ -65,9 +65,9 @@ describe("non-named lists arguments", {
 
   it("handles all values given", {
     d1_id      <- "SCZ"
-    d1_relkind <- "fs"
+    d1_relkind <- "full_siblings"
     d2_id      <- "CAD"
-    d2_relkind <- "p"
+    d2_relkind <- "parents"
 
     args <- validator$run(
       list(
@@ -93,9 +93,9 @@ describe("non-named lists arguments", {
 
   it("handles missing values in the middle", {
     d1_id      <- "SCZ"
-    d1_relkind <- "fs"
+    d1_relkind <- "full_siblings"
     d2_id      <- "CAD"
-    d2_relkind <- "p"
+    d2_relkind <- "parents"
 
     args <- validator$run(
       list(

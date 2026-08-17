@@ -132,7 +132,7 @@ generate_pipeline_tte <- function(n_count) {
     relocate(failure_status, .after = failure_time) |>
     relocate(relatives, .after = failure_status) |>
     relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "SCZ", relatives_kind = "fs") |>
+    mutate(person_id = as.character(person_id), disorder = "SCZ", relatives_kind = "full_siblings") |>
     as.data.table()
 
   d2_fs_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relatives_kind))
@@ -142,7 +142,7 @@ generate_pipeline_tte <- function(n_count) {
     relocate(failure_status, .after = failure_time) |>
     relocate(relatives, .after = failure_status) |>
     relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "CAD", relatives_kind = "fs") |>
+    mutate(person_id = as.character(person_id), disorder = "CAD", relatives_kind = "full_siblings") |>
     as.data.table()
 
   d1_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relatives_kind))
@@ -152,7 +152,7 @@ generate_pipeline_tte <- function(n_count) {
     relocate(failure_status, .after = failure_time) |>
     relocate(relatives, .after = failure_status) |>
     relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "SCZ", relatives_kind = "p") |>
+    mutate(person_id = as.character(person_id), disorder = "SCZ", relatives_kind = "parents") |>
     as.data.table()
 
   d2_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relatives_kind))
@@ -162,7 +162,7 @@ generate_pipeline_tte <- function(n_count) {
     relocate(failure_status, .after = failure_time) |>
     relocate(relatives, .after = failure_status) |>
     relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "CAD", relatives_kind = "p") |>
+    mutate(person_id = as.character(person_id), disorder = "CAD", relatives_kind = "parents") |>
     as.data.table()
 
   tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-born_at, -dead_at_year) |>
