@@ -441,12 +441,10 @@ in a named list with the members ~cif~, ~h2~ and ~rg~ that contain the results a
 #+ATTR_HTML: :style max-width: 100%;
 #+BEGIN_SRC plantuml :file ../diagrams/pipeline-dag.png :exports results
 @startuml
-!include <material7.4.47/Database/DatabaseClock>
-!include <material7.4.47/Science/Flask>
-!include <material/account>
-!include <material/chart_line>
-!include <material/data>
-!include <material/database>
+!include <material7.4.47/AccountUser/AccountGroup>
+!include <material7.4.47/Weather/MoonFull>
+!include <material7.4.47/Weather/MoonFirstQuarter>
+!include <material7.4.47/Weather/MoonLastQuarter>
 !include <material/matrix>
 !include ../diagrams/ibp.puml
 
@@ -454,19 +452,24 @@ skinparam nodesep 80
 skinparam ranksep 80
 
 <style>
+  root {
+    LineColor #333333
+    FontColor #111111
+  }
+
   rectangle {
     RoundCorner 0
   }
 </style>
 
-storage "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 1\nPopulation" as cif_d1_pop
-storage "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 1\nFamily history 1" as cif_d1_fh1
-storage "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 2\nPopulation" as cif_d2_pop
-storage "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 2\nFamily history 2" as cif_d2_fh2
-storage "<color:#255ba7><$ma_matrix{scale=0.35}></color> **CIF**\nDisorder 1\nFamily history 2" as cif_d1_fh2
-rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **H2**\nDisorder 1" as h2_d1
-rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color> **H2**\nDisorder 2" as h2_d2
-hexagon "<color:#255ba7><$ma_matrix{scale=0.35}></color> **RG**" as rg
+storage "<$mdiMoonFull{scale=0.35}> **CIF**" as cif_d1_pop #dd2e44
+storage "<$mdiMoonLastQuarter{scale=0.35}> **CIF**" as cif_d1_fh1 #dd2e44
+storage "<$mdiMoonFull{scale=0.35}> **CIF**" as cif_d2_pop #54adef
+storage "<$mdiMoonFirstQuarter{scale=0.35}> **CIF**" as cif_d2_fh2 #54adef
+storage "<$mdiMoonFirstQuarter{scale=0.35}> **CIF**" as cif_d1_fh2 #dd2e44
+rectangle "**H2**" as h2_d1 #dd2e44
+rectangle "**H2**" as h2_d2 #54adef
+hexagon "**RG**" as rg #ffd600
 
 cif_d2_pop -UP-> h2_d2
 cif_d2_fh2 --> h2_d2
@@ -479,6 +482,17 @@ cif_d1_fh2 -UP-> rg
 cif_d2_pop -LEFT-> rg
 h2_d1 --> rg
 h2_d2 --> rg
+
+legend left
+  <#silver>|= Color|= Disorder|
+  |<b><:closed_book:></b>|Disorder 1|
+  |<b><:green_book:></b>|Disorder 2|
+
+  <#silver>|= Icon|= Cohort|
+  |<b><$mdiMoonFull{scale=0.35}></b>|Population|
+  |<b><$mdiMoonLastQuarter{scale=0.35}></b>|Family history 1|
+  |<b><$mdiMoonFirstQuarter{scale=0.35}></b>|Family history 2|
+endlegend
 @enduml
 #+END_SRC
 
