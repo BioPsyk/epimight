@@ -87,6 +87,77 @@ correlation between two disorders stratified by birth year.
 - Any data shown in this guide comes from [[../data/pipeline-tte.csv][this randomly generated time-to-event dataset]]
 - All code shown in this guide have been written to [[./guide.R][this R file]]
 
+* How it works
+
+The pipeline produces a genetic correlation between two disorders by using
+time-to-event data from 3 different cohorts.
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:pipeline-dag
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/pipeline-dag.png :exports results
+@startuml
+!include <material7.4.47/AccountUser/AccountGroup>
+!include <material7.4.47/Weather/MoonFull>
+!include <material7.4.47/Weather/MoonFirstQuarter>
+!include <material7.4.47/Weather/MoonLastQuarter>
+!include <material/matrix>
+!include ../diagrams/ibp.puml
+
+skinparam nodesep 80
+skinparam ranksep 80
+
+<style>
+  root {
+    LineColor #333333
+    FontColor #111111
+  }
+
+  rectangle {
+    RoundCorner 0
+  }
+</style>
+
+storage "<$mdiMoonFull{scale=0.35}> **CIF**" as cif_d1_pop #dd2e44
+storage "<$mdiMoonLastQuarter{scale=0.35}> **CIF**" as cif_d1_fh1 #dd2e44
+storage "<$mdiMoonFull{scale=0.35}> **CIF**" as cif_d2_pop #54adef
+storage "<$mdiMoonFirstQuarter{scale=0.35}> **CIF**" as cif_d2_fh2 #54adef
+storage "<$mdiMoonFirstQuarter{scale=0.35}> **CIF**" as cif_d1_fh2 #dd2e44
+rectangle "**H2**" as h2_d1 #dd2e44
+rectangle "**H2**" as h2_d2 #54adef
+hexagon "**RG**" as rg #ffd600
+
+cif_d2_pop -UP-> h2_d2
+cif_d2_fh2 --> h2_d2
+
+cif_d1_pop -UP-> h2_d1
+cif_d1_fh1 --> h2_d1
+
+cif_d1_pop -RIGHT-> rg
+cif_d1_fh2 ---> rg
+cif_d2_pop -LEFT-> rg
+h2_d1 --> rg
+h2_d2 --> rg
+
+legend left
+  <#silver>|= Color|= Disorder|
+  |<b><:closed_book:></b>|Disorder 1|
+  |<b><:blue_book:></b>|Disorder 2|
+
+  <#silver>|= Icon|= Cohort|
+  |<b><$mdiMoonFull{scale=0.35}></b>|Population|
+  |<b><$mdiMoonLastQuarter{scale=0.35}></b>|Family history 1|
+  |<b><$mdiMoonFirstQuarter{scale=0.35}></b>|Family history 2|
+endlegend
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Pipeline data flow
+#+RESULTS: fig:pipeline-dag
+[[file:../diagrams/pipeline-dag.png]]
+
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
 #+NAME: fig:pipeline-component-diagram
@@ -434,72 +505,6 @@ results <- pipeline$run(
 
 This will give us the genetic correlation between the two disorders and all the intermediate results (cif and h2)
 in a named list with the members ~cif~, ~h2~ and ~rg~ that contain the results as ~data.tables~.
-
-#+LATEX: \vspace{0.5cm}
-#+LATEX: \begin{center}
-#+NAME: fig:pipeline-dag
-#+ATTR_HTML: :style max-width: 100%;
-#+BEGIN_SRC plantuml :file ../diagrams/pipeline-dag.png :exports results
-@startuml
-!include <material7.4.47/AccountUser/AccountGroup>
-!include <material7.4.47/Weather/MoonFull>
-!include <material7.4.47/Weather/MoonFirstQuarter>
-!include <material7.4.47/Weather/MoonLastQuarter>
-!include <material/matrix>
-!include ../diagrams/ibp.puml
-
-skinparam nodesep 80
-skinparam ranksep 80
-
-<style>
-  root {
-    LineColor #333333
-    FontColor #111111
-  }
-
-  rectangle {
-    RoundCorner 0
-  }
-</style>
-
-storage "<$mdiMoonFull{scale=0.35}> **CIF**" as cif_d1_pop #dd2e44
-storage "<$mdiMoonLastQuarter{scale=0.35}> **CIF**" as cif_d1_fh1 #dd2e44
-storage "<$mdiMoonFull{scale=0.35}> **CIF**" as cif_d2_pop #54adef
-storage "<$mdiMoonFirstQuarter{scale=0.35}> **CIF**" as cif_d2_fh2 #54adef
-storage "<$mdiMoonFirstQuarter{scale=0.35}> **CIF**" as cif_d1_fh2 #dd2e44
-rectangle "**H2**" as h2_d1 #dd2e44
-rectangle "**H2**" as h2_d2 #54adef
-hexagon "**RG**" as rg #ffd600
-
-cif_d2_pop -UP-> h2_d2
-cif_d2_fh2 --> h2_d2
-
-cif_d1_pop -UP-> h2_d1
-cif_d1_fh1 --> h2_d1
-
-cif_d1_pop -RIGHT-> rg
-cif_d1_fh2 ---> rg
-cif_d2_pop -LEFT-> rg
-h2_d1 --> rg
-h2_d2 --> rg
-
-legend left
-  <#silver>|= Color|= Disorder|
-  |<b><:closed_book:></b>|Disorder 1|
-  |<b><:green_book:></b>|Disorder 2|
-
-  <#silver>|= Icon|= Cohort|
-  |<b><$mdiMoonFull{scale=0.35}></b>|Population|
-  |<b><$mdiMoonLastQuarter{scale=0.35}></b>|Family history 1|
-  |<b><$mdiMoonFirstQuarter{scale=0.35}></b>|Family history 2|
-endlegend
-@enduml
-#+END_SRC
-
-#+ATTR_LATEX: :placement [H]
-#+CAPTION: Pipeline data flow
-#+RESULTS: fig:pipeline-dag
-[[file:../diagrams/pipeline-dag.png]]
 
 ** Cumulative incidence
 
