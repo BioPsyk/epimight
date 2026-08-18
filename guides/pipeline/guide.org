@@ -126,8 +126,7 @@ That produce 7 intermediate results that the genetic correlation is derived from
 | ~h2_d1~      | Heritability of disorder 1                  |
 | ~h2_d2~      | Heritability of disorder 2                  |
 
-The dependecy diagram below shows how the results from the different analyzes
-depend on each other:
+The diagram below shows how these results are combined to produce the genetic correlation:
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -196,15 +195,9 @@ endlegend
 #+RESULTS: fig:pipeline-dag
 [[file:../diagrams/pipeline-dag.png]]
 
-In order to produce these results, the pipeline needs to know the following of each individual:
+In order to produce a genetic correlation between 2 disorders, the pipeline needs to know
 
-- How to uniquely identify the individual in the population
-- Their failure status/time of disorder 1
-- Their failure status/time of disorder 2
-- For each kind of relative (parents, full siblings, cousins, etc.):
-  - How many relatives the individual have of that kind
-  - How many of those relatives are diagnosed with disorder 1
-  - How many of those relatives are diagnosed with disorder 2
+- Which individuals
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
