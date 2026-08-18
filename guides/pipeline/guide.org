@@ -126,7 +126,7 @@ That produce 7 intermediate results that the genetic correlation is derived from
 | ~h2_d1~      | Heritability of disorder 1                  |
 | ~h2_d2~      | Heritability of disorder 2                  |
 
-The diagram below shows from which cohorts each result originates from and how they
+The diagram below shows which cohorts each result originates from and how they
 are combined to finally produce the genetic correlation.
 
 #+LATEX: \vspace{0.5cm}
