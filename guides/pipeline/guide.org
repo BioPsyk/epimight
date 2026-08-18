@@ -96,13 +96,35 @@ The pipeline produces a genetic correlation between 2 disorders:
 | ~d1~ | Disorder 1  |
 | ~d2~ | Disorder 2  |
 
-By using time-to-event data from 3 different cohorts:
+By using time-to-event data (referred to as ~tte~) from 3 different cohorts:
 
 | Term  | Description                                              |
 |-------+----------------------------------------------------------|
 | ~pop~ | Population or "target cohort"                            |
 | ~fh1~ | Individuals with at least 1 relative diagnosed with ~d1~ |
 | ~fh2~ | Individuals with at least 1 relative diagnosed with ~d2~ |
+
+Note: ~fh~ is short for "family history" and the number refers to the disorder.
+
+The pipeline consists of 3 analyzes:
+
+| Term  | Description                                                                            |
+|-------+----------------------------------------------------------------------------------------|
+| ~cif~ | Cumulative incidence function                                                          |
+| ~h2~  | Heritability                                                                           |
+| ~rg~  | Genetic correlation                                                                    |
+
+That produce 7 intermediate results that the final genetic correlation is derived from:
+
+| Term         | Description                                           |
+|--------------+-------------------------------------------------------|
+| ~cif_d1_pop~ | CIF of disorder 1, population                         |
+| ~cif_d1_fh1~ | CIF of disorder 1, family history disorder 1          |
+| ~cif_d1_fh2~ | CIF of disorder 1, family history disorder 2          |
+| ~cif_d2_pop~ | CIF of disorder 1, population                         |
+| ~cif_d2_fh2~ | CIF of disorder 1, family history disorder 2          |
+| ~h2_d1~      | Heritability of disorder 1                            |
+| ~h2_d2~      | Heritability of disorder 2                            |
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
