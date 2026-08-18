@@ -140,7 +140,7 @@ are combined to finally produce the genetic correlation.
 !include ../diagrams/ibp.puml
 
 skinparam nodesep 80
-skinparam ranksep 80
+skinparam ranksep 50
 
 <style>
   root {
