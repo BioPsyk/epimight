@@ -182,13 +182,9 @@ h2_d1 --> rg
 h2_d2 --> rg
 
 legend left
-  <#silver>|= Color|= Disorder|
-  |<#dd2e44>|Disorder 1|
-  |<#54adef>|Disorder 2|
-
-  <#silver>|= Icon|= Cohort|
-  |<b><$mdiAccount{scale=0.35}></b>|Population|
-  |<b><$mdiHumanMaleFemaleChild{scale=0.35}></b>|Family history|
+  <#silver>|= Color|= Disorder|= Icon|= Cohort|
+  |<#dd2e44>|Disorder 1|<b><$mdiAccount{scale=0.35}></b>|Population|
+  |<#54adef>|Disorder 2|<b><$mdiHumanMaleFemaleChild{scale=0.35}></b>|Family history|
 endlegend
 @enduml
 #+END_SRC
@@ -200,7 +196,8 @@ endlegend
 
 In order to produce a genetic correlation between 2 disorders, the pipeline needs to know
 
-- Which individuals
+- Which disorder is disorder 1
+- Which disorder is disorder 2
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -349,19 +346,6 @@ and type of relatives you want to analyse and it will output cumulative incidenc
 and genetic correlations.
 
 The most work you have to do is to format the data in a way that the pipeline expects.
-
-* Glossary
-
-| Term  | Description                                                                            |
-|-------+----------------------------------------------------------------------------------------|
-| ~d1~  | Disorder 1                                                                             |
-| ~d2~  | Disorder 2                                                                             |
-| ~pop~ | Population or "target cohort"                                                          |
-| ~fh1~ | Family history of disorder 1, individuals with at least 1 relative diagnosed with ~d1~ |
-| ~fh2~ | Family history of disorder 2, individuals with at least 1 relative diagnosed with ~d2~ |
-| ~cif~ | Cumulative incidence function                                                          |
-| ~h2~  | Heritability                                                                           |
-| ~rg~  | Genetic correlation                                                                    |
 
 * Creating the time-to-event data
 
