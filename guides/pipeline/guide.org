@@ -181,7 +181,7 @@ file "**CIF**" as cif_d2_pop #54adef
 file "**CIF**" as cif_d2_fh2 #54adef
 file "**H2**" as h2_d1 #dd2e44
 file "**H2**" as h2_d2 #54adef
-rectangle "**RG**" as rg #ffd600
+file "**RG**" as rg #ffd600
 
 legend left
   <#silver>|= Color|= Disorder|
