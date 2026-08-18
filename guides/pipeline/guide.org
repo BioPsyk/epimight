@@ -134,12 +134,8 @@ The diagram below shows how these results are combined to produce the genetic co
 #+ATTR_HTML: :style max-width: 100%;
 #+BEGIN_SRC plantuml :file ../diagrams/pipeline-dag.png :exports results
 @startuml
-!include <material7.4.47/AccountUser/account>
+!include <material7.4.47/AccountUser/AccountGroup>
 !include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
-!include <material7.4.47/Weather/MoonFull>
-!include <material7.4.47/Database/SetAll>
-!include <material7.4.47/Database/SetLeft>
-!include <material7.4.47/Database/SetRight>
 !include ../diagrams/ibp.puml
 
 skinparam nodesep 80
@@ -158,9 +154,11 @@ skinparam ranksep 80
   }
 </style>
 
-actor "Population" as pop
-actor "Family history 1" as fh1
-actor "Family history 2" as fh2
+skinparam defaultTextAlignment center
+
+card "<$mdiAccountGroup{scale=1}>\nPopulation" as pop
+card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history 1" as fh1
+card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history 2" as fh2
 file "**CIF**" as cif_d1_pop #dd2e44
 file "**CIF**" as cif_d1_fh1 #dd2e44
 file "**CIF**" as cif_d1_fh2 #dd2e44
@@ -168,7 +166,7 @@ file "**CIF**" as cif_d2_pop #54adef
 file "**CIF**" as cif_d2_fh2 #54adef
 file "**H2**" as h2_d1 #dd2e44
 file "**H2**" as h2_d2 #54adef
-file "**RG**" as rg #ffd600
+rectangle "**RG**" as rg #ffd600
 
 legend left
   <#silver>|= Color|= Disorder|
