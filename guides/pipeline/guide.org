@@ -100,6 +100,7 @@ time-to-event data from 3 different cohorts.
 @startuml
 !include <material7.4.47/AccountUser/account>
 !include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
+!include <material7.4.47/Weather/MoonFull>
 !include ../diagrams/ibp.puml
 
 skinparam nodesep 80
@@ -141,8 +142,8 @@ h2_d2 --> rg
 
 legend left
   <#silver>|= Color|= Disorder|
-  |<b><:closed_book:></b>|Disorder 1|
-  |<b><:blue_book:></b>|Disorder 2|
+  |<#dd2e44>|Disorder 1|
+  |<#54adef>|Disorder 2|
 
   <#silver>|= Icon|= Cohort|
   |<b><$mdiAccount{scale=0.35}></b>|Population|
