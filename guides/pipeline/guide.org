@@ -139,13 +139,25 @@ are combined to finally produce the genetic correlation.
 !include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
 !include ../diagrams/ibp.puml
 
+
 skinparam nodesep 80
 skinparam ranksep 50
 
 <style>
   root {
-    LineColor #333333
     FontColor #111111
+  }
+
+  title {
+    LineColor transparent
+  }
+
+  file {
+    LineColor #333333
+  }
+
+  rectangle {
+    LineColor #333333
   }
 
   card {
@@ -156,6 +168,8 @@ skinparam ranksep 50
 </style>
 
 skinparam defaultTextAlignment center
+
+title "**Data flow**\nCohorts and analysis results"
 
 card "<$mdiAccountGroup{scale=1}>\nPopulation" as pop
 card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nDisorder 1" as fh1
