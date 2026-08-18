@@ -137,6 +137,9 @@ The diagram below shows how these results are combined to produce the genetic co
 !include <material7.4.47/AccountUser/account>
 !include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
 !include <material7.4.47/Weather/MoonFull>
+!include <material7.4.47/Database/SetAll>
+!include <material7.4.47/Database/SetLeft>
+!include <material7.4.47/Database/SetRight>
 !include ../diagrams/ibp.puml
 
 skinparam nodesep 80
@@ -155,19 +158,25 @@ skinparam ranksep 80
   }
 </style>
 
-card "|<#dd2e44>**CIF**|<#dd2e44><$mdiAccount{scale=0.35}>|" as cif_d1_pop
-card "|<#dd2e44>**CIF**|<#dd2e44><$mdiHumanMaleFemaleChild{scale=0.35}>|" as cif_d1_fh1
-card "|<#dd2e44>**CIF**|<#54adef><$mdiHumanMaleFemaleChild{scale=0.35}>|" as cif_d1_fh2
-card "|<#54adef>**CIF**|<#54adef><$mdiAccount{scale=0.35}>|" as cif_d2_pop
-card "|<#54adef>**CIF**|<#54adef><$mdiHumanMaleFemaleChild{scale=0.35}>|" as cif_d2_fh2
+actor "Population" as pop
+actor "Family history 1" as fh1
+actor "Family history 2" as fh2
 
-' card "<#dd2e44>|**H2**|<$mdiAccount{scale=0.35}>|<$mdiHumanMaleFemaleChild{scale=0.35}>|" as h2_d1
-' card "<#54adef>|**H2**|<$mdiAccount{scale=0.35}>|<$mdiHumanMaleFemaleChild{scale=0.35}>|" as h2_d2
-' card "|<#ffd600>**RG**|<#dd2e44><$mdiAccount{scale=0.35}>|<#dd2e44><$mdiHumanMaleFemaleChild{scale=0.35}>|<#54adef><$mdiAccount{scale=0.35}>|<#54adef><$mdiHumanMaleFemaleChild{scale=0.35}>|" as rg
+rectangle "**CIF**" as cif_d1_pop #dd2e44
+rectangle "**CIF**" as cif_d1_fh1 #dd2e44
+rectangle "**CIF**" as cif_d1_fh2 #dd2e44
+rectangle "**CIF**" as cif_d2_pop #54adef
+rectangle "**CIF**" as cif_d2_fh2 #54adef
 
 rectangle "**H2**" as h2_d1 #dd2e44
 rectangle "**H2**" as h2_d2 #54adef
-hexagon "**RG**" as rg #ffd600
+rectangle "**RG**" as rg #ffd600
+
+pop -UP-> cif_d2_pop
+pop -UP-> cif_d1_pop
+fh1 --> cif_d1_fh1
+fh2 --> cif_d1_fh2
+fh2 --> cif_d2_fh2
 
 cif_d2_pop -UP-> h2_d2
 cif_d2_fh2 --> h2_d2
@@ -182,9 +191,9 @@ h2_d1 --> rg
 h2_d2 --> rg
 
 legend left
-  <#silver>|= Color|= Disorder|= Icon|= Cohort|
-  |<#dd2e44>|Disorder 1|<b><$mdiAccount{scale=0.35}></b>|Population|
-  |<#54adef>|Disorder 2|<b><$mdiHumanMaleFemaleChild{scale=0.35}></b>|Family history|
+  <#silver>|= Color|= Disorder|
+  |<#dd2e44>|Disorder 1|
+  |<#54adef>|Disorder 2|
 endlegend
 @enduml
 #+END_SRC
