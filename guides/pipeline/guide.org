@@ -98,11 +98,8 @@ time-to-event data from 3 different cohorts.
 #+ATTR_HTML: :style max-width: 100%;
 #+BEGIN_SRC plantuml :file ../diagrams/pipeline-dag.png :exports results
 @startuml
-!include <material7.4.47/AccountUser/AccountGroup>
-!include <material7.4.47/Weather/MoonFull>
-!include <material7.4.47/Weather/MoonFirstQuarter>
-!include <material7.4.47/Weather/MoonLastQuarter>
-!include <material/matrix>
+!include <material7.4.47/AccountUser/account>
+!include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
 !include ../diagrams/ibp.puml
 
 skinparam nodesep 80
@@ -114,18 +111,20 @@ skinparam ranksep 80
     FontColor #111111
   }
 
-  rectangle {
-    RoundCorner 0
+  card {
+    RoundCorner     0
+    BackgroundColor transparent
+    LineColor       transparent
   }
 </style>
 
-storage "<$mdiMoonFull{scale=0.35}> **CIF**" as cif_d1_pop #dd2e44
-storage "<$mdiMoonLastQuarter{scale=0.35}> **CIF**" as cif_d1_fh1 #dd2e44
-storage "<$mdiMoonFull{scale=0.35}> **CIF**" as cif_d2_pop #54adef
-storage "<$mdiMoonFirstQuarter{scale=0.35}> **CIF**" as cif_d2_fh2 #54adef
-storage "<$mdiMoonFirstQuarter{scale=0.35}> **CIF**" as cif_d1_fh2 #dd2e44
-rectangle "**H2**" as h2_d1 #dd2e44
-rectangle "**H2**" as h2_d2 #54adef
+card "|<#dd2e44>**CIF**|<#dd2e44><$mdiAccount{scale=0.35}>|" as cif_d1_pop
+card "|<#dd2e44>**CIF**|<#dd2e44><$mdiHumanMaleFemaleChild{scale=0.35}>|" as cif_d1_fh1
+card "|<#dd2e44>**CIF**|<#54adef><$mdiHumanMaleFemaleChild{scale=0.35}>|" as cif_d1_fh2
+card "|<#54adef>**CIF**|<#54adef><$mdiAccount{scale=0.35}>|" as cif_d2_pop
+card "|<#54adef>**CIF**|<#54adef><$mdiHumanMaleFemaleChild{scale=0.35}>|" as cif_d2_fh2
+action "**H2**" as h2_d1 #dd2e44
+action "**H2**" as h2_d2 #54adef
 hexagon "**RG**" as rg #ffd600
 
 cif_d2_pop -UP-> h2_d2
@@ -146,9 +145,8 @@ legend left
   |<b><:blue_book:></b>|Disorder 2|
 
   <#silver>|= Icon|= Cohort|
-  |<b><$mdiMoonFull{scale=0.35}></b>|Population|
-  |<b><$mdiMoonLastQuarter{scale=0.35}></b>|Family history 1|
-  |<b><$mdiMoonFirstQuarter{scale=0.35}></b>|Family history 2|
+  |<b><$mdiAccount{scale=0.35}></b>|Population|
+  |<b><$mdiHumanMaleFemaleChild{scale=0.35}></b>|Family history|
 endlegend
 @enduml
 #+END_SRC
