@@ -98,11 +98,11 @@ The pipeline produces a genetic correlation between 2 disorders:
 
 By using time-to-event data (referred to as ~tte~) from 3 different cohorts:
 
-| Term  | Description                                              |
-|-------+----------------------------------------------------------|
-| ~pop~ | Population or "target cohort"                            |
-| ~fh1~ | Individuals with at least 1 relative diagnosed with ~d1~ |
-| ~fh2~ | Individuals with at least 1 relative diagnosed with ~d2~ |
+| Term  | Description                                                          |
+|-------+----------------------------------------------------------------------|
+| ~pop~ | Population or "target cohort"                                        |
+| ~fh1~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~d1~ |
+| ~fh2~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~d2~ |
 
 Note: ~fh~ is short for "family history" and the number refers to which disorder the relatives must be diagnosed with.
 
