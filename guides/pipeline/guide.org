@@ -81,8 +81,8 @@ tte <- read_csv(
 
 #+RESULTS:
 
-This is a guide that explains how to run the epimight pipeline to estimates genetic
-correlation between two disorders stratified by birth year.
+This is a guide that explains how the epimight pipeline works, how you prepare your
+data and how you run the pipeline on said data.
 
 - Any data shown in this guide comes from [[../data/pipeline-tte.csv][this randomly generated time-to-event dataset]]
 - All code shown in this guide have been written to [[./guide.R][this R file]]
@@ -96,7 +96,7 @@ The pipeline produces a genetic correlation between 2 disorders:
 | ~d1~ | Disorder 1  |
 | ~d2~ | Disorder 2  |
 
-By using time-to-event data (referred to as ~tte~) from 3 different cohorts:
+By using time-to-event data of 3 different cohorts:
 
 | Term  | Description                                                          |
 |-------+----------------------------------------------------------------------|
@@ -104,7 +104,7 @@ By using time-to-event data (referred to as ~tte~) from 3 different cohorts:
 | ~fh1~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~d1~ |
 | ~fh2~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~d2~ |
 
-Note: ~fh~ is short for "family history" and the number refers to which disorder the relatives must be diagnosed with.
+Note: ~fh~ is short for "family history".
 
 The pipeline consists of 3 analyzes:
 
@@ -126,8 +126,23 @@ That produce 7 intermediate results that the genetic correlation is derived from
 | ~h2_d1~      | Heritability of disorder 1                     |
 | ~h2_d2~      | Heritability of disorder 2                     |
 
-The diagram below shows which cohorts each result originates from and how they
-are combined to finally produce the genetic correlation.
+Let's say way we want to answer this research question:
+"What is the genetic correlation between schizophrenia and coronary artery disease
+using Danish millenials (people born from 1981 to 1996) and their full siblings?"
+
+We would then define the disorders as:
+
+- ~d1~ :: Schizophrenia
+- ~d2~ :: Coronary artery disease
+
+And the cohorts as:
+
+- ~pop~ :: Danish millenials
+- ~fh1~ :: Danish millenials, with at least one full sibling diagnosed with ~d1~
+- ~fh2~ :: Danish millenials, with at least one full sibling diagnosed with ~d2~
+
+The pipeline starts by producing the CIF results for the two disorders from the
+~pop~ cohort.
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -189,26 +204,26 @@ legend left
   |<#54adef>|Disorder 2|
 endlegend
 
-pop -UP-> cif_d2_pop
-pop -UP-> cif_d1_pop
+pop --> fh1
+pop --> fh2
+pop --> cif_d2_pop
+pop --> cif_d1_pop
 fh1 --> cif_d1_fh1
 fh2 --> cif_d1_fh2
 fh2 --> cif_d2_fh2
 
-cif_d2_pop -UP-> h2_d2
+cif_d2_pop --> h2_d2
 cif_d2_fh2 --> h2_d2
 
-cif_d1_pop -UP-> h2_d1
+cif_d1_pop --> h2_d1
 cif_d1_fh1 --> h2_d1
 
 cif_d1_fh2 ---> rg
-cif_d1_pop -RIGHT-> rg
-cif_d2_pop -LEFT-> rg
+cif_d1_pop --> rg
+cif_d2_pop --> rg
 h2_d1 --> rg
 h2_d2 --> rg
 
-pop -UP-> fh1
-pop -UP-> fh2
 @enduml
 #+END_SRC
 
@@ -216,22 +231,6 @@ pop -UP-> fh2
 #+CAPTION: Pipeline results
 #+RESULTS: fig:pipeline-dag
 [[file:../diagrams/pipeline-dag.png]]
-
-Let's say way we want to answer this research question:
-"What is the genetic correlation between schizophrenia and coronary artery disease
-using Danish millenials (people born from 1981 to 1996) and their full siblings?"
-
-We would then define the disorders as:
-
-- ~d1~ :: Schizophrenia
-- ~d2~ :: Coronary artery disease
-
-And the cohorts as:
-
-- ~pop~ :: Danish millenials
-- ~fh1~ :: Danish millenials, with at least one full sibling diagnosed with ~d1~
-- ~fh2~ :: Danish millenials, with at least one full sibling diagnosed with ~d2~
-
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
