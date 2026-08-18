@@ -124,8 +124,8 @@ card "|<#dd2e44>**CIF**|<#dd2e44><$mdiHumanMaleFemaleChild{scale=0.35}>|" as cif
 card "|<#dd2e44>**CIF**|<#54adef><$mdiHumanMaleFemaleChild{scale=0.35}>|" as cif_d1_fh2
 card "|<#54adef>**CIF**|<#54adef><$mdiAccount{scale=0.35}>|" as cif_d2_pop
 card "|<#54adef>**CIF**|<#54adef><$mdiHumanMaleFemaleChild{scale=0.35}>|" as cif_d2_fh2
-action "**H2**" as h2_d1 #dd2e44
-action "**H2**" as h2_d2 #54adef
+rectangle "**H2**" as h2_d1 #dd2e44
+rectangle "**H2**" as h2_d2 #54adef
 hexagon "**RG**" as rg #ffd600
 
 cif_d2_pop -UP-> h2_d2
