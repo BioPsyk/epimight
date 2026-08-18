@@ -114,7 +114,7 @@ The pipeline consists of 3 analyzes:
 | ~h2~  | Heritability                                                                           |
 | ~rg~  | Genetic correlation                                                                    |
 
-That produce 7 intermediate results that the final genetic correlation is derived from:
+That produce 7 intermediate results that the genetic correlation is derived from:
 
 | Term         | Description                                           |
 |--------------+-------------------------------------------------------|
@@ -125,6 +125,9 @@ That produce 7 intermediate results that the final genetic correlation is derive
 | ~cif_d2_fh2~ | CIF of disorder 1, family history disorder 2          |
 | ~h2_d1~      | Heritability of disorder 1                            |
 | ~h2_d2~      | Heritability of disorder 2                            |
+
+The dependecy diagram below shows how the results from the different analyzes
+depend on each other:
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -187,7 +190,7 @@ endlegend
 #+END_SRC
 
 #+ATTR_LATEX: :placement [H]
-#+CAPTION: Pipeline data flow
+#+CAPTION: Pipeline results
 #+RESULTS: fig:pipeline-dag
 [[file:../diagrams/pipeline-dag.png]]
 
