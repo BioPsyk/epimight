@@ -161,16 +161,20 @@ skinparam ranksep 80
 actor "Population" as pop
 actor "Family history 1" as fh1
 actor "Family history 2" as fh2
+file "**CIF**" as cif_d1_pop #dd2e44
+file "**CIF**" as cif_d1_fh1 #dd2e44
+file "**CIF**" as cif_d1_fh2 #dd2e44
+file "**CIF**" as cif_d2_pop #54adef
+file "**CIF**" as cif_d2_fh2 #54adef
+file "**H2**" as h2_d1 #dd2e44
+file "**H2**" as h2_d2 #54adef
+file "**RG**" as rg #ffd600
 
-rectangle "**CIF**" as cif_d1_pop #dd2e44
-rectangle "**CIF**" as cif_d1_fh1 #dd2e44
-rectangle "**CIF**" as cif_d1_fh2 #dd2e44
-rectangle "**CIF**" as cif_d2_pop #54adef
-rectangle "**CIF**" as cif_d2_fh2 #54adef
-
-rectangle "**H2**" as h2_d1 #dd2e44
-rectangle "**H2**" as h2_d2 #54adef
-rectangle "**RG**" as rg #ffd600
+legend left
+  <#silver>|= Color|= Disorder|
+  |<#dd2e44>|Disorder 1|
+  |<#54adef>|Disorder 2|
+endlegend
 
 pop -UP-> cif_d2_pop
 pop -UP-> cif_d1_pop
@@ -184,17 +188,12 @@ cif_d2_fh2 --> h2_d2
 cif_d1_pop -UP-> h2_d1
 cif_d1_fh1 --> h2_d1
 
-cif_d1_pop -RIGHT-> rg
 cif_d1_fh2 ---> rg
+cif_d1_pop -RIGHT-> rg
 cif_d2_pop -LEFT-> rg
 h2_d1 --> rg
 h2_d2 --> rg
 
-legend left
-  <#silver>|= Color|= Disorder|
-  |<#dd2e44>|Disorder 1|
-  |<#54adef>|Disorder 2|
-endlegend
 @enduml
 #+END_SRC
 
