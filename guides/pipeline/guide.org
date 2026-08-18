@@ -89,12 +89,20 @@ correlation between two disorders stratified by birth year.
 
 * How it works
 
-The pipeline produces a genetic correlation between 2 disorders by using
-time-to-event data from 3 different cohorts:
+The pipeline produces a genetic correlation between 2 disorders:
 
-- Population (referred to as ~pop~)
-- Individuals with at least 1 relative diagnosed with disorder 1 (referred to as ~fh1~, "family history of disorder1")
-- Individuals with at least 1 relative diagnosed with disorder 2 (referred to as ~fh2~, "family history of disorder2")
+| Term | Description |
+|------+-------------|
+| ~d1~ | Disorder 1  |
+| ~d2~ | Disorder 2  |
+
+By using time-to-event data from 3 different cohorts:
+
+| Term  | Description                                              |
+|-------+----------------------------------------------------------|
+| ~pop~ | Population or "target cohort"                            |
+| ~fh1~ | Individuals with at least 1 relative diagnosed with ~d1~ |
+| ~fh2~ | Individuals with at least 1 relative diagnosed with ~d2~ |
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
