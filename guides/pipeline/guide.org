@@ -158,8 +158,8 @@ skinparam ranksep 50
 skinparam defaultTextAlignment center
 
 card "<$mdiAccountGroup{scale=1}>\nPopulation" as pop
-card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history 1" as fh1
-card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history 2" as fh2
+card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nDisorder 1" as fh1
+card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nDisorder 2" as fh2
 file "**CIF**" as cif_d1_pop #dd2e44
 file "**CIF**" as cif_d1_fh1 #dd2e44
 file "**CIF**" as cif_d1_fh2 #dd2e44
