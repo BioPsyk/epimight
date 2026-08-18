@@ -114,17 +114,17 @@ The pipeline consists of 3 analyzes:
 | ~h2~  | Heritability                                                                           |
 | ~rg~  | Genetic correlation                                                                    |
 
-That produce 7 intermediate results that the genetic correlation is derived from:
+That produce 7 intermediate results that the genetic correlation (referred to as ~rg~) is derived from:
 
-| Term         | Description                                           |
-|--------------+-------------------------------------------------------|
-| ~cif_d1_pop~ | CIF of disorder 1, population                         |
-| ~cif_d1_fh1~ | CIF of disorder 1, family history disorder 1          |
-| ~cif_d1_fh2~ | CIF of disorder 1, family history disorder 2          |
-| ~cif_d2_pop~ | CIF of disorder 1, population                         |
-| ~cif_d2_fh2~ | CIF of disorder 1, family history disorder 2          |
-| ~h2_d1~      | Heritability of disorder 1                            |
-| ~h2_d2~      | Heritability of disorder 2                            |
+| Term         | Description                                 |
+|--------------+---------------------------------------------|
+| ~cif_d1_pop~ | Disorder 1 CIF from population cohort       |
+| ~cif_d1_fh1~ | Disorder 1 CIF from family history 1 cohort |
+| ~cif_d1_fh2~ | Disorder 1 CIF from family history 2 cohort |
+| ~cif_d2_pop~ | Disorder 2 CIF from population cohort       |
+| ~cif_d2_fh2~ | Disorder 2 CIF from family history 2 cohort |
+| ~h2_d1~      | Heritability of disorder 1                  |
+| ~h2_d2~      | Heritability of disorder 2                  |
 
 The dependecy diagram below shows how the results from the different analyzes
 depend on each other:
