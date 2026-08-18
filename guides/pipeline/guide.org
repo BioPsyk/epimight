@@ -196,6 +196,16 @@ endlegend
 #+RESULTS: fig:pipeline-dag
 [[file:../diagrams/pipeline-dag.png]]
 
+In order to produce these results, the pipeline needs to know the following of each individual:
+
+- How to uniquely identify the individual in the population
+- Their failure status/time of disorder 1
+- Their failure status/time of disorder 2
+- For each kind of relative (parents, full siblings, cousins, etc.):
+  - How many relatives the individual have of that kind
+  - How many of those relatives are diagnosed with disorder 1
+  - How many of those relatives are diagnosed with disorder 2
+
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
 #+NAME: fig:pipeline-component-diagram
