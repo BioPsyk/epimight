@@ -24,7 +24,7 @@ tte <- read_csv(
   col_types = cols(person_id = col_character()),
 ) |>
   mutate(
-    weight = ifelse(relatives_diagnosed > 0.0, relatives_diagnosed / relatives, 0.0)
+    weight = ifelse(relatives_trait_n > 0.0, relatives_trait_n / relatives, 0.0)
   ) |>
   filter(
     trait          == "SCZ",

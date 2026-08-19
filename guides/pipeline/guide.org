@@ -254,7 +254,7 @@ skinparam ranksep 80
 file tte [
 <color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **birth_year** | **trait** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_amount** | **relatives_diagnosed** |
+| **person_id**  | **birth_year** | **trait** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_amount** | **relatives_trait_n** |
 | ...            | ...              | ...          | ...                | ...              | ...                   | ...                  | ...                     |
 <#76b354>| 99962 | 1999             | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
 | 99962          | 1999             | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
@@ -451,7 +451,7 @@ tte |> tail(4 * 4)
 #+END_SRC
 
 #+RESULTS:
-| person_id | birth_year | trait | failure_status | failure_time | relatives_kind | relatives | relatives_diagnosed |
+| person_id | birth_year | trait | failure_status | failure_time | relatives_kind | relatives | relatives_trait_n |
 |-----------+--------------+----------+----------------+--------------+----------------+-----------+---------------------|
 |     99996 |         2013 | CAD      |              0 |           13 | full_siblings  |         0 |                   0 |
 |     99996 |         2013 | CAD      |              0 |           13 | parents        |         0 |                   0 |
@@ -517,7 +517,7 @@ The supplied pool must be a ~data.table~ with the following required columns:
   - Must be a string
 - ~relatives~
   - Must be an integer, minimum ~0~
-- ~relatives_diagnosed~
+- ~relatives_trait_n~
   - Must be an integer, minimum ~0~
 
 It accepts any additional columns used for stratification.

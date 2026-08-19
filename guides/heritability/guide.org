@@ -231,7 +231,7 @@ to fulfill the following requirements in order to be used by this guide:
 
 5. These additional columns *must* also exist:
    - relatives :: Non-negative integer that represents the amount of relatives the individual have
-   - relatives_diagnosed :: Non-negative integer that represents how many relatives are diagnosed with the disorder
+   - relatives_trait_n :: Non-negative integer that represents how many relatives are diagnosed with the disorder
 
 This time we also need the ~birth_date~ column with the birth dates in order to filter out millenials.
 
@@ -248,7 +248,7 @@ n_count <- 100000
 
 tte <- generate_random_tte(n_count)
 tte <- generate_failure(tte, 20, 10)
-tte <- generate_relatives_diagnosed(tte, "relatives_diagnosed") |>
+tte <- generate_relatives_trait_n(tte, "relatives_trait_n") |>
   select(-birth_year, -dead_at_year) |>
   relocate(relatives, .after = failure_time) |>
   as.data.table()
@@ -260,10 +260,10 @@ The example data in this guide contains the same 100000 randomly generated in th
 with the addition of:
 
 - Amount of relatives sampled with the following probablities (0-9): ~c(0.2, 0.22, 0.23, 0.16, 0.09, 0.05, 0.03, 0.01, 0.008, 0.002)~
-- If the individual is diagnosed, the following probablities of ~relatives_diagnosed~:
+- If the individual is diagnosed, the following probablities of ~relatives_trait_n~:
   - No diagnosed relatives :: ~0.45~
   - Probablity per relative count :: ~(1 - 0.55) / relatives~
-- If the individual is unaffected, the following probablities of ~relatives_diagnosed~:
+- If the individual is unaffected, the following probablities of ~relatives_trait_n~:
   - No diagnosed relatives :: ~0.75~
   - Probablity per relative count :: ~(1 - 0.55) / relatives~
 
@@ -302,7 +302,7 @@ print(tte)
 19806:     99982      m 1981-04-06              0           45         3
 19807:     99984      f 1985-11-06              0           41         1
 19808:    100000      f 1987-04-11              0           39         1
-       relatives_diagnosed
+       relatives_trait_n
     1:                   0
     2:                   0
     3:                   2
@@ -342,7 +342,7 @@ tte <- tte |>
   mutate(cohort = "all") |>
   union_all(
     tte |>
-      filter(relatives_diagnosed > 0) |>
+      filter(relatives_trait_n > 0) |>
       mutate(cohort = "affected_relatives")
   )
 #+END_SRC

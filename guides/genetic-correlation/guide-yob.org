@@ -153,13 +153,13 @@ n_count <- 100000
 
 d1_tte <- generate_random_tte(n_count)
 d1_tte <- generate_failure(d1_tte, 20, 10)
-d1_tte <- generate_relatives_diagnosed(d1_tte, "relatives_diagnosed") |>
+d1_tte <- generate_relatives_trait_n(d1_tte, "relatives_trait_n") |>
   relocate(relatives, .after = failure_time)
 d1_tte <- data.table(d1_tte)
 
 d2_tte <- d1_tte
 d2_tte <- generate_failure(d2_tte, 25, 10)
-d2_tte <- generate_relatives_diagnosed(d2_tte, "relatives_diagnosed") |>
+d2_tte <- generate_relatives_trait_n(d2_tte, "relatives_trait_n") |>
   relocate(relatives, .after = failure_time)
 d2_tte <- data.table(d2_tte)
 
@@ -228,7 +228,7 @@ person_id gender    birth_date failure_status failure_time relatives
 19806:     99982      m 1981-04-06              0           45         3
 19807:     99984      f 1985-11-06              0           41         1
 19808:    100000      f 1987-04-11              0           39         1
-       relatives_diagnosed birth_year
+       relatives_trait_n birth_year
     1:                   0         1986
     2:                   0         1990
     3:                   2         1993
@@ -253,7 +253,7 @@ person_id gender    birth_date failure_status failure_time relatives
 19806:     99982      m 1981-04-06              0           45         3
 19807:     99984      f 1985-11-06              0           41         1
 19808:    100000      f 1987-04-11              0           39         1
-       relatives_diagnosed birth_year
+       relatives_trait_n birth_year
     1:                   0         1986
     2:                   0         1990
     3:                   0         1993
@@ -280,15 +280,15 @@ c1_tte <- inner_join(d1_tte, d2_tte, by = join_by(person_id)) |>
     relatives              = relatives.x,
     d1_failure_status      = failure_status.x,
     d1_failure_time        = failure_time.x,
-    d1_relatives_diagnosed = relatives_diagnosed.x,
+    d1_relatives_trait_n = relatives_trait_n.x,
     d2_failure_status      = failure_status.y,
     d2_failure_time        = failure_time.y,
-    d2_relatives_diagnosed = relatives_diagnosed.y
+    d2_relatives_trait_n = relatives_trait_n.y
   ) |>
   select(person_id, relatives, birth_year, starts_with("d1_"), starts_with("d2_"))
 
-c2_tte <- c1_tte |> filter(d1_relatives_diagnosed > 0)
-c3_tte <- c1_tte |> filter(d2_relatives_diagnosed > 0)
+c2_tte <- c1_tte |> filter(d1_relatives_trait_n > 0)
+c3_tte <- c1_tte |> filter(d2_relatives_trait_n > 0)
 #+END_SRC
 
 #+RESULTS:
@@ -317,7 +317,7 @@ person_id relatives birth_year d1_failure_status d1_failure_time
 19806:     99982         3         1981                 0              45
 19807:     99984         1         1985                 0              41
 19808:    100000         1         1987                 0              39
-       d1_relatives_diagnosed d2_failure_status d2_failure_time d2_relatives_diagnosed
+       d1_relatives_trait_n d2_failure_status d2_failure_time d2_relatives_trait_n
     1:                      0                 0              40                      0
     2:                      0                 0              36                      0
     3:                      2                 0              33                      0
@@ -342,7 +342,7 @@ person_id relatives birth_year d1_failure_status d1_failure_time
 4526:     99971         1         1993                 0              33
 4527:     99977         7         1993                 1              24
 4528:     99982         3         1981                 0              45
-      d1_relatives_diagnosed d2_failure_status d2_failure_time d2_relatives_diagnosed
+      d1_relatives_trait_n d2_failure_status d2_failure_time d2_relatives_trait_n
    1:                      2                 0              33                      0
    2:                      2                 0              34                      0
    3:                      2                 0              45                      1
@@ -367,7 +367,7 @@ person_id relatives birth_year d1_failure_status d1_failure_time
 4461:     99972         1         1981                 0              45
 4462:     99981         2         1989                 0              37
 4463:    100000         1         1987                 0              39
-      d1_relatives_diagnosed d2_failure_status d2_failure_time d2_relatives_diagnosed
+      d1_relatives_trait_n d2_failure_status d2_failure_time d2_relatives_trait_n
    1:                      0                 0              33                      1
    2:                      0                 0              42                      1
    3:                      2                 0              45                      1

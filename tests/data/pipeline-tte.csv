@@ -1,4 +1,4 @@
-person_id,born_at_year,disorder,failure_status,failure_time,relatives_kind,relatives,relatives_diagnosed
+person_id,born_at_year,disorder,failure_status,failure_time,relatives_kind,relatives,relatives_trait_n
 1,2000,CAD,0,26,full_siblings,2,0
 1,2000,CAD,0,26,parents,2,1
 1,2000,SCZ,0,26,full_siblings,2,0

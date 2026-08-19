@@ -48,7 +48,7 @@ describe("initialize", {
         failure_status      = c(0, 1),
         failure_time        = c(10, 10),
         relatives           = c(1, 1),
-        relatives_diagnosed = c(0, 0),
+        relatives_trait_n = c(0, 0),
         relatives_kind      = c(10, 20) # Wrong type
       )
     ))
@@ -63,7 +63,7 @@ describe("initialize", {
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
         relatives           = c(2, 2),
-        relatives_diagnosed = c(0, 1),
+        relatives_trait_n = c(0, 1),
         relatives_kind      = c("parents", "parents")
       )
     ))
@@ -78,7 +78,7 @@ describe("initialize", {
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
         relatives           = c(2, 2),
-        relatives_diagnosed = c(0, 1),
+        relatives_trait_n = c(0, 1),
         relatives_kind      = c("parents", "parents")
       )
     )
@@ -124,7 +124,7 @@ describe("get_tte", {
     )
 
     expect_true(!("relatives" %in% colnames(tte)))
-    expect_true(!("relatives_diagnosed" %in% colnames(tte)))
+    expect_true(!("relatives_trait_n" %in% colnames(tte)))
     expect_true(!("weight" %in% colnames(tte)))
   })
 
@@ -140,7 +140,7 @@ describe("get_tte", {
     )
 
     expect_true("relatives" %in% colnames(tte))
-    expect_true("relatives_diagnosed" %in% colnames(tte))
+    expect_true("relatives_trait_n" %in% colnames(tte))
     expect_true("weight" %in% colnames(tte))
   })
 })
