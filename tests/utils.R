@@ -4,37 +4,35 @@ library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 # Generators
 #=================================================================================
 
-generate_relatives_trait_n_prob <- function(trait_status, relatives) {
+generate_relatives_trait_n_prob <- function(trait_status, relatives_n) {
   if (trait_status == 1) {
     unaffected_prob <- 0.45
   } else {
     unaffected_prob <- 0.75
   }
 
-  rest_prob <- 1.0 - unaffected_prob
-  prob_per_relative <- rest_prob / relatives
+  rest_prob         <- 1.0 - unaffected_prob
+  prob_per_relative <- rest_prob / relatives_n
 
   prob <- append(
     c(unaffected_prob),
-    rep(prob_per_relative, relatives)
+    rep(prob_per_relative, relatives_n)
   )
 
   return(prob)
 }
 
 generate_relatives_trait_n <- function(tte, column_name) {
-  survival_data <- tte |>
+  tte |>
     rowwise() |>
     mutate(
       !!column_name := sample(
-        0:relatives,
+        0:relatives_n,
         1,
         replace = TRUE,
-        prob = generate_relatives_trait_n_prob(trait_status, relatives)
+        prob = generate_relatives_trait_n_prob(trait_status, relatives_n)
       )
     )
-
-  return(survival_data)
 }
 
 generate_trait <- function(tte, mean, sd, end_of_study) {
@@ -50,12 +48,12 @@ generate_trait <- function(tte, mean, sd, end_of_study) {
     rowwise() |>
     mutate(
       max_age = ifelse(
-        dead_at_year > end_of_study_year,
+        death_year > end_of_study_year,
         end_of_study_year - birth_year,
-        dead_at_year - birth_year
+        death_year - birth_year
       ),
       trait_status = ifelse(
-        dead_at_year > end_of_study_year,
+        death_year > end_of_study_year,
         sample(
           seq(0, 1),
           1,
@@ -116,7 +114,7 @@ generate_random_tte <- function(n_count, period_start, period_end) {
   ) |>
     mutate(
       birth_year = as.numeric(format(birth_date, "%Y")),
-      dead_at_year = birth_year + death_age
+      death_year = birth_year + death_age
     ) |>
     select(-death_age) |>
     distinct(person_id, .keep_all = TRUE)
@@ -135,7 +133,7 @@ generate_pipeline_tte <- function(n_count) {
     mutate(person_id = as.character(person_id), trait = "SCZ", relatives = "full_siblings") |>
     as.data.table()
 
-  d2_fs_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives_n))
+  d2_fs_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
   d2_fs_tte <- generate_trait(d2_fs_tte, 19, 11)
   d2_fs_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
     relocate(trait_onset_time, .after = person_id) |>
@@ -145,7 +143,7 @@ generate_pipeline_tte <- function(n_count) {
     mutate(person_id = as.character(person_id), trait = "CAD", relatives = "full_siblings") |>
     as.data.table()
 
-  d1_po_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives_n))
+  d1_po_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
   d1_po_tte <- generate_trait(d2_fs_tte, 20, 10)
   d1_po_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
     relocate(trait_onset_time, .after = person_id) |>
@@ -161,11 +159,11 @@ generate_pipeline_tte <- function(n_count) {
     relocate(trait_onset_time, .after = person_id) |>
     relocate(trait_status, .after = trait_onset_time) |>
     relocate(relatives, .after = trait_status) |>
-    relocate(relatives_trait_n, .after = relatives) |>
+    relocate(relatives_trait_n, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), trait = "CAD", relatives = "parents") |>
     as.data.table()
 
-  tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-birth_date, -dead_at_year) |>
+  tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-birth_date, -death_year) |>
     arrange(person_id, trait, relatives) |>
     select(person_id, birth_year, trait, trait_status, trait_onset_time, relatives, relatives_n, relatives_trait_n)
 
