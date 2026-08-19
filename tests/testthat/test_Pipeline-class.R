@@ -44,7 +44,7 @@ describe("initialize", {
       pool = data.table(
         person_id           = c("p1", "p1"),
         born_at_year        = c(1950, 1951),
-        disorder            = c("SCZ", "CAD"),
+        trait            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 10),
         relatives           = c(1, 1),
@@ -59,7 +59,7 @@ describe("initialize", {
       pool = data.table(
         person_id           = c(1, 1),
         born_at_year        = c(1950, 1951),
-        disorder            = c("SCZ", "CAD"),
+        trait            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
         relatives           = c(2, 2),
@@ -74,7 +74,7 @@ describe("initialize", {
       pool = data.table(
         person_id           = c("p1", "p1"),
         born_at_year        = c(1950, 1951),
-        disorder            = c("SCZ", "CAD"),
+        trait            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
         relatives           = c(2, 2),
@@ -94,7 +94,7 @@ describe("get_tte", {
     ))
   })
 
-  it("fails on unknown relatives disorder", {
+  it("fails on unknown relatives trait", {
     expect_error(pipeline$get_tte(
       list(id = "SCZ"),
       list(
@@ -150,16 +150,16 @@ describe("run", {
     expect_error(pipeline$run())
   })
 
-  it("fails when disorders are not found", {
+  it("fails when traits are not found", {
     expect_error(pipeline$run(
-      disorder1 = list(
+      analysis1 = list(
         id                    = "unknown",
         earliest_onset        = 1,
         latest_onset          = 100,
         relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
-      disorder2 = list(
+      analysis2 = list(
         id                    = "CAD",
         earliest_onset        = 0,
         latest_onset          = 100,
@@ -169,14 +169,14 @@ describe("run", {
     ))
 
     expect_error(pipeline$run(
-      disorder1 = list(
+      analysis1 = list(
         id                    = "SCZ",
         earliest_onset        = 1,
         latest_onset          = 100,
         relatives_kind        = "parents",
         relatives_coefficient = 0.5
       ),
-      disorder2 = list(
+      analysis2 = list(
         id                    = "unknown",
         earliest_onset        = 0,
         latest_onset          = 100,
@@ -188,15 +188,15 @@ describe("run", {
 
   it("fails when stratify column cannot be found in TTE dataset", {
     expect_error(pipeline$run(
-      disorder1 = list(
-        id                    = "SCZ",
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      analysis1 = list(
+        trait       = "SCZ",
+        relatives   = "parents",
+        relatedness = 0.5
       ),
-      disorder2 = list(
-        id                    = "CAD",
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      analysis2 = list(
+        trait       = "CAD",
+        relatives   = "parents",
+        relatedness = 0.5
       ),
       draws = 2,
       stratify_columns = list("born_at_year", "unknown")
@@ -205,30 +205,30 @@ describe("run", {
 
   it("produces different result when using weighted cif", {
     results <- pipeline$run(
-      disorder1 = list(
-        id                    = "SCZ",
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      analysis1 = list(
+        trait       = "SCZ",
+        relatives   = "parents",
+        relatedness = 0.5
       ),
-      disorder2 = list(
-        id                    = "CAD",
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      analysis2 = list(
+        trait       = "CAD",
+        relatives   = "parents",
+        relatedness = 0.5
       ),
       stratify_columns = list("born_at_year"),
       use_weighted_cif = FALSE
     )
 
     weighted_results <- pipeline$run(
-      disorder1 = list(
-        id                    = "SCZ",
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      analysis1 = list(
+        trait       = "SCZ",
+        relatives   = "parents",
+        relatedness = 0.5
       ),
-      disorder2 = list(
-        id                    = "CAD",
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      analysis2 = list(
+        trait       = "CAD",
+        relatives   = "parents",
+        relatedness = 0.5
       ),
       stratify_columns = list("born_at_year"),
       use_weighted_cif = TRUE
