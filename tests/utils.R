@@ -123,9 +123,9 @@ generate_random_tte <- function(n_count, period_start, period_end) {
 }
 
 generate_pipeline_tte <- function(n_count) {
-  d1_fs_tte <- generate_random_tte(n_count)
-  d1_fs_tte <- generate_trait(d1_fs_tte, 20, 10)
-  d1_fs_tte <- generate_relatives_trait_n(d1_fs_tte, "relatives_trait_n") |>
+  t1_fs_tte <- generate_random_tte(n_count)
+  t1_fs_tte <- generate_trait(t1_fs_tte, 20, 10)
+  t1_fs_tte <- generate_relatives_trait_n(t1_fs_tte, "relatives_trait_n") |>
     relocate(trait_onset_time, .after = person_id) |>
     relocate(trait_status, .after = trait_onset_time) |>
     relocate(relatives_n, .after = trait_status) |>
@@ -133,7 +133,7 @@ generate_pipeline_tte <- function(n_count) {
     mutate(person_id = as.character(person_id), trait = "SCZ", relatives = "full_siblings") |>
     as.data.table()
 
-  d2_fs_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
+  d2_fs_tte <- copy(t1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
   d2_fs_tte <- generate_trait(d2_fs_tte, 19, 11)
   d2_fs_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
     relocate(trait_onset_time, .after = person_id) |>
@@ -143,9 +143,9 @@ generate_pipeline_tte <- function(n_count) {
     mutate(person_id = as.character(person_id), trait = "CAD", relatives = "full_siblings") |>
     as.data.table()
 
-  d1_po_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
-  d1_po_tte <- generate_trait(d2_fs_tte, 20, 10)
-  d1_po_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
+  t1_p_tte <- copy(t1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
+  t1_p_tte <- generate_trait(d2_fs_tte, 20, 10)
+  t1_p_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
     relocate(trait_onset_time, .after = person_id) |>
     relocate(trait_status, .after = trait_onset_time) |>
     relocate(relatives_n, .after = trait_status) |>
@@ -153,7 +153,7 @@ generate_pipeline_tte <- function(n_count) {
     mutate(person_id = as.character(person_id), trait = "SCZ", relatives = "parents") |>
     as.data.table()
 
-  d2_po_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
+  d2_po_tte <- copy(t1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
   d2_po_tte <- generate_trait(d2_fs_tte, 19, 11)
   d2_po_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
     relocate(trait_onset_time, .after = person_id) |>
@@ -163,7 +163,7 @@ generate_pipeline_tte <- function(n_count) {
     mutate(person_id = as.character(person_id), trait = "CAD", relatives = "parents") |>
     as.data.table()
 
-  tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-birth_date, -death_year) |>
+  tte <- rbindlist(list(t1_fs_tte, d2_fs_tte, t1_p_tte, d2_po_tte)) |> select(-birth_date, -death_year) |>
     arrange(person_id, trait, relatives) |>
     select(person_id, birth_year, trait, trait_status, trait_onset_time, relatives, relatives_n, relatives_trait_n)
 
