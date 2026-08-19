@@ -24,7 +24,7 @@ results <- pipeline$run(
     latest_onset   = 100
   ),
   relationship_kind = "FS",
-  stratify_columns = list("born_at_year")
+  stratify_columns = list("birth_year")
 )
 
 meta <- pipeline$run_meta(results)

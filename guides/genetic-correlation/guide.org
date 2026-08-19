@@ -182,8 +182,8 @@ study_period_end   <- as.Date("2016-12-31")
 d1_earliest_onset_age <- 10
 d2_earliest_onset_age <- 1
 
-born_at_start <- as.Date("1981-01-01")
-born_at_end   <- as.Date("1996-01-01")
+birth_date_start <- as.Date("1981-01-01")
+birth_date_end   <- as.Date("1996-01-01")
 
 relationship_kind <- "FS"
 #+END_SRC
@@ -225,8 +225,8 @@ d2_tte <- generate_relatives_diagnosed(d2_tte, "relatives_diagnosed") |>
   relocate(relatives, .after = failure_time)
 d2_tte <- data.table(d2_tte)
 
-d1_tte <- d1_tte |> select(-born_at_year, -dead_at_year)
-d2_tte <- d2_tte |> select(-born_at_year, -dead_at_year)
+d1_tte <- d1_tte |> select(-birth_year, -dead_at_year)
+d2_tte <- d2_tte |> select(-birth_year, -dead_at_year)
 #+END_SRC
 
 #+RESULTS:
@@ -242,14 +242,14 @@ After the data has been read, we need to apply our millenials filter to it:
 #+BEGIN_SRC R :exports both :results output
 d1_tte <- d1_tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 
 d2_tte <- d2_tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 #+END_SRC
 
@@ -268,7 +268,7 @@ print(d2_tte)
 #+RESULTS:
 #+begin_example
 [1] "Disorder 1 survival data:"
-person_id gender    born_at failure_status failure_time relatives
+person_id gender    birth_date failure_status failure_time relatives
     1:         4      f 1986-03-12              0           40         1
     2:         5      f 1990-10-10              0           36         2
     3:         9      m 1993-11-17              0           33         3
@@ -293,7 +293,7 @@ person_id gender    born_at failure_status failure_time relatives
 19807:                   0
 19808:                   0
 [1] "Disorder 2 survival data:"
-person_id gender    born_at failure_status failure_time relatives
+person_id gender    birth_date failure_status failure_time relatives
     1:         4      f 1986-03-12              0           40         1
     2:         5      f 1990-10-10              0           36         2
     3:         9      m 1993-11-17              0           33         3

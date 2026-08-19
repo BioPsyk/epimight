@@ -130,8 +130,8 @@ study_period_end   <- as.Date("2016-12-31")
 d1_earliest_onset_age <- 10
 d2_earliest_onset_age <- 1
 
-born_at_start <- as.Date("1981-01-01")
-born_at_end   <- as.Date("1996-01-01")
+birth_date_start <- as.Date("1981-01-01")
+birth_date_end   <- as.Date("1996-01-01")
 
 relationship_kind <- "FS"
 #+END_SRC
@@ -163,8 +163,8 @@ d2_tte <- generate_relatives_diagnosed(d2_tte, "relatives_diagnosed") |>
   relocate(relatives, .after = failure_time)
 d2_tte <- data.table(d2_tte)
 
-d1_tte <- d1_tte |> select(-born_at_year, -dead_at_year)
-d2_tte <- d2_tte |> select(-born_at_year, -dead_at_year)
+d1_tte <- d1_tte |> select(-birth_year, -dead_at_year)
+d2_tte <- d2_tte |> select(-birth_year, -dead_at_year)
 #+END_SRC
 
 #+RESULTS:
@@ -174,14 +174,14 @@ After the data has been read, we need to apply our millenials filter to it:
 #+BEGIN_SRC R :exports both :results output
 d1_tte <- d1_tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 
 d2_tte <- d2_tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 #+END_SRC
 
@@ -193,12 +193,12 @@ column which we can use as the grouping column:
 #+BEGIN_SRC R :exports code :results output
 d1_tte <- d1_tte |>
   mutate(
-    born_at_year = as.character(format(born_at, "%Y"))
+    birth_year = as.character(format(birth_date, "%Y"))
   )
 
 d2_tte <- d2_tte |>
   mutate(
-    born_at_year = as.character(format(born_at, "%Y"))
+    birth_year = as.character(format(birth_date, "%Y"))
   )
 #+END_SRC
 
@@ -216,7 +216,7 @@ print(d2_tte)
 #+RESULTS:
 #+begin_example
 [1] "Disorder 1 survival data:"
-person_id gender    born_at failure_status failure_time relatives
+person_id gender    birth_date failure_status failure_time relatives
     1:         4      f 1986-03-12              0           40         1
     2:         5      f 1990-10-10              0           36         2
     3:         9      m 1993-11-17              0           33         3
@@ -228,7 +228,7 @@ person_id gender    born_at failure_status failure_time relatives
 19806:     99982      m 1981-04-06              0           45         3
 19807:     99984      f 1985-11-06              0           41         1
 19808:    100000      f 1987-04-11              0           39         1
-       relatives_diagnosed born_at_year
+       relatives_diagnosed birth_year
     1:                   0         1986
     2:                   0         1990
     3:                   2         1993
@@ -241,7 +241,7 @@ person_id gender    born_at failure_status failure_time relatives
 19807:                   0         1985
 19808:                   0         1987
 [1] "Disorder 2 survival data:"
-person_id gender    born_at failure_status failure_time relatives
+person_id gender    birth_date failure_status failure_time relatives
     1:         4      f 1986-03-12              0           40         1
     2:         5      f 1990-10-10              0           36         2
     3:         9      m 1993-11-17              0           33         3
@@ -253,7 +253,7 @@ person_id gender    born_at failure_status failure_time relatives
 19806:     99982      m 1981-04-06              0           45         3
 19807:     99984      f 1985-11-06              0           41         1
 19808:    100000      f 1987-04-11              0           39         1
-       relatives_diagnosed born_at_year
+       relatives_diagnosed birth_year
     1:                   0         1986
     2:                   0         1990
     3:                   0         1993
@@ -276,7 +276,7 @@ We then need to create the 3 cohorts:
 #+BEGIN_SRC R :exports both :results output
 c1_tte <- inner_join(d1_tte, d2_tte, by = join_by(person_id)) |>
   rename(
-    born_at_year           = born_at_year.x,
+    birth_year           = birth_year.x,
     relatives              = relatives.x,
     d1_failure_status      = failure_status.x,
     d1_failure_time        = failure_time.x,
@@ -285,7 +285,7 @@ c1_tte <- inner_join(d1_tte, d2_tte, by = join_by(person_id)) |>
     d2_failure_time        = failure_time.y,
     d2_relatives_diagnosed = relatives_diagnosed.y
   ) |>
-  select(person_id, relatives, born_at_year, starts_with("d1_"), starts_with("d2_"))
+  select(person_id, relatives, birth_year, starts_with("d1_"), starts_with("d2_"))
 
 c2_tte <- c1_tte |> filter(d1_relatives_diagnosed > 0)
 c3_tte <- c1_tte |> filter(d2_relatives_diagnosed > 0)
@@ -305,7 +305,7 @@ print(c3_tte)
 #+RESULTS:
 #+begin_example
 [1] "c1_tte:"
-person_id relatives born_at_year d1_failure_status d1_failure_time
+person_id relatives birth_year d1_failure_status d1_failure_time
     1:         4         1         1986                 0              40
     2:         5         2         1990                 0              36
     3:         9         3         1993                 0              33
@@ -330,7 +330,7 @@ person_id relatives born_at_year d1_failure_status d1_failure_time
 19807:                      0                 0              41                      0
 19808:                      0                 0              39                      1
 [1] "c2_tte:"
-person_id relatives born_at_year d1_failure_status d1_failure_time
+person_id relatives birth_year d1_failure_status d1_failure_time
    1:         9         3         1993                 0              33
    2:        12         6         1992                 0              34
    3:        56         2         1981                 1              20
@@ -355,7 +355,7 @@ person_id relatives born_at_year d1_failure_status d1_failure_time
 4527:                      7                 0              33                      0
 4528:                      1                 0              45                      0
 [1] "c3_tte:"
-person_id relatives born_at_year d1_failure_status d1_failure_time
+person_id relatives birth_year d1_failure_status d1_failure_time
    1:        33         1         1993                 0              33
    2:        43         2         1984                 0              42
    3:        56         2         1981                 1              20
@@ -400,7 +400,7 @@ Like the non-stratified pipeline, we need to create the 5 risk estimates:
 - cif_d2_c1 :: Risk estimates of disorder 2, cohort 1
 - cif_d2_c3 :: Risk estimates of disorder 2, cohort 3
 
-But this time we will supply the column ~born_at_year~ as a grouping column, in order
+But this time we will supply the column ~birth_year~ as a grouping column, in order
 to stratify the analysis on birth year:
 
 #+BEGIN_SRC R :exports code :results output
@@ -415,7 +415,7 @@ run_cif_stratified <- function(disorder, cohort) {
   cif_analysis$run(
     tte = tte,
     earliest_onset = onset,
-    stratify_columns = list("born_at_year")
+    stratify_columns = list("birth_year")
   )
 }
 
@@ -446,7 +446,7 @@ print(cif_d2_c3)
 #+RESULTS:
 #+begin_example
 [1] "cif_d1_c1:"
-time        cif          se         l95        u95          var cases born_at_year
+time        cif          se         l95        u95          var cases birth_year
   1:   10 0.01233616 0.003066147 0.006326622 0.01834570 9.401258e-06     6         1981
   2:   11 0.01696222 0.003586949 0.009931930 0.02399251 1.286620e-05    11         1981
   3:   12 0.02081727 0.003965910 0.013044231 0.02859031 1.572844e-05    14         1981
@@ -459,7 +459,7 @@ time        cif          se         l95        u95          var cases born_at_ye
 411:   30 0.08409786 0.007676910 0.069051393 0.09914433 5.893494e-05    96         1995
 412:   31 0.08562691 0.007739919 0.070456948 0.10079687 5.990635e-05   116         1995
 [1] "cif_d1_c2:"
-time        cif          se        l95        u95          var cases born_at_year
+time        cif          se        l95        u95          var cases birth_year
   1:   10 0.03010033 0.009898061 0.01070049 0.04950018 9.797162e-05     1         1981
   2:   11 0.03344482 0.010415502 0.01303081 0.05385882 1.084827e-04     4         1981
   3:   12 0.04347826 0.011813796 0.02032365 0.06663287 1.395658e-04     6         1981
@@ -472,7 +472,7 @@ time        cif          se        l95        u95          var cases born_at_yea
 351:   30 0.19344262 0.022658813 0.14903217 0.23785308 5.134218e-04    49         1995
 352:   31 0.19672131 0.022803638 0.15202700 0.24141562 5.200059e-04    59         1995
 [1] "cif_d1_c3:"
-time         cif          se          l95         u95          var cases born_at_year
+time         cif          se          l95         u95          var cases birth_year
   1:   10 0.003322259 0.003322259 -0.003189249 0.009833767 1.103741e-05     2         1981
   2:   11 0.009966777 0.005735130 -0.001273870 0.021207425 3.289171e-05     5         1981
   3:   12 0.019933555 0.008069823  0.004116993 0.035750117 6.512204e-05     6         1981
@@ -485,7 +485,7 @@ time         cif          se          l95         u95          var cases born_at
 248:   29 0.107744108 0.018023399  0.072418895 0.143069320 3.248429e-04    27         1995
 249:   31 0.111111111 0.018268349  0.075305804 0.146916418 3.337326e-04    30         1995
 [1] "cif_d2_c1:"
-time        cif          se           l95         u95          var cases born_at_year
+time        cif          se           l95         u95          var cases birth_year
   1:    5 0.00000000 0.000000000  0.0000000000 0.000000000 0.000000e+00     1         1981
   2:    6 0.00077101 0.000771010 -0.0007401419 0.002282162 5.944565e-07     2         1981
   3:    7 0.00154202 0.001089952 -0.0005942471 0.003678287 1.187996e-06     5         1981
@@ -498,7 +498,7 @@ time        cif          se           l95         u95          var cases born_at
 501:   17 0.00000000 0.000000000  0.0000000000 0.000000000 0.000000e+00     1         1996
 502:   30 0.25000000 0.250000000 -0.2399909961 0.739990996 6.250000e-02     2         1996
 [1] "cif_d2_c3:"
-time         cif          se          l95         u95          var cases born_at_year
+time         cif          se          l95         u95          var cases birth_year
   1:    5 0.000000000 0.000000000  0.000000000 0.000000000 0.000000e+00     1         1981
   2:    6 0.003322259 0.003322259 -0.003189249 0.009833767 1.103741e-05     2         1981
   3:    8 0.006644518 0.004690560 -0.002548810 0.015837847 2.200135e-05     3         1981
@@ -537,19 +537,19 @@ per birth year):
 #+BEGIN_SRC R :exports code :results output
 run_h2_stratified <- function(c1_estimates, c2_estimates) {
   combined_estimates <- c1_estimates |>
-    inner_join(c2_estimates, by = join_by(time, born_at_year)) |>
+    inner_join(c2_estimates, by = join_by(time, birth_year)) |>
     rename(
       c1_cif       = cif.x,
       c1_cif_cases = cases.x,
       c2_cif       = cif.y,
       c2_cif_cases = cases.y
     ) |>
-    select(time, born_at_year, starts_with(c("c1", "c2")))
+    select(time, birth_year, starts_with(c("c1", "c2")))
 
   h2_analysis$run(
     relationship_kind = relationship_kind,
     estimates         = combined_estimates
-  ) |> select(time, born_at_year, h2, se)
+  ) |> select(time, birth_year, h2, se)
 }
 
 h2_d1 <- run_h2_stratified(cif_d1_c1, cif_d1_c2)
@@ -571,7 +571,7 @@ print(h2_d2)
 #+RESULTS:
 #+begin_example
 [1] "h2_d1:"
-time born_at_year        h2         se
+time birth_year        h2         se
   1:   10         1981 0.2976864 0.35099513
   2:   11         1981 0.2423438 0.19802134
   3:   12         1981 0.2832651 0.17571184
@@ -584,7 +584,7 @@ time born_at_year        h2         se
 350:   30         1995 0.5943060 0.10773600
 351:   31         1995 0.5993152 0.09899422
 [1] "h2_d2:"
-time born_at_year         h2         se
+time birth_year         h2         se
   1:    6         1981 0.27746475 0.17126626
   2:    8         1981 0.13009087 0.16313828
   3:   11         1981 0.06979836 0.13132859
@@ -605,35 +605,35 @@ produce a table that contains all the risk estimates and heritabilities, which f
 can be passed to the genetic correlation analysis:
 
 #+BEGIN_SRC R :exports both :results output
-re_combined <- inner_join(cif_d1_c1, cif_d1_c3, by = join_by(time, born_at_year)) |>
+re_combined <- inner_join(cif_d1_c1, cif_d1_c3, by = join_by(time, birth_year)) |>
   rename(
     d1_c1_cif       = cif.x,
     d1_c1_cif_cases = cases.x,
     d1_c3_cif       = cif.y,
     d1_c3_cif_cases = cases.y
   ) |>
-  select(time, born_at_year, starts_with("d1_")) |>
-  inner_join(cif_d2_c1, by = join_by(time, born_at_year)) |>
+  select(time, birth_year, starts_with("d1_")) |>
+  inner_join(cif_d2_c1, by = join_by(time, birth_year)) |>
   rename(
     d2_c1_cif       = cif,
     d2_c1_cif_cases = cases
   ) |>
-  select(time, born_at_year, starts_with("d1_"), starts_with("d2_"))
+  select(time, birth_year, starts_with("d1_"), starts_with("d2_"))
 
 # Join both h2 estimates into a single estimate
-h2_combined <- inner_join(h2_d1, h2_d2, by = join_by(time, born_at_year)) |>
+h2_combined <- inner_join(h2_d1, h2_d2, by = join_by(time, birth_year)) |>
   rename(
     d1_h2 = h2.x,
     d2_h2 = h2.y
   ) |>
-  select(time, born_at_year, starts_with("d1_"), starts_with("d2_"))
+  select(time, birth_year, starts_with("d1_"), starts_with("d2_"))
 
 # Join cumulative incidence and heritability estimates into a single dataset
-combined <- inner_join(re_combined, h2_combined, by = join_by(time, born_at_year)) |>
-  group_by(born_at_year) |>
+combined <- inner_join(re_combined, h2_combined, by = join_by(time, birth_year)) |>
+  group_by(birth_year) |>
   arrange(desc(time)) |>
   filter(row_number() == 1) |>
-  arrange(born_at_year) |>
+  arrange(birth_year) |>
   as.data.table()
 #+END_SRC
 
@@ -649,7 +649,7 @@ print(combined)
 
 #+RESULTS:
 #+begin_example
-    time born_at_year  d1_c1_cif d1_c1_cif_cases  d1_c3_cif d1_c3_cif_cases  d2_c1_cif
+    time birth_year  d1_c1_cif d1_c1_cif_cases  d1_c3_cif d1_c3_cif_cases  d2_c1_cif
  1:   45         1981 0.09252120             104 0.08970100              26 0.09714726
  2:   44         1982 0.09954407             116 0.11186441              27 0.11398176
  3:   43         1983 0.09628506             101 0.10702341              27 0.09476876
@@ -700,12 +700,12 @@ gc_d1_d2 <- gc_analysis$run(
 Which produces a single genetic correlation per year:
 
 #+BEGIN_SRC R :exports both :results output
-print(gc_d1_d2 |> select(born_at_year, rg, se, l95, u95) |> arrange(born_at_year))
+print(gc_d1_d2 |> select(birth_year, rg, se, l95, u95) |> arrange(birth_year))
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
-    born_at_year          rg        se         l95       u95
+    birth_year          rg        se         l95       u95
  1:         1981 -0.03714437 0.1416605 -0.29705668 0.2582525
  2:         1982  0.18940602 0.1488442 -0.21101341 0.3724559
  3:         1983  0.16307671 0.1424635 -0.21057688 0.3478800

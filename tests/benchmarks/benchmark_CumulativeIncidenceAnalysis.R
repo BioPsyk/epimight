@@ -51,7 +51,7 @@ benchmarks <- list(
   "CIF (1 strat)" = function() {
     results <- analysis$run(
       tte              = tte |> select(-weight),
-      stratify_columns = list("born_at_year")
+      stratify_columns = list("birth_year")
     )
 
     if (nrow(results) == 0) {
@@ -70,7 +70,7 @@ benchmarks <- list(
   "weighted CIF (1 strat)" = function() {
     results <- analysis$run(
       tte              = tte,
-      stratify_columns = list("born_at_year")
+      stratify_columns = list("birth_year")
     )
 
     if (nrow(results) == 0) {

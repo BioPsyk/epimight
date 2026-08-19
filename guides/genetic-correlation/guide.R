@@ -11,8 +11,8 @@ study_period_end   <- as.Date("2016-12-31")
 d1_earliest_onset_age <- 10
 d2_earliest_onset_age <- 1
 
-born_at_start <- as.Date("1981-01-01")
-born_at_end   <- as.Date("1996-01-01")
+birth_date_start <- as.Date("1981-01-01")
+birth_date_end   <- as.Date("1996-01-01")
 
 relationship_kind <- "FS"
 
@@ -21,14 +21,14 @@ d2_tte <- read_csv("./tte_CAD_FS.csv") |> as.data.table()
 
 d1_tte <- d1_tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 
 d2_tte <- d2_tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 
 print("Disorder 1 survival data:")

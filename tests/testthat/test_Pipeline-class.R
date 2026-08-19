@@ -43,7 +43,7 @@ describe("initialize", {
     expect_error(Pipeline$new(
       pool = data.table(
         person_id           = c("p1", "p1"),
-        born_at_year        = c(1950, 1951),
+        birth_year        = c(1950, 1951),
         trait            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 10),
@@ -58,7 +58,7 @@ describe("initialize", {
     expect_error(Pipeline$new(
       pool = data.table(
         person_id           = c(1, 1),
-        born_at_year        = c(1950, 1951),
+        birth_year        = c(1950, 1951),
         trait            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
@@ -73,7 +73,7 @@ describe("initialize", {
     Pipeline$new(
       pool = data.table(
         person_id           = c("p1", "p1"),
-        born_at_year        = c(1950, 1951),
+        birth_year        = c(1950, 1951),
         trait            = c("SCZ", "CAD"),
         failure_status      = c(0, 1),
         failure_time        = c(10, 20),
@@ -101,7 +101,7 @@ describe("get_tte", {
         id             = "unknown",
         relatives_kind = "full_siblings"
       ),
-      list("born_at_year")
+      list("birth_year")
     ))
   })
 
@@ -112,7 +112,7 @@ describe("get_tte", {
         id             = "CAD",
         relatives_kind = "unknown"
       ),
-      list("born_at_year")
+      list("birth_year")
     ))
   })
 
@@ -120,7 +120,7 @@ describe("get_tte", {
     tte <- pipeline$get_tte(
       list(id = "SCZ"),
       NA,
-      list("born_at_year")
+      list("birth_year")
     )
 
     expect_true(!("relatives" %in% colnames(tte)))
@@ -135,7 +135,7 @@ describe("get_tte", {
         id             = "SCZ",
         relatives_kind = "parents"
       ),
-      list("born_at_year"),
+      list("birth_year"),
       TRUE
     )
 
@@ -199,7 +199,7 @@ describe("run", {
         relatedness = 0.5
       ),
       draws = 2,
-      stratify_columns = list("born_at_year", "unknown")
+      stratify_columns = list("birth_year", "unknown")
     ))
   })
 
@@ -215,7 +215,7 @@ describe("run", {
         relatives   = "parents",
         relatedness = 0.5
       ),
-      stratify_columns = list("born_at_year"),
+      stratify_columns = list("birth_year"),
       use_weighted_cif = FALSE
     )
 
@@ -230,7 +230,7 @@ describe("run", {
         relatives   = "parents",
         relatedness = 0.5
       ),
-      stratify_columns = list("born_at_year"),
+      stratify_columns = list("birth_year"),
       use_weighted_cif = TRUE
     )
 

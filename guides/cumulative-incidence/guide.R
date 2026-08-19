@@ -13,15 +13,15 @@ study_period_end   <- as.Date("2016-12-31")
 
 earliest_onset_age <- 10
 
-born_at_start <- as.Date("1981-01-01")
-born_at_end   <- as.Date("1996-01-01")
+birth_date_start <- as.Date("1981-01-01")
+birth_date_end   <- as.Date("1996-01-01")
 
 tte <- read_csv("./tte_SCZ.csv") |> as.data.table()
 
 tte <- tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 
 print(tte)

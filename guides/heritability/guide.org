@@ -188,8 +188,8 @@ earliest_onset_age <- 10
 Next we define the millenials period (1981 to 1996) as the allowed date of birth:
 
 #+BEGIN_SRC R :exports code
-born_at_start <- as.Date("1981-01-01")
-born_at_end   <- as.Date("1996-01-01")
+birth_date_start <- as.Date("1981-01-01")
+birth_date_end   <- as.Date("1996-01-01")
 #+END_SRC
 
 #+RESULTS:
@@ -233,7 +233,7 @@ to fulfill the following requirements in order to be used by this guide:
    - relatives :: Non-negative integer that represents the amount of relatives the individual have
    - relatives_diagnosed :: Non-negative integer that represents how many relatives are diagnosed with the disorder
 
-This time we also need the ~born_at~ column with the birth dates in order to filter out millenials.
+This time we also need the ~birth_date~ column with the birth dates in order to filter out millenials.
 
 The example data in this guide is contained in a file called ~tte_SCZ_FS.csv~,
 so we simply read it and convert it into a ~data.table~:
@@ -249,7 +249,7 @@ n_count <- 100000
 tte <- generate_random_tte(n_count)
 tte <- generate_failure(tte, 20, 10)
 tte <- generate_relatives_diagnosed(tte, "relatives_diagnosed") |>
-  select(-born_at_year, -dead_at_year) |>
+  select(-birth_year, -dead_at_year) |>
   relocate(relatives, .after = failure_time) |>
   as.data.table()
 #+END_SRC
@@ -274,8 +274,8 @@ After the data has been read, we need to apply our millenials filter to it:
 #+BEGIN_SRC R :exports both :results output
 tte <- tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 #+END_SRC
 
@@ -290,7 +290,7 @@ print(tte)
 
 #+RESULTS:
 #+begin_example
-       person_id gender    born_at failure_status failure_time relatives
+       person_id gender    birth_date failure_status failure_time relatives
     1:         4      f 1986-03-12              0           40         1
     2:         5      f 1990-10-10              0           36         2
     3:         9      m 1993-11-17              0           33         3

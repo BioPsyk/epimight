@@ -97,8 +97,8 @@ study_period_end   <- as.Date("2016-12-31")
 icd_codes_regexp <- "^F20|^295[^7]9"
 earliest_onset_age <- 10
 
-born_at_start <- as.Date("1981-01-01")
-born_at_end   <- as.Date("1996-01-01")
+birth_date_start <- as.Date("1981-01-01")
+birth_date_end   <- as.Date("1996-01-01")
 
 relationship_kind <- "FS"
 #+END_SRC
@@ -117,7 +117,7 @@ n_count <- 100000
 tte <- generate_random_tte(n_count)
 tte <- generate_failure(tte, 20, 10)
 tte <- generate_relatives_diagnosed(tte, "relatives_diagnosed") |>
-  select(-born_at_year, -dead_at_year) |>
+  select(-birth_year, -dead_at_year) |>
   relocate(relatives, .after = failure_time) |>
   as.data.table()
 #+END_SRC
@@ -127,8 +127,8 @@ tte <- generate_relatives_diagnosed(tte, "relatives_diagnosed") |>
 #+BEGIN_SRC R :exports both :results output
 tte <- tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 #+END_SRC
 
@@ -140,7 +140,7 @@ print(tte)
 
 #+RESULTS:
 #+begin_example
-       person_id gender    born_at failure_status failure_time relatives
+       person_id gender    birth_date failure_status failure_time relatives
     1:         4      f 1986-03-12              0           40         1
     2:         5      f 1990-10-10              0           36         2
     3:         9      m 1993-11-17              0           33         3
@@ -196,7 +196,7 @@ Where you have risk estimates separated on the two cohorts. In this updated vers
 the results will look something like this:
 
 #+BEGIN_EXAMPLE
-    time   estimate     variance        l95        u95 cases             cohort  born_at_year
+    time   estimate     variance        l95        u95 cases             cohort  birth_year
  1:   10 0.05769079 2.261547e-04 0.02821599 0.08716559     1 affected_relatives          1960
  2:   11 0.06229293 2.451218e-04 0.03160702 0.09297885     2 affected_relatives          1960
 27:   10 0.02128324 2.227802e-05 0.01203229 0.03053419     1                all          1960
@@ -218,7 +218,7 @@ To pull that of, we simply add a new column that contains the year of birth:
 #+BEGIN_SRC R :exports code :results output
 tte <- tte |>
   mutate(
-    born_at_year = as.character(format(born_at, "%Y"))
+    birth_year = as.character(format(birth_date, "%Y"))
   )
 #+END_SRC
 
@@ -246,7 +246,7 @@ print(tte)
 
 #+RESULTS:
 #+begin_example
-       person_id gender    born_at failure_status failure_time relatives
+       person_id gender    birth_date failure_status failure_time relatives
     1:         4      f 1986-03-12              0           40         4
     2:         5      f 1990-10-10              0           36         1
     3:         9      m 1993-11-17              0           33         4
@@ -258,7 +258,7 @@ print(tte)
 24322:     99964      m 1993-02-02              0           33         3
 24323:     99965      f 1995-10-27              0           31         4
 24324:     99990      m 1981-08-04              0           45         3
-       relatives_diagnosed born_at_year             cohort
+       relatives_diagnosed birth_year             cohort
     1:                   0         1986                all
     2:                   1         1990                all
     3:                   0         1993                all
@@ -273,13 +273,13 @@ print(tte)
 #+end_example
 
 Now when we run the analysis, we supply *both* the ~affected_relatives~ column and the
-~born_at_year~ column:
+~birth_year~ column:
 
 #+BEGIN_SRC R :exports code :results output
 estimates <- cif_analysis$run(
   tte = tte,
   earliest_onset_age = earliest_onset_age,
-  stratify_columns = list("born_at_year", "cohort")
+  stratify_columns = list("birth_year", "cohort")
 )
 #+END_SRC
 
@@ -294,7 +294,7 @@ print(estimates)
 
 #+RESULTS:
 #+begin_example
-     time         cif          se           l95         u95          var cases born_at_year
+     time         cif          se           l95         u95          var cases birth_year
   1:    3 0.003344482 0.003344482 -0.0032105819 0.009899545 1.118556e-05     1         1981
   2:    4 0.006688963 0.004721882 -0.0025657554 0.015943682 2.229617e-05     3         1981
   3:    6 0.013377926 0.006655256  0.0003338644 0.026421988 4.429243e-05     5         1981
@@ -342,14 +342,14 @@ cohorts, for all years:
 
 #+BEGIN_SRC R :exports both :results output
 combined <- cohort1 |>
-  inner_join(cohort2, by = join_by(time, born_at_year)) |>
+  inner_join(cohort2, by = join_by(time, birth_year)) |>
   rename(
     c1_cif       = cif.x,
     c1_cif_cases = cases.x,
     c2_cif       = cif.y,
     c2_cif_cases = cases.y
   ) |>
-  select(time, born_at_year, c1_cif, c1_cif_cases, c2_cif, c2_cif_cases)
+  select(time, birth_year, c1_cif, c1_cif_cases, c2_cif, c2_cif_cases)
 #+END_SRC
 
 #+RESULTS:
@@ -361,7 +361,7 @@ risk estimate per year of birth:
 
 #+BEGIN_SRC R :exports both :results output
 combined <- combined |>
-  group_by(born_at_year) |>
+  group_by(birth_year) |>
   arrange(desc(time)) |>
   filter(row_number() == 1) |>
   as.data.table()
@@ -374,12 +374,12 @@ risk estimate for each year with the estimates and amount of cases for
 both cohorts:
 
 #+BEGIN_SRC R :exports both :results output
-print(combined |> arrange(born_at_year))
+print(combined |> arrange(birth_year))
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
-    time born_at_year     c1_cif c1_cif_cases    c2_cif c2_cif_cases
+    time birth_year     c1_cif c1_cif_cases    c2_cif c2_cif_cases
  1:   45         1981 0.09252120          119 0.1872910           55
  2:   44         1982 0.09954407          128 0.1666667           51
  3:   43         1983 0.09628506          123 0.1557093           44
@@ -406,7 +406,7 @@ h2_analysis <- HeritabilityAnalysis$new()
 h2_estimates <- h2_analysis$run(
   relationship_kind = relationship_kind,
   estimates         = combined
-) |> select(time, born_at_year, h2, se, l95, u95) # We don't need the risk estimate columns
+) |> select(time, birth_year, h2, se, l95, u95) # We don't need the risk estimate columns
 #+END_SRC
 
 #+RESULTS:
@@ -419,7 +419,7 @@ print(h2_estimates)
 
 #+RESULTS:
 #+begin_example
-    time born_at_year        h2         se       l95       u95
+    time birth_year        h2         se       l95       u95
  1:   45         1981 0.5163613 0.10368868 0.3131315 0.7195911
  2:   44         1982 0.3768777 0.10732707 0.1665167 0.5872388
  3:   43         1983 0.3420142 0.11204020 0.1224154 0.5616130

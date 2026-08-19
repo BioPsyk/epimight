@@ -78,7 +78,7 @@ describe("non-named lists arguments", {
         id             = d2_id,
         relatives_kind = d2_relkind
       ),
-      list("born_at")
+      list("birth_date")
     )
 
     proband_disorder   <- args[[1]]
@@ -103,7 +103,7 @@ describe("non-named lists arguments", {
         relatives_kind = d1_relkind
       ),
       NA,
-      list("born_at")
+      list("birth_date")
     )
 
     expect_true(is.list(args[[1]]))
@@ -121,10 +121,10 @@ describe("gen_pop_risk_validator", {
         type = "string"
       )
     ),
-    born_at_min = list(
+    birth_date_min = list(
       type = "date"
     ),
-    born_at_max = list(
+    birth_date_max = list(
       type = "date"
     ),
     study_end_at = list(
@@ -159,16 +159,16 @@ describe("gen_pop_risk_validator", {
       stop("Argument 'earliest_onset' was larger than 'latest_onset'")
     }
 
-    if (is.null(args$born_at_max)) return()
+    if (is.null(args$birth_date_max)) return()
 
-    if (args$study_end_at <= args$born_at_max) {
-      stop("Argument 'study_end_at' was earlier than 'born_at_max'")
+    if (args$study_end_at <= args$birth_date_max) {
+      stop("Argument 'study_end_at' was earlier than 'birth_date_max'")
     }
 
-    if (is.null(args$born_at_min)) return()
+    if (is.null(args$birth_date_min)) return()
 
-    if (args$born_at_min >= args$born_at_max) {
-      stop("Argument 'born_at_min' was same or later than 'born_at_max'")
+    if (args$birth_date_min >= args$birth_date_max) {
+      stop("Argument 'birth_date_min' was same or later than 'birth_date_max'")
     }
   })
 
@@ -179,8 +179,8 @@ describe("gen_pop_risk_validator", {
   it("Supplying correct values is successful", {
     gen_pop_risk_validator$run(
       phenotype_icd_codes = list("F20", "F30"),
-      born_at_min = as.Date("1980-12-01"),
-      born_at_max = as.Date("2020-12-01"),
+      birth_date_min = as.Date("1980-12-01"),
+      birth_date_max = as.Date("2020-12-01"),
       study_end_at = as.Date("2020-12-02"),
       gender = "male"
     )
@@ -196,8 +196,8 @@ describe("gen_pop_risk_validator", {
     expect_no_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_min = as.Date("1980-12-01"),
-        born_at_max = as.Date("2020-12-01"),
+        birth_date_min = as.Date("1980-12-01"),
+        birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-02"),
         gender = "male"
       )
@@ -206,8 +206,8 @@ describe("gen_pop_risk_validator", {
     expect_no_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_min = as.Date("1980-12-01"),
-        born_at_max = as.Date("2020-12-01"),
+        birth_date_min = as.Date("1980-12-01"),
+        birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-02"),
         gender = "male",
         earliest_onset = 2,
@@ -270,7 +270,7 @@ describe("gen_pop_risk_validator", {
     expect_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_max = as.Date("2020-12-01"),
+        birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-01")
       )
     )
@@ -278,8 +278,8 @@ describe("gen_pop_risk_validator", {
     expect_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_min = as.Date("1980-12-01"),
-        born_at_max = as.Date("1980-12-01"),
+        birth_date_min = as.Date("1980-12-01"),
+        birth_date_max = as.Date("1980-12-01"),
         study_end_at = as.Date("2020-12-02")
       )
     )
@@ -287,8 +287,8 @@ describe("gen_pop_risk_validator", {
     expect_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_min = as.Date("1980-12-01"),
-        born_at_max = as.Date("2020-12-01"),
+        birth_date_min = as.Date("1980-12-01"),
+        birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-02"),
         gender = "male",
         earliest_onset = 2,
@@ -407,8 +407,8 @@ describe("named list type", {
           required = TRUE,
           type = "date"
         ),
-        born_at_min = list(type = "date"),
-        born_at_max = list(type = "date")
+        birth_date_min = list(type = "date"),
+        birth_date_max = list(type = "date")
       )
     ),
     status = list(
@@ -420,7 +420,7 @@ describe("named list type", {
     expect_error(
       validator$run(
         population_filter = list(
-          born_at_min = as.Date("2020-12-02")
+          birth_date_min = as.Date("2020-12-02")
         )
       )
     )
@@ -431,7 +431,7 @@ describe("named list type", {
       validator$run(
         population_filter = list(
           study_end_at = 20,
-          born_at_min = as.Date("2020-12-02")
+          birth_date_min = as.Date("2020-12-02")
         )
       )
     )
@@ -461,8 +461,8 @@ describe("named list type", {
     validator$run(
       population_filter = list(
         study_end_at = as.Date("2020-12-02"),
-        born_at_min  = as.Date("1985-01-01"),
-        born_at_max  = as.Date("2010-01-01")
+        birth_date_min  = as.Date("1985-01-01"),
+        birth_date_max  = as.Date("2010-01-01")
       ),
       status = "dead"
     )
@@ -543,28 +543,28 @@ describe("list type minimum length", {
 
 describe("date type", {
   validator <- ArgumentsValidator$new(
-    born_at = list(
+    birth_date = list(
       required = TRUE,
       type = "date"
     )
   )
 
   it("succeeds on Date type", {
-    validator$run(born_at = as.Date("2020-12-03"))
-    validator$run(born_at = as.Date("1800-03-28"))
+    validator$run(birth_date = as.Date("2020-12-03"))
+    validator$run(birth_date = as.Date("1800-03-28"))
   })
 
   it("succeeds on strings with right format", {
-    validator$run(born_at = "2020-12-03")
-    validator$run(born_at = "1800-03-28")
+    validator$run(birth_date = "2020-12-03")
+    validator$run(birth_date = "1800-03-28")
   })
 
   it("fails on incorrect formats", {
     expect_error(
-      validator$run(born_at = "a2020-12-03")
+      validator$run(birth_date = "a2020-12-03")
     )
     expect_error(
-      validator$run(born_at = "180003/28")
+      validator$run(birth_date = "180003/28")
     )
   })
 })

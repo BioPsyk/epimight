@@ -135,8 +135,8 @@ earliest_onset_age <- 10
 Next we define the millenials period (1981 to 1996) as the allowed date of birth:
 
 #+BEGIN_SRC R :exports code
-born_at_start <- as.Date("1981-01-01")
-born_at_end   <- as.Date("1996-01-01")
+birth_date_start <- as.Date("1981-01-01")
+birth_date_end   <- as.Date("1996-01-01")
 #+END_SRC
 
 #+RESULTS:
@@ -160,7 +160,7 @@ requirements in order to be used by this pipeline:
 4. Can contain any other column used in pre-analysis filtering
 
 Since we are only studying millenials, our TTE data also needs to contain a column that
-contains each individuals birth date. In this guide, we call this column ~born_at~.
+contains each individuals birth date. In this guide, we call this column ~birth_date~.
 The file format of the data is not important, what is important is that we can read the
 data and convert into a ~data.table~.
 
@@ -177,7 +177,7 @@ n_count <- 100000
 
 tte <- generate_random_tte(n_count)
 tte <- generate_failure(tte, 20, 10) |>
-  select(-born_at_year, -dead_at_year, -relatives) |>
+  select(-birth_year, -dead_at_year, -relatives) |>
   as.data.table()
 #+END_SRC
 
@@ -200,8 +200,8 @@ After the data has been read, we need to apply our millenials filter to it:
 #+BEGIN_SRC R :exports both :results output
 tte <- tte |>
   filter(
-    born_at >= born_at_start,
-    born_at <= born_at_end
+    birth_date >= birth_date_start,
+    birth_date <= birth_date_end
   )
 #+END_SRC
 
@@ -216,7 +216,7 @@ print(tte)
 
 #+RESULTS:
 #+begin_example
-       person_id gender    born_at failure_status failure_time
+       person_id gender    birth_date failure_status failure_time
     1:         4      f 1986-03-12              0           40
     2:         5      f 1990-10-10              0           36
     3:         9      m 1993-11-17              0           33

@@ -163,14 +163,14 @@ Here's an example where we want to stratify the results on birthyear:
 We
 
 Here's an example where we read a single dataset that contains TTE data for schizophrenia,
-that contains an extra column called ~born_at_year~ which contains the year the sample was
-born. We then use the run function and also tell it to stratify the results on the ~born_at_year~
+that contains an extra column called ~birth_year~ which contains the year the sample was
+born. We then use the run function and also tell it to stratify the results on the ~birth_year~
 column:
 
 #+BEGIN_SRC R
 estimates <- analysis$run(
   tte           = read_csv("./tmp/data/tte_SCZ.csv") |> as.data.table(),
-  stratify_columns = list("born_at_year")
+  stratify_columns = list("birth_year")
 )
 #+END_SRC
 
@@ -192,7 +192,7 @@ estimates <- analysis$run(
 file tte [
 <color:#255ba7><$ma_account{scale=0.35}></color>  **TTE data**
 
-| **person_id** | **failure_status** | **failure_time** | **born_at_year** |
+| **person_id** | **failure_status** | **failure_time** | **birth_year** |
 | ...           | ...                | ...              | ...              |
 | 99962         |              0     | 30               | 1995             |
 | 99968         |              0     | 28               | 1988             |
@@ -205,13 +205,13 @@ file stratify_columns [
 <color:#255ba7><$ma_format_list_bulleted{scale=0.35}></color>  **Group columns**
 
 ---
-born_at_year
+birth_year
 ]
 
 file estimates [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**
 
-| **time** | **estimate** | **variance** | **l95**     | **u95**     | **cases ** | **born_at_year** |
+| **time** | **estimate** | **variance** | **l95**     | **u95**     | **cases ** | **birth_year** |
 | ...      | ...          | ...          | ...         | ...         | ...        | ...              |
 | 23       | 0.05706522   | 7.321201e-05 | 0.040294979 | 0.07383546  | 40         | 1995             |
 | 24       | 0.06114130   | 7.810260e-05 | 0.043819991 | 0.07846262  | 43         | 1995             |

@@ -254,7 +254,7 @@ skinparam ranksep 80
 file tte [
 <color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **born_at_year** | **disorder** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_amount** | **relatives_diagnosed** |
+| **person_id**  | **birth_year** | **disorder** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_amount** | **relatives_diagnosed** |
 | ...            | ...              | ...          | ...                | ...              | ...                   | ...                  | ...                     |
 <#76b354>| 99962 | 1999             | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
 | 99962          | 1999             | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
@@ -275,7 +275,7 @@ rectangle relkind #76b354 [
 | Heritability disorder 2 | FS |
 | Genetic correlation     | HS |
 ]
-rectangle "**Stratify columns**\nborn_at_year" as stratcols #76b354
+rectangle "**Stratify columns**\nbirth_year" as stratcols #76b354
 rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Analysis arguments**" as args
 rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**" as results
 
@@ -284,9 +284,9 @@ rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**
 
 file combined_cif [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**
-(disorder × cohort × born_at_year × time)
+(disorder × cohort × birth_year × time)
 
-| **disorder** | **cohort** | **born_at_year** | **time**  | **cif** |
+| **disorder** | **cohort** | **birth_year** | **time**  | **cif** |
 | SCZ          | c1         | 1999             | 25        | 0.054   |
 | SCZ          | c1         | 1999             | 26        | 0.048   |
 | SCZ          | c1         | 2000             | 25        | 0.048   |
@@ -301,9 +301,9 @@ file combined_cif [
 
 file combined_h2 [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**
-(disorder × born_at_year)
+(disorder × birth_year)
 
-| **disorder** | **born_at_year** | **h2** |
+| **disorder** | **birth_year** | **h2** |
 | SCZ          | 1999             | 0.054  |
 | SCZ          | 2000             | 0.048  |
 | ...          | ...              | ...    |
@@ -314,9 +314,9 @@ file combined_h2 [
 
 file combined_rg [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**
-(born_at_year)
+(birth_year)
 
-| **born_at_year** | **rg** |
+| **birth_year** | **rg** |
 | 1999             | 0.054  |
 | 2000             | 0.054  |
 ]
@@ -402,12 +402,12 @@ Then we need to have the stratification data of each individual (in our example,
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
-  distinct(person_id, born_at_year) |>
+  distinct(person_id, birth_year) |>
   tail(4)
 #+END_SRC
 
 #+RESULTS:
-| person_id | born_at_year |
+| person_id | birth_year |
 |-----------+--------------|
 |     99996 |         2013 |
 |     99997 |         1961 |
@@ -419,12 +419,12 @@ of this guide, there are two kinds of relatives:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
-  distinct(person_id, born_at_year, relatives_kind, relatives) |>
+  distinct(person_id, birth_year, relatives_kind, relatives) |>
   tail(4 * 2)
 #+END_SRC
 
 #+RESULTS:
-| person_id | born_at_year | relatives_kind | relatives |
+| person_id | birth_year | relatives_kind | relatives |
 |-----------+--------------+----------------+-----------|
 |     99996 |         2013 | full_siblings  |         0 |
 |     99996 |         2013 | parents        |         0 |
@@ -451,7 +451,7 @@ tte |> tail(4 * 4)
 #+END_SRC
 
 #+RESULTS:
-| person_id | born_at_year | disorder | failure_status | failure_time | relatives_kind | relatives | relatives_diagnosed |
+| person_id | birth_year | disorder | failure_status | failure_time | relatives_kind | relatives | relatives_diagnosed |
 |-----------+--------------+----------+----------------+--------------+----------------+-----------+---------------------|
 |     99996 |         2013 | CAD      |              0 |           13 | full_siblings  |         0 |                   0 |
 |     99996 |         2013 | CAD      |              0 |           13 | parents        |         0 |                   0 |
@@ -559,7 +559,7 @@ results <- pipeline$run(
     relatives_kind        = "full_siblings",
     relatives_coefficient = 0.5
   ),
-  stratify_columns = list("born_at_year")
+  stratify_columns = list("birth_year")
 )
 #+END_SRC
 
@@ -575,7 +575,7 @@ results$cif |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| disorder | cohort | born_at_year | time |                 cif |            cases |
+| disorder | cohort | birth_year | time |                 cif |            cases |
 |----------+--------+--------------+------+---------------------+------------------|
 | d2       | fh2    |         2020 |    3 | 0.00227496777128991 |                1 |
 | d2       | fh2    |         2020 |    5 | 0.00682490331386972 |                2 |
@@ -595,7 +595,7 @@ results$h2 |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| disorder | time | born_at_year |                h2 |                 se |                l95 |               u95 |
+| disorder | time | birth_year |                h2 |                 se |                l95 |               u95 |
 |----------+------+--------------+-------------------+--------------------+--------------------+-------------------|
 | d1       |   12 |         2014 | 0.330614992583285 | 0.0679961142094846 |  0.197342608732695 | 0.463887376433874 |
 | d1       |   11 |         2015 | 0.407681325162318 | 0.0718330295499271 |  0.266888587244461 | 0.548474063080175 |
@@ -615,7 +615,7 @@ results$rg |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| born_at_year |                  rg |                 se |                 l95 |                  u95 |
+| birth_year |                  rg |                 se |                 l95 |                  u95 |
 |--------------+---------------------+--------------------+---------------------+----------------------|
 |         2003 |  -0.314945414896915 |  0.128210202927866 |  -0.304752811598138 |    0.197831183879095 |
 |         2004 |    1.30058310043885 |  0.119679762755255 |  -0.175216406940015 |    0.293928263060584 |

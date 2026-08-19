@@ -51,8 +51,8 @@ generate_failure <- function(tte, mean, sd, end_of_study) {
     mutate(
       max_age = ifelse(
         dead_at_year > end_of_study_year,
-        end_of_study_year - born_at_year,
-        dead_at_year - born_at_year
+        end_of_study_year - birth_year,
+        dead_at_year - birth_year
       ),
       failure_status = ifelse(
         dead_at_year > end_of_study_year,
@@ -103,7 +103,7 @@ generate_random_tte <- function(n_count, period_start, period_end) {
   survival_data <- data.frame(
     person_id      = 1:n_count,
     gender         = sample(c("m", "f"), n_count, replace = TRUE),
-    born_at        = sample(birth_dates, n_count, replace = TRUE),
+    birth_date        = sample(birth_dates, n_count, replace = TRUE),
     death_age      = round(
       rnorm(n_count, mean = 68.9, sd = 8.2)
     ),
@@ -115,8 +115,8 @@ generate_random_tte <- function(n_count, period_start, period_end) {
     )
   ) |>
     mutate(
-      born_at_year = as.numeric(format(born_at, "%Y")),
-      dead_at_year = born_at_year + death_age
+      birth_year = as.numeric(format(birth_date, "%Y")),
+      dead_at_year = birth_year + death_age
     ) |>
     select(-death_age) |>
     distinct(person_id, .keep_all = TRUE)
@@ -165,9 +165,9 @@ generate_pipeline_tte <- function(n_count) {
     mutate(person_id = as.character(person_id), disorder = "CAD", relatives_kind = "parents") |>
     as.data.table()
 
-  tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-born_at, -dead_at_year) |>
+  tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-birth_date, -dead_at_year) |>
     arrange(person_id, disorder, relatives_kind) |>
-    select(person_id, born_at_year, disorder, failure_status, failure_time, relatives_kind, relatives, relatives_diagnosed)
+    select(person_id, birth_year, disorder, failure_status, failure_time, relatives_kind, relatives, relatives_diagnosed)
 
   return(tte)
 }
