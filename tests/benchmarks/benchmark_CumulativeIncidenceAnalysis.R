@@ -27,7 +27,7 @@ tte <- read_csv(
     weight = ifelse(relatives_diagnosed > 0.0, relatives_diagnosed / relatives, 0.0)
   ) |>
   filter(
-    disorder          == "SCZ",
+    trait          == "SCZ",
     relationship_kind == "PO"
   ) |>
   as.data.table()

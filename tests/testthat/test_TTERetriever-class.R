@@ -106,7 +106,7 @@ describe("run_from_file", {
   })
 })
 
-describe("two disorders", {
+describe("two traits", {
   it("produces a valid query with only the requirements", {
     query <- tte_retriever$generate_query(
       samples = list(
@@ -131,7 +131,7 @@ describe("two disorders", {
   })
 })
 
-describe("two disorders with relatives", {
+describe("two traits with relatives", {
   it("produces a valid query with only the requirements", {
     query <- tte_retriever$generate_query(
       samples = list(

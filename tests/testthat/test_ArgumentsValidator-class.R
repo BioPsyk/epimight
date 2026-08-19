@@ -81,14 +81,14 @@ describe("non-named lists arguments", {
       list("birth_date")
     )
 
-    proband_disorder   <- args[[1]]
-    relatives_disorder <- args[[2]]
+    proband_trait   <- args[[1]]
+    relatives_trait <- args[[2]]
     stratify_columns   <- args[[3]]
 
-    expect_equal(proband_disorder$id, d1_id)
-    expect_equal(proband_disorder$relatives_kind, d1_relkind)
-    expect_equal(relatives_disorder$id, d2_id)
-    expect_equal(relatives_disorder$relatives_kind, d2_relkind)
+    expect_equal(proband_trait$id, d1_id)
+    expect_equal(proband_trait$relatives_kind, d1_relkind)
+    expect_equal(relatives_trait$id, d2_id)
+    expect_equal(relatives_trait$relatives_kind, d2_relkind)
   })
 
   it("handles missing values in the middle", {

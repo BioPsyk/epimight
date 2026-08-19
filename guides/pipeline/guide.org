@@ -89,12 +89,12 @@ data and how you run the pipeline on said data.
 
 * How it works
 
-The pipeline produces a genetic correlation between 2 disorders:
+The pipeline produces a genetic correlation between 2 traits:
 
 | Term | Description |
 |------+-------------|
-| ~d1~ | Disorder 1  |
-| ~d2~ | Disorder 2  |
+| ~d1~ | Trait 1  |
+| ~d2~ | Trait 2  |
 
 By using time-to-event data of 3 different cohorts:
 
@@ -118,13 +118,13 @@ It produces 7 intermediate results that the genetic correlation is derived from:
 
 | Term         | Description                                    |
 |--------------+------------------------------------------------|
-| ~cif_d1_pop~ | CIF of disorder 1 from population cohort       |
-| ~cif_d1_fh1~ | CIF of disorder 1 from family history 1 cohort |
-| ~cif_d1_fh2~ | CIF of disorder 1 from family history 2 cohort |
-| ~cif_d2_pop~ | CIF of disorder 2 from population cohort       |
-| ~cif_d2_fh2~ | CIF of disorder 2 from family history 2 cohort |
-| ~h2_d1~      | Heritability of disorder 1                     |
-| ~h2_d2~      | Heritability of disorder 2                     |
+| ~cif_d1_pop~ | CIF of trait 1 from population cohort       |
+| ~cif_d1_fh1~ | CIF of trait 1 from family history 1 cohort |
+| ~cif_d1_fh2~ | CIF of trait 1 from family history 2 cohort |
+| ~cif_d2_pop~ | CIF of trait 2 from population cohort       |
+| ~cif_d2_fh2~ | CIF of trait 2 from family history 2 cohort |
+| ~h2_d1~      | Heritability of trait 1                     |
+| ~h2_d2~      | Heritability of trait 2                     |
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -169,8 +169,8 @@ skinparam defaultTextAlignment center
 title "**Data flow**\nCohorts and analysis results"
 
 card "<$mdiAccountGroup{scale=1}>\nPopulation" as pop
-card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nDisorder 1" as fh1
-card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nDisorder 2" as fh2
+card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nTrait 1" as fh1
+card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nTrait 2" as fh2
 file "**CIF**" as cif_d1_pop #dd2e44
 file "**CIF**" as cif_d1_fh1 #dd2e44
 file "**CIF**" as cif_d1_fh2 #dd2e44
@@ -181,9 +181,9 @@ file "**H2**" as h2_d2 #54adef
 file "**RG**" as rg #ffd600
 
 legend left
-  <#silver>|= Color|= Disorder|
-  |<#dd2e44>|Disorder 1|
-  |<#54adef>|Disorder 2|
+  <#silver>|= Color|= Trait|
+  |<#dd2e44>|Trait 1|
+  |<#54adef>|Trait 2|
 endlegend
 
 pop --> fh1
@@ -218,7 +218,7 @@ Let's say way we want to answer this research question:
 "What is the genetic correlation between schizophrenia and coronary artery disease
 using Danish millenials (people born from 1981 to 1996) and their full siblings?"
 
-We would then define the disorders as:
+We would then define the traits as:
 
 - ~d1~ :: Schizophrenia
 - ~d2~ :: Coronary artery disease
@@ -229,7 +229,7 @@ And the cohorts as:
 - ~fh1~ :: Danish millenials, with at least one full sibling diagnosed with ~d1~
 - ~fh2~ :: Danish millenials, with at least one full sibling diagnosed with ~d2~
 
-The pipeline starts by producing the CIF results for the two disorders from the
+The pipeline starts by producing the CIF results for the two traits from the
 ~pop~ cohort.
 
 
@@ -254,7 +254,7 @@ skinparam ranksep 80
 file tte [
 <color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **birth_year** | **disorder** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_amount** | **relatives_diagnosed** |
+| **person_id**  | **birth_year** | **trait** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_amount** | **relatives_diagnosed** |
 | ...            | ...              | ...          | ...                | ...              | ...                   | ...                  | ...                     |
 <#76b354>| 99962 | 1999             | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
 | 99962          | 1999             | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
@@ -266,13 +266,13 @@ file tte [
 | 99963          | 2000             | CAD          | 0                  | 33               | FS                    | 2                    | 0                       |
 ]
 
-rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
-rectangle "**Disorder 2**\nCAD" as disorder2 #76b354
+rectangle "**Trait 1**\nSCZ" as trait1 #76b354
+rectangle "**Trait 2**\nCAD" as trait2 #76b354
 rectangle relkind #76b354 [
 **Relationship kinds**
 
-| Heritability disorder 1 | PO |
-| Heritability disorder 2 | FS |
+| Heritability trait 1 | PO |
+| Heritability trait 2 | FS |
 | Genetic correlation     | HS |
 ]
 rectangle "**Stratify columns**\nbirth_year" as stratcols #76b354
@@ -284,9 +284,9 @@ rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**
 
 file combined_cif [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**
-(disorder × cohort × birth_year × time)
+(trait × cohort × birth_year × time)
 
-| **disorder** | **cohort** | **birth_year** | **time**  | **cif** |
+| **trait** | **cohort** | **birth_year** | **time**  | **cif** |
 | SCZ          | c1         | 1999             | 25        | 0.054   |
 | SCZ          | c1         | 1999             | 26        | 0.048   |
 | SCZ          | c1         | 2000             | 25        | 0.048   |
@@ -301,9 +301,9 @@ file combined_cif [
 
 file combined_h2 [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**
-(disorder × birth_year)
+(trait × birth_year)
 
-| **disorder** | **birth_year** | **h2** |
+| **trait** | **birth_year** | **h2** |
 | SCZ          | 1999             | 0.054  |
 | SCZ          | 2000             | 0.048  |
 | ...          | ...              | ...    |
@@ -323,9 +323,9 @@ file combined_rg [
 
 ' file meta_h2 [
 ' <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**
-' (disorder)
+' (trait)
 '
-' | **disorder** | **h2** |
+' | **trait** | **h2** |
 ' | SCZ          | 0.054  |
 ' | CAD          | 0.053  |
 ' ]
@@ -345,8 +345,8 @@ Boundary1(epimight, "Epimight") {
 
 stratcols --> args
 relkind --> args
-disorder2 --> args
-disorder1 --> args
+trait2 --> args
+trait1 --> args
 
 args --> run : " Given to"
 
@@ -374,8 +374,8 @@ results --> combined_rg
 [[file:../diagrams/pipeline-component-diagram.png]]
 
 The basic concept of the pipeline is pretty simple, you create a dataset that contains
-time-to-event for all disorders and types of relatives you want to analyse. You feed this
-dataset to the pipeline when you create it. Then you tell the pipeline which pair of disorders
+time-to-event for all traits and types of relatives you want to analyse. You feed this
+dataset to the pipeline when you create it. Then you tell the pipeline which pair of traits
 and type of relatives you want to analyse and it will output cumulative incidences, heritabilities
 and genetic correlations.
 
@@ -438,20 +438,20 @@ tte |>
 Note that you are free to use whatever label you want in the ~relatives_kind~ column.
 The label is only used to filter out rows for cohorts selection.
 
-Then for each disorder, we need to know:
+Then for each trait, we need to know:
 
-- The label of the disorder
+- The label of the trait
 - The failure status/time of the individual
-- How many relatives were diagnosed with the disorder
+- How many relatives were diagnosed with the trait
 
-Since there are 2 disorders and 2 kinds of relatives, each individual gets 4 rows:
+Since there are 2 traits and 2 kinds of relatives, each individual gets 4 rows:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |> tail(4 * 4)
 #+END_SRC
 
 #+RESULTS:
-| person_id | birth_year | disorder | failure_status | failure_time | relatives_kind | relatives | relatives_diagnosed |
+| person_id | birth_year | trait | failure_status | failure_time | relatives_kind | relatives | relatives_diagnosed |
 |-----------+--------------+----------+----------------+--------------+----------------+-----------+---------------------|
 |     99996 |         2013 | CAD      |              0 |           13 | full_siblings  |         0 |                   0 |
 |     99996 |         2013 | CAD      |              0 |           13 | parents        |         0 |                   0 |
@@ -470,8 +470,8 @@ tte |> tail(4 * 4)
 |     99999 |         1983 | SCZ      |              0 |           43 | full_siblings  |         0 |                   0 |
 |     99999 |         1983 | SCZ      |              0 |           43 | parents        |         0 |                   0 |
 
-Note that you are free to use whatever label you want in the ~disorder~ column.
-The label is only used to filter out rows for disorder selection.
+Note that you are free to use whatever label you want in the ~trait~ column.
+The label is only used to filter out rows for trait selection.
 
 * Setting up the pipeline
 
@@ -504,7 +504,7 @@ The supplied pool must be a ~data.table~ with the following required columns:
 
 - ~person_id~
   - Must be a string
-- ~disorder~
+- ~trait~
   - Must be a string
 - ~failure_status~
   - Must be one of these integers:
@@ -526,13 +526,13 @@ It accepts any additional columns used for stratification.
 
 After creating the pipeline instance, we run the pipeline by supplying the ~run~ function with:
 
-- Disorder 1
+- Trait 1
   - Identifier
   - Earliest onset
   - Latest onset
   - What kind of relatives to use for ~fh1~ cohort
   - What coefficient of relationship to use for heritability
-- Disorder 2
+- Trait 2
   - Identifier
   - Earliest onset
   - Latest onset
@@ -545,14 +545,14 @@ stratifying on birth year, we would run:
 
 #+BEGIN_SRC R :exports code :results output
 results <- pipeline$run(
-  disorder1 = list(
+  trait1 = list(
     id                    = "SCZ",
     earliest_onset        = 1,
     latest_onset          = 100,
     relatives_kind        = "parents",
     relatives_coefficient = 0.5
   ),
-  disorder2 = list(
+  trait2 = list(
     id                    = "CAD",
     earliest_onset        = 1,
     latest_onset          = 100,
@@ -565,7 +565,7 @@ results <- pipeline$run(
 
 #+RESULTS:
 
-This will give us the genetic correlation between the two disorders and all the intermediate results (cif and h2)
+This will give us the genetic correlation between the two traits and all the intermediate results (cif and h2)
 in a named list with the members ~cif~, ~h2~ and ~rg~ that contain the results as ~data.tables~.
 
 ** Cumulative incidence
@@ -575,7 +575,7 @@ results$cif |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| disorder | cohort | birth_year | time |                 cif |            cases |
+| trait | cohort | birth_year | time |                 cif |            cases |
 |----------+--------+--------------+------+---------------------+------------------|
 | d2       | fh2    |         2020 |    3 | 0.00227496777128991 |                1 |
 | d2       | fh2    |         2020 |    5 | 0.00682490331386972 |                2 |
@@ -595,7 +595,7 @@ results$h2 |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| disorder | time | birth_year |                h2 |                 se |                l95 |               u95 |
+| trait | time | birth_year |                h2 |                 se |                l95 |               u95 |
 |----------+------+--------------+-------------------+--------------------+--------------------+-------------------|
 | d1       |   12 |         2014 | 0.330614992583285 | 0.0679961142094846 |  0.197342608732695 | 0.463887376433874 |
 | d1       |   11 |         2015 | 0.407681325162318 | 0.0718330295499271 |  0.266888587244461 | 0.548474063080175 |
@@ -644,7 +644,7 @@ meta$h2 |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| disorder |        fixed_meta |            fixed_se |         fixed_l95 |         fixed_u95 |         rand_meta |            rand_se |          rand_l95 |          rand_u95 |
+| trait |        fixed_meta |            fixed_se |         fixed_l95 |         fixed_u95 |         rand_meta |            rand_se |          rand_l95 |          rand_u95 |
 |----------+-------------------+---------------------+-------------------+-------------------+-------------------+--------------------+-------------------+-------------------|
 | d1       | 0.277860581629354 | 0.00870065805468959 | 0.260807291842162 | 0.294913871416545 | 0.316149891779342 | 0.0223208020980199 | 0.272401119667223 | 0.359898663891461 |
 

@@ -4,8 +4,8 @@ library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 # Generators
 #=================================================================================
 
-generate_relatives_diagnosed_prob <- function(failure_status, relatives) {
-  if (failure_status == 1) {
+generate_relatives_trait_n_prob <- function(trait_status, relatives) {
+  if (trait_status == 1) {
     unaffected_prob <- 0.45
   } else {
     unaffected_prob <- 0.75
@@ -22,7 +22,7 @@ generate_relatives_diagnosed_prob <- function(failure_status, relatives) {
   return(prob)
 }
 
-generate_relatives_diagnosed <- function(tte, column_name) {
+generate_relatives_trait_n <- function(tte, column_name) {
   survival_data <- tte |>
     rowwise() |>
     mutate(
@@ -30,7 +30,7 @@ generate_relatives_diagnosed <- function(tte, column_name) {
         0:relatives,
         1,
         replace = TRUE,
-        prob = generate_relatives_diagnosed_prob(failure_status, relatives)
+        prob = generate_relatives_trait_n_prob(trait_status, relatives)
       )
     )
 
@@ -54,7 +54,7 @@ generate_failure <- function(tte, mean, sd, end_of_study) {
         end_of_study_year - birth_year,
         dead_at_year - birth_year
       ),
-      failure_status = ifelse(
+      trait_status = ifelse(
         dead_at_year > end_of_study_year,
         sample(
           seq(0, 1),
@@ -70,8 +70,8 @@ generate_failure <- function(tte, mean, sd, end_of_study) {
         )
       ),
       onset_age = round(rnorm(1, mean = mean, sd = sd)),
-      failure_time = ifelse(
-        failure_status == 1,
+      trait_onset_time = ifelse(
+        trait_status == 1,
         case_when(
           onset_age < 0 ~ 0,
           onset_age > max_age ~ max_age,
@@ -103,7 +103,7 @@ generate_random_tte <- function(n_count, period_start, period_end) {
   survival_data <- data.frame(
     person_id      = 1:n_count,
     gender         = sample(c("m", "f"), n_count, replace = TRUE),
-    birth_date        = sample(birth_dates, n_count, replace = TRUE),
+    birth_date     = sample(birth_dates, n_count, replace = TRUE),
     death_age      = round(
       rnorm(n_count, mean = 68.9, sd = 8.2)
     ),
@@ -127,47 +127,47 @@ generate_random_tte <- function(n_count, period_start, period_end) {
 generate_pipeline_tte <- function(n_count) {
   d1_fs_tte <- generate_random_tte(n_count)
   d1_fs_tte <- generate_failure(d1_fs_tte, 20, 10)
-  d1_fs_tte <- generate_relatives_diagnosed(d1_fs_tte, "relatives_diagnosed") |>
-    relocate(failure_time, .after = person_id) |>
-    relocate(failure_status, .after = failure_time) |>
-    relocate(relatives, .after = failure_status) |>
-    relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "SCZ", relatives_kind = "full_siblings") |>
+  d1_fs_tte <- generate_relatives_trait_n(d1_fs_tte, "relatives_trait_n") |>
+    relocate(trait_onset_time, .after = person_id) |>
+    relocate(trait_status, .after = trait_onset_time) |>
+    relocate(relatives, .after = trait_status) |>
+    relocate(relatives_trait_n, .after = relatives) |>
+    mutate(person_id = as.character(person_id), trait = "SCZ", relatives = "full_siblings") |>
     as.data.table()
 
-  d2_fs_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relatives_kind))
+  d2_fs_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
   d2_fs_tte <- generate_failure(d2_fs_tte, 19, 11)
-  d2_fs_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
-    relocate(failure_time, .after = person_id) |>
-    relocate(failure_status, .after = failure_time) |>
-    relocate(relatives, .after = failure_status) |>
-    relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "CAD", relatives_kind = "full_siblings") |>
+  d2_fs_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
+    relocate(trait_onset_time, .after = person_id) |>
+    relocate(trait_status, .after = trait_onset_time) |>
+    relocate(relatives, .after = trait_status) |>
+    relocate(relatives_trait_n, .after = relatives) |>
+    mutate(person_id = as.character(person_id), trait = "CAD", relatives = "full_siblings") |>
     as.data.table()
 
-  d1_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relatives_kind))
+  d1_po_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
   d1_po_tte <- generate_failure(d2_fs_tte, 20, 10)
-  d1_po_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
-    relocate(failure_time, .after = person_id) |>
-    relocate(failure_status, .after = failure_time) |>
-    relocate(relatives, .after = failure_status) |>
-    relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "SCZ", relatives_kind = "parents") |>
+  d1_po_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
+    relocate(trait_onset_time, .after = person_id) |>
+    relocate(trait_status, .after = trait_onset_time) |>
+    relocate(relatives, .after = trait_status) |>
+    relocate(relatives_trait_n, .after = relatives) |>
+    mutate(person_id = as.character(person_id), trait = "SCZ", relatives = "parents") |>
     as.data.table()
 
-  d2_po_tte <- copy(d1_fs_tte |> select(-failure_time, -failure_status, -relatives_diagnosed, -disorder, -relatives_kind))
+  d2_po_tte <- copy(d1_fs_tte |> select(-trait_onset_time, -trait_status, -relatives_trait_n, -trait, -relatives))
   d2_po_tte <- generate_failure(d2_fs_tte, 19, 11)
-  d2_po_tte <- generate_relatives_diagnosed(d2_fs_tte, "relatives_diagnosed") |>
-    relocate(failure_time, .after = person_id) |>
-    relocate(failure_status, .after = failure_time) |>
-    relocate(relatives, .after = failure_status) |>
-    relocate(relatives_diagnosed, .after = relatives) |>
-    mutate(person_id = as.character(person_id), disorder = "CAD", relatives_kind = "parents") |>
+  d2_po_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
+    relocate(trait_onset_time, .after = person_id) |>
+    relocate(trait_status, .after = trait_onset_time) |>
+    relocate(relatives, .after = trait_status) |>
+    relocate(relatives_trait_n, .after = relatives) |>
+    mutate(person_id = as.character(person_id), trait = "CAD", relatives = "parents") |>
     as.data.table()
 
   tte <- rbindlist(list(d1_fs_tte, d2_fs_tte, d1_po_tte, d2_po_tte)) |> select(-birth_date, -dead_at_year) |>
-    arrange(person_id, disorder, relatives_kind) |>
-    select(person_id, birth_year, disorder, failure_status, failure_time, relatives_kind, relatives, relatives_diagnosed)
+    arrange(person_id, trait, relatives) |>
+    select(person_id, birth_year, trait, trait_status, trait_onset_time, relatives, relatives, relatives_trait_n)
 
   return(tte)
 }

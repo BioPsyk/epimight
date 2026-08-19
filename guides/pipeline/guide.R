@@ -13,12 +13,12 @@ tte <- read_csv(
 pipeline <- Pipeline$new(pool = tte)
 
 results <- pipeline$run(
-  disorder1 = list(
+  trait1 = list(
     id             = "SCZ",
     earliest_onset = 1,
     latest_onset   = 100
   ),
-  disorder2 = list(
+  trait2 = list(
     id             = "CAD",
     earliest_onset = 1,
     latest_onset   = 100

@@ -24,7 +24,7 @@ tte <- read_csv(
   col_types = cols(person_id = col_character()),
 ) |> as.data.table()
 
-samples <- tte |> filter(disorder == "SCZ", relationship_kind == "PO") |> nrow()
+samples <- tte |> filter(trait == "SCZ", relationship_kind == "PO") |> nrow()
 
 pipeline <- Pipeline$new(pool = tte)
 
@@ -35,10 +35,10 @@ pipeline <- Pipeline$new(pool = tte)
 benchmarks <- list(
   "CIF, H2, RG" = function() {
     results <- pipeline$run(
-      disorder1 = list(
+      trait1 = list(
         id = "SCZ"
       ),
-      disorder2 = list(
+      trait2 = list(
         id = "CAD"
       ),
       relationship_kind = "PO"
@@ -50,10 +50,10 @@ benchmarks <- list(
   },
   "CIF, H2, RG (1 strat)" = function() {
     results <- pipeline$run(
-      disorder1 = list(
+      trait1 = list(
         id = "SCZ"
       ),
-      disorder2 = list(
+      trait2 = list(
         id = "CAD"
       ),
       relationship_kind = "PO",
@@ -66,10 +66,10 @@ benchmarks <- list(
   },
   "weighted CIF, H2, RG" = function() {
     results <- pipeline$run(
-      disorder1 = list(
+      trait1 = list(
         id = "SCZ"
       ),
-      disorder2 = list(
+      trait2 = list(
         id = "CAD"
       ),
       relationship_kind = "PO",
@@ -82,10 +82,10 @@ benchmarks <- list(
   },
   "weighted CIF, H2, RG (1 strat)" = function() {
     results <- pipeline$run(
-      disorder1 = list(
+      trait1 = list(
         id = "SCZ"
       ),
-      disorder2 = list(
+      trait2 = list(
         id = "CAD"
       ),
       relationship_kind = "PO",

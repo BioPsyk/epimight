@@ -88,7 +88,7 @@
 file tte [
 <color:#255ba7><$ma_account{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **disorder** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** |
+| **person_id**  | **trait** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** |
 | ...            | ...          | ...                | ...              | ...                   | ...                  | ...                     |
 <#76b354>| 99962 | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
 | 99962          | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
@@ -96,8 +96,8 @@ file tte [
 | 99962          | CAD          | 2                  | 34               | FS                    | 1                    | 0                       |
 ]
 
-rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
-rectangle "**Disorder 2**\nCAD" as disorder2 #76b354
+rectangle "**Trait 1**\nSCZ" as trait1 #76b354
+rectangle "**Trait 2**\nCAD" as trait2 #76b354
 rectangle "**Relationship kind**\nPO" as relkind #76b354
 
 file results [
@@ -116,8 +116,8 @@ Boundary1(scope, "Epimight") {
 }
 
 tte ..> preproc
-disorder1 ..> preproc
-disorder2 ..> preproc
+trait1 ..> preproc
+trait2 ..> preproc
 relkind ..> preproc
 
 Arrow_Down(preproc, cif)

@@ -21,14 +21,14 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
     #' Calulates genetic correlation (rg/rhh) along with standard error and confidence intervals.
     #'
     #' @param id Id of row, when providing stratified results.
-    #' @param Kc lifetime prevalence disorder 1 in the general population.
-    #' @param Krc lifetime prevalence of disorder 1 on those whose parents have CAD.
-    #' @param kf lifetime prevalence disorder 2 in the general population.
+    #' @param Kc lifetime prevalence trait 1 in the general population.
+    #' @param Krc lifetime prevalence of trait 1 on those whose parents have CAD.
+    #' @param kf lifetime prevalence trait 2 in the general population.
     #' @param Ac number of cases used to calculate Kc.
     #' @param Arc number of cases used to calculate Krc.
     #' @param Af number of cases used to calculate Kf.
-    #' @param h2_d1 heritability of disorder 1.
-    #' @param h2_d2 heritability of disorder 2.
+    #' @param h2_d1 heritability of trait 1.
+    #' @param h2_d2 heritability of trait 2.
     #' @param rc Relationship coefficient.
     #' @returns Data.table with results
     calculate_rg = function(id, kc, krc, kf, ac, arc, af, h2_d1, h2_d2, rc) {
@@ -68,7 +68,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
       return(results)
     },
     #' @description
-    #' Calculates genetic correlation from the given risk and heritability estimates for two disorders.
+    #' Calculates genetic correlation from the given risk and heritability estimates for two traits.
     #'
     #' @returns Data.table with genetic correlations.
     run = function(...) {
