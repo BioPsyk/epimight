@@ -158,7 +158,7 @@ generate_pipeline_tte <- function(n_count) {
   d2_po_tte <- generate_relatives_trait_n(d2_fs_tte, "relatives_trait_n") |>
     relocate(trait_onset_time, .after = person_id) |>
     relocate(trait_status, .after = trait_onset_time) |>
-    relocate(relatives, .after = trait_status) |>
+    relocate(relatives_n, .after = trait_status) |>
     relocate(relatives_trait_n, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), trait = "CAD", relatives = "parents") |>
     as.data.table()
