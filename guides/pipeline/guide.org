@@ -126,24 +126,6 @@ That produce 7 intermediate results that the genetic correlation is derived from
 | ~h2_d1~      | Heritability of disorder 1                     |
 | ~h2_d2~      | Heritability of disorder 2                     |
 
-Let's say way we want to answer this research question:
-"What is the genetic correlation between schizophrenia and coronary artery disease
-using Danish millenials (people born from 1981 to 1996) and their full siblings?"
-
-We would then define the disorders as:
-
-- ~d1~ :: Schizophrenia
-- ~d2~ :: Coronary artery disease
-
-And the cohorts as:
-
-- ~pop~ :: Danish millenials
-- ~fh1~ :: Danish millenials, with at least one full sibling diagnosed with ~d1~
-- ~fh2~ :: Danish millenials, with at least one full sibling diagnosed with ~d2~
-
-The pipeline starts by producing the CIF results for the two disorders from the
-~pop~ cohort.
-
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
 #+NAME: fig:pipeline-dag
@@ -231,6 +213,25 @@ h2_d2 --> rg
 #+CAPTION: Pipeline results
 #+RESULTS: fig:pipeline-dag
 [[file:../diagrams/pipeline-dag.png]]
+
+Let's say way we want to answer this research question:
+"What is the genetic correlation between schizophrenia and coronary artery disease
+using Danish millenials (people born from 1981 to 1996) and their full siblings?"
+
+We would then define the disorders as:
+
+- ~d1~ :: Schizophrenia
+- ~d2~ :: Coronary artery disease
+
+And the cohorts as:
+
+- ~pop~ :: Danish millenials
+- ~fh1~ :: Danish millenials, with at least one full sibling diagnosed with ~d1~
+- ~fh2~ :: Danish millenials, with at least one full sibling diagnosed with ~d2~
+
+The pipeline starts by producing the CIF results for the two disorders from the
+~pop~ cohort.
+
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
