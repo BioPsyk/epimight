@@ -93,16 +93,16 @@ The pipeline produces a genetic correlation between 2 traits:
 
 | Term | Description |
 |------+-------------|
-| ~d1~ | Trait 1  |
-| ~d2~ | Trait 2  |
+| ~t1~ | Trait 1     |
+| ~t2~ | Trait 2     |
 
 By using time-to-event data of 3 different cohorts:
 
 | Term  | Description                                                          |
 |-------+----------------------------------------------------------------------|
 | ~pop~ | Population or "target cohort"                                        |
-| ~fh1~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~d1~ |
-| ~fh2~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~d2~ |
+| ~fh1~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~t1~ |
+| ~fh2~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~t2~ |
 
 Note: ~fh~ is short for "family history".
 
@@ -116,15 +116,15 @@ The pipeline consists of 3 analyzes:
 
 It produces 7 intermediate results that the genetic correlation is derived from:
 
-| Term         | Description                                    |
-|--------------+------------------------------------------------|
-| ~cif_d1_pop~ | CIF of trait 1 from population cohort       |
-| ~cif_d1_fh1~ | CIF of trait 1 from family history 1 cohort |
-| ~cif_d1_fh2~ | CIF of trait 1 from family history 2 cohort |
-| ~cif_d2_pop~ | CIF of trait 2 from population cohort       |
-| ~cif_d2_fh2~ | CIF of trait 2 from family history 2 cohort |
-| ~h2_d1~      | Heritability of trait 1                     |
-| ~h2_d2~      | Heritability of trait 2                     |
+| Term         | Description                                 |
+|--------------+---------------------------------------------|
+| ~cif_t1_pop~ | CIF of trait 1 from population cohort       |
+| ~cif_t1_fh1~ | CIF of trait 1 from family history 1 cohort |
+| ~cif_t1_fh2~ | CIF of trait 1 from family history 2 cohort |
+| ~cif_t2_pop~ | CIF of trait 2 from population cohort       |
+| ~cif_t2_fh2~ | CIF of trait 2 from family history 2 cohort |
+| ~h2_t1~      | Heritability of trait 1                     |
+| ~h2_t2~      | Heritability of trait 2                     |
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -171,40 +171,40 @@ title "**Data flow**\nCohorts and analysis results"
 card "<$mdiAccountGroup{scale=1}>\nPopulation" as pop
 card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nTrait 1" as fh1
 card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nTrait 2" as fh2
-file "**CIF**" as cif_d1_pop #dd2e44
-file "**CIF**" as cif_d1_fh1 #dd2e44
-file "**CIF**" as cif_d1_fh2 #dd2e44
-file "**CIF**" as cif_d2_pop #54adef
-file "**CIF**" as cif_d2_fh2 #54adef
-file "**H2**" as h2_d1 #dd2e44
-file "**H2**" as h2_d2 #54adef
-file "**RG**" as rg #ffd600
+file "**CIF**" as cif_t1_pop #dt2e44
+file "**CIF**" as cif_t1_fh1 #dt2e44
+file "**CIF**" as cif_t1_fh2 #dt2e44
+file "**CIF**" as cif_t2_pop #54adef
+file "**CIF**" as cif_t2_fh2 #54adef
+file "**H2**" as h2_t1 #dt2e44
+file "**H2**" as h2_t2 #54adef
+file "**RG**" as rg #fft600
 
 legend left
   <#silver>|= Color|= Trait|
-  |<#dd2e44>|Trait 1|
+  |<#dt2e44>|Trait 1|
   |<#54adef>|Trait 2|
 endlegend
 
 pop --> fh1
 pop --> fh2
-pop --> cif_d2_pop
-pop --> cif_d1_pop
-fh1 --> cif_d1_fh1
-fh2 --> cif_d1_fh2
-fh2 --> cif_d2_fh2
+pop --> cif_t2_pop
+pop --> cif_t1_pop
+fh1 --> cif_t1_fh1
+fh2 --> cif_t1_fh2
+fh2 --> cif_t2_fh2
 
-cif_d2_pop --> h2_d2
-cif_d2_fh2 --> h2_d2
+cif_t2_pop --> h2_t2
+cif_t2_fh2 --> h2_t2
 
-cif_d1_pop --> h2_d1
-cif_d1_fh1 --> h2_d1
+cif_t1_pop --> h2_t1
+cif_t1_fh1 --> h2_t1
 
-cif_d1_fh2 ---> rg
-cif_d1_pop --> rg
-cif_d2_pop --> rg
-h2_d1 --> rg
-h2_d2 --> rg
+cif_t1_fh2 ---> rg
+cif_t1_pop --> rg
+cif_t2_pop --> rg
+h2_t1 --> rg
+h2_t2 --> rg
 
 @enduml
 #+END_SRC
@@ -220,14 +220,14 @@ using Danish millenials (people born from 1981 to 1996) and their full siblings?
 
 We would then define the traits as:
 
-- ~d1~ :: Schizophrenia
-- ~d2~ :: Coronary artery disease
+- ~t1~ :: Schizophrenia
+- ~t2~ :: Coronary artery disease
 
 And the cohorts as:
 
 - ~pop~ :: Danish millenials
-- ~fh1~ :: Danish millenials, with at least one full sibling diagnosed with ~d1~
-- ~fh2~ :: Danish millenials, with at least one full sibling diagnosed with ~d2~
+- ~fh1~ :: Danish millenials, with at least one full sibling diagnosed with ~t1~
+- ~fh2~ :: Danish millenials, with at least one full sibling diagnosed with ~t2~
 
 The pipeline starts by producing the CIF results for the two traits from the
 ~pop~ cohort.
@@ -577,16 +577,16 @@ results$cif |> tail(10)
 #+RESULTS:
 | trait | cohort | birth_year | time |                 cif |            cases |
 |----------+--------+--------------+------+---------------------+------------------|
-| d2       | fh2    |         2020 |    3 | 0.00227496777128991 |                1 |
-| d2       | fh2    |         2020 |    5 | 0.00682490331386972 |                2 |
-| d2       | fh2    |         2020 |    6 |  0.0113748388564495 | 49.6420634920635 |
-| d2       | fh2    |         2021 |    5 | 0.00951738906293373 | 36.9333333333333 |
-| d2       | fh2    |         2022 |    4 |  0.0110219405504082 | 50.1440476190476 |
-| d2       | fh2    |         2023 |    1 | 0.00527058351096156 |                2 |
-| d2       | fh2    |         2023 |    2 |  0.0143058695297528 |                4 |
-| d2       | fh2    |         2023 |    3 |   0.023341155548544 | 45.4166666666667 |
-| d2       | fh2    |         2024 |    2 |  0.0141825549379189 |           40.225 |
-| d2       | fh2    |         2025 |    1 |  0.0125132829491623 | 47.4880952380952 |
+| t2       | fh2    |         2020 |    3 | 0.00227496777128991 |                1 |
+| t2       | fh2    |         2020 |    5 | 0.00682490331386972 |                2 |
+| t2       | fh2    |         2020 |    6 |  0.0113748388564495 | 49.6420634920635 |
+| t2       | fh2    |         2021 |    5 | 0.00951738906293373 | 36.9333333333333 |
+| t2       | fh2    |         2022 |    4 |  0.0110219405504082 | 50.1440476190476 |
+| t2       | fh2    |         2023 |    1 | 0.00527058351096156 |                2 |
+| t2       | fh2    |         2023 |    2 |  0.0143058695297528 |                4 |
+| t2       | fh2    |         2023 |    3 |   0.023341155548544 | 45.4166666666667 |
+| t2       | fh2    |         2024 |    2 |  0.0141825549379189 |           40.225 |
+| t2       | fh2    |         2025 |    1 |  0.0125132829491623 | 47.4880952380952 |
 
 ** Heritability
 
@@ -597,16 +597,16 @@ results$h2 |> tail(10)
 #+RESULTS:
 | trait | time | birth_year |                h2 |                 se |                l95 |               u95 |
 |----------+------+--------------+-------------------+--------------------+--------------------+-------------------|
-| d1       |   12 |         2014 | 0.330614992583285 | 0.0679961142094846 |  0.197342608732695 | 0.463887376433874 |
-| d1       |   11 |         2015 | 0.407681325162318 | 0.0718330295499271 |  0.266888587244461 | 0.548474063080175 |
-| d1       |    9 |         2017 | 0.152520777527039 | 0.0567582498831699 | 0.0412746077560259 | 0.263766947298052 |
-| d1       |    8 |         2018 | 0.204601036561276 | 0.0586732205318798 | 0.0896015243187919 | 0.319600548803761 |
-| d1       |    7 |         2019 | 0.172634352053748 | 0.0560324008795387 | 0.0628108463298522 | 0.282457857777644 |
-| d1       |    6 |         2020 | 0.160239615913957 | 0.0429726479037732 | 0.0760132260225615 | 0.244466005805353 |
-| d1       |    4 |         2022 | 0.188082675164681 | 0.0420436449445697 |  0.105677131073325 | 0.270488219256038 |
-| d1       |    3 |         2023 | 0.327186238815467 | 0.0494982888471826 |   0.23016959267499 | 0.424202884955945 |
-| d1       |    2 |         2024 | 0.233549186441482 | 0.0478630388319541 |  0.139737630330852 | 0.327360742552113 |
-| d1       |    1 |         2025 | 0.258661991675208 | 0.0426818089598783 |  0.175005646113846 | 0.342318337236569 |
+| t1       |   12 |         2014 | 0.330614992583285 | 0.0679961142094846 |  0.197342608732695 | 0.463887376433874 |
+| t1       |   11 |         2015 | 0.407681325162318 | 0.0718330295499271 |  0.266888587244461 | 0.548474063080175 |
+| t1       |    9 |         2017 | 0.152520777527039 | 0.0567582498831699 | 0.0412746077560259 | 0.263766947298052 |
+| t1       |    8 |         2018 | 0.204601036561276 | 0.0586732205318798 | 0.0896015243187919 | 0.319600548803761 |
+| t1       |    7 |         2019 | 0.172634352053748 | 0.0560324008795387 | 0.0628108463298522 | 0.282457857777644 |
+| t1       |    6 |         2020 | 0.160239615913957 | 0.0429726479037732 | 0.0760132260225615 | 0.244466005805353 |
+| t1       |    4 |         2022 | 0.188082675164681 | 0.0420436449445697 |  0.105677131073325 | 0.270488219256038 |
+| t1       |    3 |         2023 | 0.327186238815467 | 0.0494982888471826 |   0.23016959267499 | 0.424202884955945 |
+| t1       |    2 |         2024 | 0.233549186441482 | 0.0478630388319541 |  0.139737630330852 | 0.327360742552113 |
+| t1       |    1 |         2025 | 0.258661991675208 | 0.0426818089598783 |  0.175005646113846 | 0.342318337236569 |
 
 ** Genetic correlation
 
@@ -646,7 +646,7 @@ meta$h2 |> tail(10)
 #+RESULTS:
 | trait |        fixed_meta |            fixed_se |         fixed_l95 |         fixed_u95 |         rand_meta |            rand_se |          rand_l95 |          rand_u95 |
 |----------+-------------------+---------------------+-------------------+-------------------+-------------------+--------------------+-------------------+-------------------|
-| d1       | 0.277860581629354 | 0.00870065805468959 | 0.260807291842162 | 0.294913871416545 | 0.316149891779342 | 0.0223208020980199 | 0.272401119667223 | 0.359898663891461 |
+| t1       | 0.277860581629354 | 0.00870065805468959 | 0.260807291842162 | 0.294913871416545 | 0.316149891779342 | 0.0223208020980199 | 0.272401119667223 | 0.359898663891461 |
 
 ** Genetic correlation
 
