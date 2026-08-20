@@ -268,7 +268,7 @@ print(d2_tte)
 #+RESULTS:
 #+begin_example
 [1] "Disorder 1 survival data:"
-person_id gender    birth_date failure_status failure_time relatives
+person_id sex    birth_date failure_status failure_time relatives
     1:         4      f 1986-03-12              0           40         1
     2:         5      f 1990-10-10              0           36         2
     3:         9      m 1993-11-17              0           33         3
@@ -293,7 +293,7 @@ person_id gender    birth_date failure_status failure_time relatives
 19807:                   0
 19808:                   0
 [1] "Disorder 2 survival data:"
-person_id gender    birth_date failure_status failure_time relatives
+person_id sex    birth_date failure_status failure_time relatives
     1:         4      f 1986-03-12              0           40         1
     2:         5      f 1990-10-10              0           36         2
     3:         9      m 1993-11-17              0           33         3

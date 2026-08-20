@@ -101,7 +101,7 @@ generate_random_tte <- function(n_count, period_start, period_end) {
 
   survival_data <- data.frame(
     person_id      = 1:n_count,
-    gender         = sample(c("m", "f"), n_count, replace = TRUE),
+    sex         = sample(c("m", "f"), n_count, replace = TRUE),
     birth_date     = sample(birth_dates, n_count, replace = TRUE),
     death_age      = round(
       rnorm(n_count, mean = 68.9, sd = 8.2)

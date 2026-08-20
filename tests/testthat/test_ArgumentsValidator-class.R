@@ -131,9 +131,9 @@ describe("gen_pop_risk_validator", {
       required = TRUE,
       type = "date"
     ),
-    gender = list(
+    sex = list(
       type = "string",
-      enum = epimight:::genders
+      enum = list("male", "female")
     ),
     diagnosis_kind = list(
       type = "list",
@@ -182,14 +182,14 @@ describe("gen_pop_risk_validator", {
       birth_date_min = as.Date("1980-12-01"),
       birth_date_max = as.Date("2020-12-01"),
       study_end_at = as.Date("2020-12-02"),
-      gender = "male"
+      sex = "male"
     )
 
     expect_no_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
         study_end_at = as.Date("2020-12-01"),
-        gender = "male"
+        sex = "male"
       )
     )
 
@@ -199,7 +199,7 @@ describe("gen_pop_risk_validator", {
         birth_date_min = as.Date("1980-12-01"),
         birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-02"),
-        gender = "male"
+        sex = "male"
       )
     )
 
@@ -209,7 +209,7 @@ describe("gen_pop_risk_validator", {
         birth_date_min = as.Date("1980-12-01"),
         birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-02"),
-        gender = "male",
+        sex = "male",
         earliest_onset = 2,
         latest_onset = 80
       )
@@ -253,7 +253,7 @@ describe("gen_pop_risk_validator", {
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
         study_end_at = as.Date("2020-12-01"),
-        gender = 120
+        sex = 120
       )
     )
   })
@@ -263,7 +263,7 @@ describe("gen_pop_risk_validator", {
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
         study_end_at = as.Date("2020-12-01"),
-        gender = "both"
+        sex = "both"
       )
     )
 
@@ -290,7 +290,7 @@ describe("gen_pop_risk_validator", {
         birth_date_min = as.Date("1980-12-01"),
         birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-02"),
-        gender = "male",
+        sex = "male",
         earliest_onset = 2,
         latest_onset = 1
       )
@@ -512,7 +512,7 @@ describe("generic named list type", {
 
 describe("list type minimum length", {
   validator <- ArgumentsValidator$new(
-    genders = list(
+    sex = list(
       required = TRUE,
       type = "list",
       minimum_length = 1,
@@ -525,19 +525,19 @@ describe("list type minimum length", {
 
   it("fails when too few elements are given", {
     expect_error(
-      validator$run(genders = list())
+      validator$run(sex = list())
     )
   })
 
   it("fails when too many elements are given", {
     expect_error(
-      validator$run(genders = list("male", "female", "male"))
+      validator$run(sex = list("male", "female", "male"))
     )
   })
 
   it("works as expected when same or more elements given", {
-    validator$run(genders = list("male"))
-    validator$run(genders = list("male", "female"))
+    validator$run(sex = list("male"))
+    validator$run(sex = list("male", "female"))
   })
 })
 

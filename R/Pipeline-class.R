@@ -214,11 +214,11 @@ Pipeline <- R6::R6Class( #nolint
     #' Helper that aggregates the given estimates dataset down to a single row per stratification
     #' combination, where the kept row is the one with the largest `time` value within it's group.
     #'
-    #' If we have a dataset of cumulative incidences stratified by birth year and gender, each
+    #' If we have a dataset of cumulative incidences stratified by birth year and sex, each
     #' stratification combination will have multiple rows, like this:
     #'
     #'   |------+------------+--------+------------+------|
-    #'   | time | birth_year | gender |  estimates | case |
+    #'   | time | birth_year | sex |  estimates | case |
     #'   |------+------------+--------+------------+------|
     #'   |   43 |       1981 | f      | 0.10639881 |  141 |
     #'   |   42 |       1981 | f      | 0.09763101 |  131 |
@@ -228,11 +228,11 @@ Pipeline <- R6::R6Class( #nolint
     #'   |   39 |       1981 | m      | 0.09747292 |  141 |
     #'   |------+------------+--------+------------+------|
     #'
-    #' Running `max_time_by_stratification(cif_example, list("birth_year", "gender"))`
+    #' Running `max_time_by_stratification(cif_example, list("birth_year", "sex"))`
     #' on this dataset would produce:
     #'
     #' |------+------------+--------+------------+------|
-    #' | time | birth_year | gender |  estimates | case |
+    #' | time | birth_year | sex |  estimates | case |
     #' |------+------------+--------+------------+------|
     #' |   43 |       1981 | f      | 0.10639881 |  141 |
     #' |   43 |       1981 | m      | 0.09816850 |  134 |
