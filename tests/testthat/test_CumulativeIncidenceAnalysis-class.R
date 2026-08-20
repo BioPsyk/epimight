@@ -117,7 +117,7 @@ describe("run", {
         trait_status = c(0, 0),
         trait_onset  = c(20, 21)
       ),
-      weights = c(0.5, 0.2)
+      weight = c(0.5, 0.2)
     )
 
     expect_null(results)
@@ -125,31 +125,27 @@ describe("run", {
 
   it("only produces CIF values that increase as time progresses", {
     faults <- analysis$run(
-      tte              = pipeline_tte,
-      use_weighted_cif = FALSE
+      tte = pipeline_tte
     ) |> filter(cif < lag(cif))
 
     expect_equal(nrow(faults), 0)
 
     faults <- analysis$run(
-      tte              = pipeline_tte,
-      use_weighted_cif = TRUE
+      tte = pipeline_tte |> select(-weight)
     ) |> filter(cif < lag(cif))
 
     expect_equal(nrow(faults), 0)
   })
 
-  it("only produces CIF values that is a probability", {
+  it("only produces CIF values that are a probability", {
     faults <- analysis$run(
-      tte              = pipeline_tte,
-      use_weighted_cif = FALSE
+      tte = pipeline_tte
     ) |> filter(cif < 0 | cif > 1)
 
     expect_equal(nrow(faults), 0)
 
     faults <- analysis$run(
-      tte              = pipeline_tte,
-      use_weighted_cif = TRUE
+      tte = pipeline_tte |> select(-weight)
     ) |> filter(cif < 0 | cif > 1)
 
     expect_equal(nrow(faults), 0)
@@ -157,16 +153,14 @@ describe("run", {
 
   it("produces a different result if competing risk is censored", {
     original <- analysis$run(
-      tte              = pipeline_tte,
-      use_weighted_cif = FALSE
+      tte = pipeline_tte
     )
 
     no_competing_risk <- analysis$run(
       tte = pipeline_tte |>
         mutate(
           trait_status = ifelse(trait_status == 1, 1, 0)
-        ),
-      use_weighted_cif = FALSE
+        )
     )
 
     combined <- inner_join(original, no_competing_risk, by = join_by(time)) |>
