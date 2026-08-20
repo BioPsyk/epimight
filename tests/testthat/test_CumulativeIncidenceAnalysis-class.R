@@ -242,7 +242,7 @@ describe("run", {
     expect_equal(nrow(combined), nrow(diff))
   })
 
-  it("produces same results as the unweighted method if weight is set to 1", {
+  it("produces same results as the unweighted method if all weights are set to 1", {
     original <- analysis$run(tte = pipeline_tte |> select(-weight))
     weighted <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0))
 
