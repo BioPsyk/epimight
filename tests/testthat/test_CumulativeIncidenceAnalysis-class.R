@@ -32,23 +32,92 @@ analysis <- CumulativeIncidenceAnalysis$new()
 #=================================================================================
 
 describe("run", {
+  it("it fails when required columns are missing", {
+    expect_error(analysis$run(
+      tte = data.table(
+        trait_status = c(1, 0),
+        trait_onset  = c(20, 21)
+      )
+    ))
+
+    expect_error(analysis$run(
+      tte = data.table(
+        person_id    = c("abc1", "abc2"),
+        trait_onset  = c(20, 21)
+      )
+    ))
+
+    expect_error(analysis$run(
+      tte = data.table(
+        person_id    = c("abc1", "abc2"),
+        trait_status = c(1, 0)
+      )
+    ))
+  })
+
+  it("it fails when rows contain invalid values", {
+    expect_error(analysis$run(
+      tte = data.table(
+        person_id    = c(1, 2),
+        trait_status = c(1, 0),
+        trait_onset  = c(20, 21)
+      )
+    ))
+
+    expect_error(analysis$run(
+      tte = data.table(
+        person_id    = c("abc1", "abc2"),
+        trait_status = c(1, 0),
+        trait_onset  = c(-20, -21)
+      )
+    ))
+
+    expect_error(analysis$run(
+      tte = data.table(
+        person_id    = c("abc1", "abc2"),
+        trait_status = c(-2, 99),
+        trait_onset  = c(20, 21)
+      )
+    ))
+
+    expect_error(analysis$run(
+      tte = data.table(
+        person_id    = c("abc1", "abc2"),
+        trait_status = c(1, 0),
+        trait_onset  = c(20, 21),
+        weight       = c(-2, 3)
+      )
+    ))
+  })
+
   it("it fails when an individual appears more than once", {
     expect_error(analysis$run(
-     tte = pipeline_tte |> mutate(person_id = 1)
+      tte = data.table(
+        person_id    = c("abc1", "abc1"),
+        trait_status = c(1, 0),
+        trait_onset  = c(20, 21)
+      )
     ))
   })
 
   it("returns NULL when no individuals have the trait", {
     results <- analysis$run(
-      tte = pipeline_tte |> mutate(trait_status = 0),
-      use_weighted_cif = FALSE
+      tte = data.table(
+        person_id    = c("abc1", "abc2"),
+        trait_status = c(0, 0),
+        trait_onset  = c(20, 21)
+      )
     )
 
     expect_null(results)
 
     results <- analysis$run(
-      tte = pipeline_tte |> mutate(trait_status = 0),
-      use_weighted_cif = TRUE
+      tte = data.table(
+        person_id    = c("abc1", "abc2"),
+        trait_status = c(0, 0),
+        trait_onset  = c(20, 21)
+      ),
+      weights = c(0.5, 0.2)
     )
 
     expect_null(results)
@@ -105,8 +174,8 @@ describe("run", {
         cif_diff = abs(cif.x - cif.y),
       )
 
-    message("diff:")
-    print(combined)
+    #message("diff:")
+    #print(combined)
   })
 
   it("produces different results if different cohorts and same method is used", {

@@ -225,16 +225,24 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           type     = "data.table",
           required = TRUE,
           columns  = list(
+            person_id = list(
+              type     = "string",
+              required = TRUE
+            ),
             trait_status = list(
               type     = "integer",
-              required = TRUE
+              required = TRUE,
+              minimum  = 0
             ),
             trait_onset = list(
               type     = "integer",
-              required = TRUE
+              required = TRUE,
+              minimum  = 0
             ),
             weight = list(
-              type = "numeric"
+              type    = "numeric",
+              minimum = 0,
+              maximum = 1
             )
           )
         ),
