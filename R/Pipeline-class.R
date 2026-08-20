@@ -127,15 +127,15 @@ Pipeline <- R6::R6Class( #nolint
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait = self$validation_rules$run$trait1$properties$trait
+            trait_name = self$validation_rules$run$trait1$properties$trait_name
           )
         ),
         list(
           required   = FALSE,
           type       = "named_list",
           properties = list(
-            trait     = self$validation_rules$run$trait2$properties$trait,
-            relatives = self$validation_rules$run$trait2$properties$relatives
+            trait_name     = self$validation_rules$run$trait2$properties$trait_name,
+            relatives_kind = self$validation_rules$run$trait2$properties$relatives_kind
           )
         ),
         self$validation_rules$run$stratify_columns,
@@ -162,7 +162,7 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       tte <- private$pool[
-        trait == proband_trait$trait
+        trait_name == proband_trait$trait_name
       ][
         , .SD[1], by = "person_id"
       ][
@@ -173,7 +173,7 @@ Pipeline <- R6::R6Class( #nolint
 
       if (is.list(relatives_trait)) {
         relative_tte <- private$pool[
-          trait == relatives_trait$trait & relatives == relatives_trait$relatives
+          trait_name == relatives_trait$trait_name & relatives == relatives_trait$relatives_kind
         ][
           , .SD[1], by = "person_id"
         ][
@@ -182,8 +182,8 @@ Pipeline <- R6::R6Class( #nolint
 
         if (nrow(relative_tte) == 0) {
           stop(paste0(
-            "No family history TTE data found for trait \"", relatives_trait$trait,
-            "\" and relationship kind \"", relatives_trait$relatives, "\""
+            "No family history TTE data found for trait \"", relatives_trait$trait_name,
+            "\" and relationship kind \"", relatives_trait$relatives_kind, "\""
           ))
         }
 
@@ -203,7 +203,7 @@ Pipeline <- R6::R6Class( #nolint
         if (nrow(tte) == 0) {
           stop(paste0(
             "No probands with at least 1 relative (of kind \"",
-            relatives_trait$relatives, "\") diagnosed with \"", relatives_trait$trait, "\""
+            relatives_trait$relatives_kind, "\") diagnosed with \"", relatives_trait$trait_name, "\""
           ))
         }
       }
@@ -251,9 +251,7 @@ Pipeline <- R6::R6Class( #nolint
       tte <- self$get_tte(proband_trait, relatives_trait, stratify_columns, use_weighted_cif)
       cif <- private$analyses$cif$run(
         tte              = tte,
-        stratify_columns = stratify_columns,
-        earliest_onset   = proband_trait$earliest_onset,
-        latest_onset     = proband_trait$latest_onset
+        stratify_columns = stratify_columns
       ) |>
         mutate(trait = trait_key, cohort = cohort_key) |>
         select(trait, cohort, all_of(unlist(stratify_columns)), time, everything())
