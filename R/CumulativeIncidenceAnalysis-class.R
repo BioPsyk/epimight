@@ -69,38 +69,38 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       return(results)
     },
     run_weighted_single = function(tte, earliest_onset, latest_onset) {
-      failure_time_max <- max(tte$failure_time)
+      trait_onset_time_max <- max(tte$trait_onset_time)
 
       weights <- tte |>
         mutate(
-          weight_event_1 = ifelse(failure_status == 1, weight, 0.0),
-          weight_event_n = ifelse(failure_status != 0, weight, 0.0),
+          weight_event_1 = ifelse(trait_status == 1, weight, 0.0),
+          weight_event_n = ifelse(trait_status != 0, weight, 0.0),
         ) |>
-        group_by(failure_time) |>
+        group_by(trait_onset_time) |>
         summarise(
           weight_all     = sum(weight),
           weight_event_1 = sum(weight_event_1),
           weight_event_n = sum(weight_event_n)
         ) |>
         ungroup() |>
-        # Make sure we have a row for `failure_time` from 0 up to `failure_time_max`
+        # Make sure we have a row for `trait_onset_time` from 0 up to `trait_onset_time_max`
         right_join(
           data.table(
-            failure_time = seq(0, failure_time_max)
+            trait_onset_time = seq(0, trait_onset_time_max)
           ),
-          by = join_by(failure_time)
+          by = join_by(trait_onset_time)
         ) |>
         # The failure times that were filled in will have NA's in missing columns,
         # so we make sure to replace them with 0.0
         mutate(
           across(everything(), ~ replace_na(.x, 0.0))
         ) |>
-        # Risk needs to be accumulated starting from the largest failure_time value
-        arrange(desc(failure_time)) |>
+        # Risk needs to be accumulated starting from the largest trait_onset_time value
+        arrange(desc(trait_onset_time)) |>
         mutate(
           at_risk = cumsum(weight_all)
         ) |>
-        arrange(failure_time)
+        arrange(trait_onset_time)
 
       weights |>
         filter(weight_event_n > 0.0) |>
@@ -120,14 +120,14 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           cif = replace_na(lag(cif_acc), 0.0),
         ) |>
         filter(
-          failure_time   >= earliest_onset,
-          failure_time   <= latest_onset,
+          trait_onset_time   >= earliest_onset,
+          trait_onset_time   <= latest_onset,
           weight_event_1 > 0.0
         ) |>
         mutate(
           cases = cumsum(weight_event_1)
         ) |>
-        rename(time = failure_time) |>
+        rename(time = trait_onset_time) |>
         select(time, cif, cases) |>
         mutate(
           se  = 0.0,
@@ -150,11 +150,11 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         stop("Given TTE was not a data.table")
       }
 
-      counts <- tte[, .N, by = .(failure_status, failure_time)]
+      counts <- tte[, .N, by = .(trait_status, trait_onset_time)]
 
       # This check is needed because if we only have censored invidivuals
       # then cuminc will fail with an internal error.
-      events_amount <- counts[failure_status != 0]
+      events_amount <- counts[trait_status != 0]
 
       if (nrow(events_amount) == 0) return(NULL)
 
@@ -167,8 +167,8 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       # We want to use the results from group 1 and for the status 1 (affected),
       # therefor we use the name `1 1` when selecting the data from the cuminc results:
       cuminc_results <- cuminc(
-        ftime   = tte$failure_time,
-        fstatus = tte$failure_status,
+        ftime   = tte$trait_onset_time,
+        fstatus = tte$trait_status,
         cencode = 0
       )$`1 1`
 
@@ -195,9 +195,9 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       ]
 
       results <- counts[
-        failure_status == 1,
+        trait_status == 1,
         .(
-          time         = failure_time,
+          time         = trait_onset_time,
           cases_amount = N
         )
       ][
@@ -229,11 +229,11 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           type     = "data.table",
           required = TRUE,
           columns  = list(
-            failure_status = list(
+            trait_status = list(
               type     = "integer",
               required = TRUE
             ),
-            failure_time = list(
+            trait_onset_time = list(
               type     = "integer",
               required = TRUE
             ),

@@ -16,13 +16,13 @@ tte <- read_csv(
   col_types=cols(person_id = col_character()),
 ) |>
   mutate(
-    weight = ifelse(relatives_trait_n > 0.0, relatives_trait_n / relatives, 0.0)
+    weight = ifelse(relatives_trait_n > 0.0, relatives_trait_n / relatives_n, 0.0)
   ) |>
   filter(
-    trait       == "SCZ",
-    relatives_kind == "parents"
+    trait     == "SCZ",
+    relatives == "parents"
   ) |>
-  select(person_id, failure_status, failure_time, weight, relatives, relatives_trait_n) |>
+  select(person_id, trait_status, trait_onset_time, weight, relatives_n, relatives_trait_n) |>
   as.data.table()
 
 analysis <- CumulativeIncidenceAnalysis$new()
