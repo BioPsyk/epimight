@@ -163,13 +163,37 @@ describe("run", {
         )
     )
 
-    combined <- inner_join(original, no_competing_risk, by = join_by(time)) |>
+    diff <- inner_join(original, no_competing_risk, by = join_by(time)) |>
       mutate(
         cif_diff = abs(cif.x - cif.y),
+      ) |>
+      filter(
+        cif_diff > testthat_tolerance()
       )
 
-    #message("diff:")
-    #print(combined)
+    expect_gt(nrow(diff), 0)
+
+    original <- analysis$run(
+      tte = pipeline_tte |> select(-weight)
+    )
+
+    no_competing_risk <- analysis$run(
+      tte = pipeline_tte |>
+        select(-weight) |>
+        mutate(
+          trait_status = ifelse(trait_status == 1, 1, 0)
+        )
+    )
+
+    diff <- inner_join(original, no_competing_risk, by = join_by(time)) |>
+      mutate(
+        cif_diff = abs(cif.x - cif.y),
+      ) |>
+      filter(
+        cif_diff > testthat_tolerance()
+      )
+
+    expect_gt(nrow(diff), 0)
   })
 
   it("produces different results if different cohorts and same method is used", {
