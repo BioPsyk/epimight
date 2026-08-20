@@ -89,7 +89,7 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
             )
           )
         ),
-        relationship_coefficient = list(
+        relatedness = list(
           required = TRUE,
           type     = "numeric",
           minimum  = 0
@@ -107,7 +107,7 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
           cif$fh_cif,
           cif$pop_cases,
           cif$fh_cases,
-          args$relationship_coefficient
+          args$relatedness
         ) |>
           filter_all(
             all_vars(!is.infinite(.) & !is.na(.))

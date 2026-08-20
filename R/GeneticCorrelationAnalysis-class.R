@@ -87,7 +87,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
             t2_h2        = list(type = "numeric", required = TRUE)
           )
         ),
-        relationship_coefficient = list(
+        relatedness = list(
           required = TRUE,
           type     = "numeric",
           minimum  = 0
@@ -112,7 +112,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
           estimates$t2_pop_cases,
           estimates$t1_h2,
           estimates$t2_h2,
-          args$relationship_coefficient
+          args$relatedness
         ) |>
           filter_all(
             all_vars(!is.infinite(.) & !is.na(.))

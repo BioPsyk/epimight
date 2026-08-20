@@ -173,7 +173,7 @@ Pipeline <- R6::R6Class( #nolint
 
       if (is.list(relatives_trait)) {
         relative_tte <- private$pool[
-          trait_name == relatives_trait$trait_name & relatives == relatives_trait$relatives_kind
+          trait_name == relatives_trait$trait_name & relatives_kind == relatives_trait$relatives_kind
         ][
           , .SD[1], by = "person_id"
         ][
@@ -263,7 +263,7 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that runs h2 on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
-    run_h2 = function(trait_key, relationship_coefficient, stratify_columns, cif_pop, cif_fh) {
+    run_h2 = function(trait_key, relatedness, stratify_columns, cif_pop, cif_fh) {
       stratify_symbols <- rlang::syms(stratify_columns)
 
       cif <- cif_pop |>
@@ -279,7 +279,7 @@ Pipeline <- R6::R6Class( #nolint
 
       h2 <- private$analyses$h2$run(
         cif                      = cif,
-        relationship_coefficient = relationship_coefficient
+        relatedness = relatedness
       ) |>
         mutate(trait = trait_key) |>
         select(trait, time, !!!stratify_symbols, h2, se, l95, u95)
@@ -343,8 +343,8 @@ Pipeline <- R6::R6Class( #nolint
       if (nrow(combined) == 0) stop("After joining h2 results for both traits no data was left")
 
       rg <- private$analyses$rg$run(
-        estimates                = combined,
-        relationship_coefficient = args$trait2$relatedness
+        estimates   = combined,
+        relatedness = args$trait2$relatedness
       ) |>
         select(!!!args$stratify_columns, rg, se, l95, u95)
 
