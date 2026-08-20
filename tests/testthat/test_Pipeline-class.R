@@ -44,10 +44,10 @@ describe("initialize", {
       pool = data.table(
         person_id         = c("p1", "p1"),
         birth_year        = c(1950, 1951),
-        trait             = c("SCZ", "CAD"),
+        trait_name        = c("SCZ", "CAD"),
         trait_status      = c(0, 1),
-        trait_onset_time  = c(10, 10),
-        relatives         = c(10, 20), # Wrong type
+        trait_onset       = c(10, 10),
+        relatives_kind    = c(10, 20), # Wrong type
         relatives_n       = c(1, 1),
         relatives_trait_n = c(0, 0)
       )
@@ -59,10 +59,10 @@ describe("initialize", {
       pool = data.table(
         person_id         = c(1, 1),
         birth_year        = c(1950, 1951),
-        trait             = c("SCZ", "CAD"),
+        trait_name        = c("SCZ", "CAD"),
         trait_status      = c(0, 1),
-        trait_onset_time  = c(10, 20),
-        relatives         = c("parents", "parents"),
+        trait_onset       = c(10, 20),
+        relatives_kind    = c("parents", "parents"),
         relatives_n       = c(2, 2),
         relatives_trait_n = c(0, 1)
       )
@@ -74,10 +74,10 @@ describe("initialize", {
       pool = data.table(
         person_id         = c("p1", "p1"),
         birth_year        = c(1950, 1951),
-        trait             = c("SCZ", "CAD"),
+        trait_name        = c("SCZ", "CAD"),
         trait_status      = c(0, 1),
-        trait_onset_time  = c(10, 20),
-        relatives         = c("parents", "parents"),
+        trait_onset       = c(10, 20),
+        relatives_kind    = c("parents", "parents"),
         relatives_n       = c(2, 2),
         relatives_trait_n = c(0, 1)
       )
@@ -88,7 +88,7 @@ describe("initialize", {
 describe("get_tte", {
   it("fails on unknown stratify_columns", {
     expect_error(pipeline$get_tte(
-      list(trait = "SCZ"),
+      list(trait_name = "SCZ"),
       NA,
       list("unknown")
     ))
@@ -96,10 +96,10 @@ describe("get_tte", {
 
   it("fails on unknown relatives trait", {
     expect_error(pipeline$get_tte(
-      list(trait = "SCZ"),
+      list(trait_name = "SCZ"),
       list(
-        trait     = "unknown",
-        relatives = "full_siblings"
+        trait_name     = "unknown",
+        relatives_kind = "full_siblings"
       ),
       list("birth_year")
     ))
@@ -107,10 +107,10 @@ describe("get_tte", {
 
   it("fails on unknown family history relationship kind", {
     expect_error(pipeline$get_tte(
-      list(trait = "SCZ"),
+      list(trait_name = "SCZ"),
       list(
-        trait     = "CAD",
-        relatives = "unknown"
+        trait_name     = "CAD",
+        relatives_kind = "unknown"
       ),
       list("birth_year")
     ))
@@ -118,12 +118,12 @@ describe("get_tte", {
 
   it("doesn't add relatives columns when population is requested", {
     tte <- pipeline$get_tte(
-      list(trait = "SCZ"),
+      list(trait_name = "SCZ"),
       NA,
       list("birth_year")
     )
 
-    expect_true(!("relatives" %in% colnames(tte)))
+    expect_true(!("relatives_kind" %in% colnames(tte)))
     expect_true(!("relatives_n" %in% colnames(tte)))
     expect_true(!("relatives_trait_n" %in% colnames(tte)))
     expect_true(!("weight" %in% colnames(tte)))
@@ -131,16 +131,16 @@ describe("get_tte", {
 
   it("adds relatives columns when relatives are requested", {
     tte <- pipeline$get_tte(
-      list(trait = "SCZ"),
+      list(trait_name = "SCZ"),
       list(
-        trait     = "SCZ",
-        relatives = "parents"
+        trait_name     = "SCZ",
+        relatives_kind = "parents"
       ),
       list("birth_year"),
       TRUE
     )
 
-    expect_true("relatives" %in% colnames(tte))
+    expect_true("relatives_kind" %in% colnames(tte))
     expect_true("relatives_n" %in% colnames(tte))
     expect_true("relatives_trait_n" %in% colnames(tte))
     expect_true("weight" %in% colnames(tte))
@@ -154,83 +154,74 @@ describe("run", {
 
   it("fails when traits are not found", {
     expect_error(pipeline$run(
-      analysis1 = list(
-        id                    = "unknown",
-        earliest_onset        = 1,
-        latest_onset          = 100,
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      trait1 = list(
+        trait_name     = "unknown",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
-      analysis2 = list(
-        id                    = "CAD",
-        earliest_onset        = 0,
-        latest_onset          = 100,
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      trait2 = list(
+        trait_name     = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
     ))
 
     expect_error(pipeline$run(
-      analysis1 = list(
-        id                    = "SCZ",
-        earliest_onset        = 1,
-        latest_onset          = 100,
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      trait1 = list(
+        trait_name     = "SCZ",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
-      analysis2 = list(
-        id                    = "unknown",
-        earliest_onset        = 0,
-        latest_onset          = 100,
-        relatives_kind        = "parents",
-        relatives_coefficient = 0.5
+      trait2 = list(
+        trait_name     = "unknown",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
     ))
   })
 
   it("fails when stratify column cannot be found in TTE dataset", {
     expect_error(pipeline$run(
-      analysis1 = list(
-        trait       = "SCZ",
-        relatives   = "parents",
-        relatedness = 0.5
+      trait1 = list(
+        trait_name     = "SCZ",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
-      analysis2 = list(
-        trait       = "CAD",
-        relatives   = "parents",
-        relatedness = 0.5
+      trait2 = list(
+        trait_name     = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
-      draws = 2,
       stratify_columns = list("birth_year", "unknown")
     ))
   })
 
   it("produces different result when using weighted cif", {
     results <- pipeline$run(
-      analysis1 = list(
-        trait       = "SCZ",
-        relatives   = "parents",
-        relatedness = 0.5
+      trait1 = list(
+        trait_name     = "SCZ",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
-      analysis2 = list(
-        trait       = "CAD",
-        relatives   = "parents",
-        relatedness = 0.5
+      trait2 = list(
+        trait_name     = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
       stratify_columns = list("birth_year"),
       use_weighted_cif = FALSE
     )
 
     weighted_results <- pipeline$run(
-      analysis1 = list(
-        trait       = "SCZ",
-        relatives   = "parents",
-        relatedness = 0.5
+      trait1 = list(
+        trait_name     = "SCZ",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
-      analysis2 = list(
-        trait       = "CAD",
-        relatives   = "parents",
-        relatedness = 0.5
+      trait2 = list(
+        trait_name     = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
       ),
       stratify_columns = list("birth_year"),
       use_weighted_cif = TRUE

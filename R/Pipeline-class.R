@@ -16,15 +16,15 @@ Pipeline <- R6::R6Class( #nolint
   public = list(
     validation_rules = list(
       run = list(
-        analysis1 = list(
+        trait1 = list(
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait = list(
+            trait_name = list(
               required = TRUE,
               type     = "string"
             ),
-            relatives = list(
+            relatives_kind = list(
               required = TRUE,
               type     = "string"
             ),
@@ -34,15 +34,15 @@ Pipeline <- R6::R6Class( #nolint
             )
           )
         ),
-        analysis2 = list(
+        trait2 = list(
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait = list(
+            trait_name = list(
               required = TRUE,
               type     = "string"
             ),
-            relatives = list(
+            relatives_kind = list(
               required = TRUE,
               type     = "string"
             ),
@@ -75,7 +75,7 @@ Pipeline <- R6::R6Class( #nolint
               type     = "string",
               required = TRUE
             ),
-            trait = list(
+            trait_name = list(
               type     = "string",
               required = TRUE
             ),
@@ -84,12 +84,12 @@ Pipeline <- R6::R6Class( #nolint
               enum     = list(0, 1, 2),
               required = TRUE
             ),
-            trait_onset_time = list(
+            trait_onset = list(
               type     = "numeric",
               minimum  = 0,
               required = TRUE
             ),
-            relatives = list(
+            relatives_kind = list(
               required = TRUE,
               type     = "string"
             ),
@@ -127,15 +127,15 @@ Pipeline <- R6::R6Class( #nolint
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait = self$validation_rules$run$analysis1$properties$trait
+            trait = self$validation_rules$run$trait1$properties$trait
           )
         ),
         list(
           required   = FALSE,
           type       = "named_list",
           properties = list(
-            trait     = self$validation_rules$run$analysis2$properties$trait,
-            relatives = self$validation_rules$run$analysis2$properties$relatives
+            trait     = self$validation_rules$run$trait2$properties$trait,
+            relatives = self$validation_rules$run$trait2$properties$relatives
           )
         ),
         self$validation_rules$run$stratify_columns,
@@ -149,7 +149,7 @@ Pipeline <- R6::R6Class( #nolint
       stratify_columns <- args[[3]]
       use_weighted_cif <- args[[4]]
 
-      columns <- c("person_id", "trait_status", "trait_onset_time")
+      columns <- c("person_id", "trait_status", "trait_onset")
 
       if (!is.null(stratify_columns) && is.list(stratify_columns)) {
         columns <- c(columns, unlist(stratify_columns))
@@ -177,7 +177,7 @@ Pipeline <- R6::R6Class( #nolint
         ][
           , .SD[1], by = "person_id"
         ][
-          , c("person_id", "relatives", "relatives_n", "relatives_trait_n")
+          , c("person_id", "relatives_kind", "relatives_n", "relatives_trait_n")
         ]
 
         if (nrow(relative_tte) == 0) {
@@ -311,14 +311,14 @@ Pipeline <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
-      cif_t1_pop <- self$run_cif("t1", "pop", args$analysis1, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh1 <- self$run_cif("t1", "fh1", args$analysis1, args$analysis1, args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh2 <- self$run_cif("t1", "fh2", args$analysis1, args$analysis2, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_pop <- self$run_cif("t2", "pop", args$analysis2, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_fh2 <- self$run_cif("t2", "fh2", args$analysis2, args$analysis2, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_pop <- self$run_cif("t1", "pop", args$trait1, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh1 <- self$run_cif("t1", "fh1", args$trait1, args$trait1, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh2 <- self$run_cif("t1", "fh2", args$trait1, args$trait2, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_pop <- self$run_cif("t2", "pop", args$trait2, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_fh2 <- self$run_cif("t2", "fh2", args$trait2, args$trait2, args$stratify_columns, args$use_weighted_cif)
 
-      h2_t1 <- self$run_h2("t1", args$analysis1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
-      h2_t2 <- self$run_h2("t1", args$analysis2$relatedness, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
+      h2_t1 <- self$run_h2("t1", args$trait1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
+      h2_t2 <- self$run_h2("t1", args$trait2$relatedness, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
 
       join_columns <- c(list("time"), args$stratify_columns)
       join_symbols <- rlang::syms(join_columns)
@@ -346,7 +346,7 @@ Pipeline <- R6::R6Class( #nolint
 
       rg <- private$analyses$rg$run(
         estimates                = combined,
-        relationship_coefficient = args$analysis2$relatedness
+        relationship_coefficient = args$trait2$relatedness
       ) |>
         select(!!!args$stratify_columns, rg, se, l95, u95)
 
