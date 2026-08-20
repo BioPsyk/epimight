@@ -32,10 +32,19 @@ analysis <- CumulativeIncidenceAnalysis$new()
 #=================================================================================
 
 describe("run", {
-  it("it fails when person_id is not unique", {
+  it("it fails when an individual appears more than once", {
     expect_error(analysis$run(
      tte = pipeline_tte |> mutate(person_id = 1)
     ))
+  })
+
+  it("returns NULL when no individuals have the trait", {
+    results <- analysis$run(
+                          tte = pipeline_tte |> mutate(trait_status = 0),
+                          use_weighted_cif = FALSE
+    )
+
+    expect_null(results)
   })
 
   it("produces different results if different cohorts and same method is used", {
