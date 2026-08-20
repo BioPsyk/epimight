@@ -17,11 +17,7 @@ pipeline_tte <- read_csv(
 ) |>
   mutate(
     weight = ifelse(relatives_trait_n > 0.0, relatives_trait_n / relatives_n, 0.0)
-  )
-
-print(pipeline_tte |> filter(trait_name == "SCZ"))
-
-pipeline_tte <- pipeline_tte |>
+  ) |>
   filter(
     trait_name     == "SCZ",
     relatives_kind == "parents"
@@ -43,8 +39,6 @@ describe("run", {
   })
 
   it("returns NULL when no individuals have the trait", {
-    print(pipeline_tte |> mutate(trait_status = 0))
-
     results <- analysis$run(
       tte = pipeline_tte |> mutate(trait_status = 0),
       use_weighted_cif = FALSE
