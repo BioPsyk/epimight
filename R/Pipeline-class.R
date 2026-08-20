@@ -312,13 +312,13 @@ Pipeline <- R6::R6Class( #nolint
       args <- validator$run(...)
 
       cif_t1_pop <- self$run_cif("t1", "pop", args$analysis1, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh1 <- self$run_cif("t1", "fh1", args$analysis1, args$trait1, args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh2 <- self$run_cif("t1", "fh2", args$analysis1, args$trait2, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh1 <- self$run_cif("t1", "fh1", args$analysis1, args$analysis1, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh2 <- self$run_cif("t1", "fh2", args$analysis1, args$analysis2, args$stratify_columns, args$use_weighted_cif)
       cif_t2_pop <- self$run_cif("t2", "pop", args$analysis2, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_fh2 <- self$run_cif("t2", "fh2", args$analysis2, args$trait2, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_fh2 <- self$run_cif("t2", "fh2", args$analysis2, args$analysis2, args$stratify_columns, args$use_weighted_cif)
 
-      h2_t1 <- self$run_h2("t1", args$trait1$relatives_coefficient, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
-      h2_t2 <- self$run_h2("t1", args$trait2$relatives_coefficient, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
+      h2_t1 <- self$run_h2("t1", args$analysis1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
+      h2_t2 <- self$run_h2("t1", args$analysis2$relatedness, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
 
       join_columns <- c(list("time"), args$stratify_columns)
       join_symbols <- rlang::syms(join_columns)
@@ -346,7 +346,7 @@ Pipeline <- R6::R6Class( #nolint
 
       rg <- private$analyses$rg$run(
         estimates                = combined,
-        relationship_coefficient = args$trait2$relatives_coefficient
+        relationship_coefficient = args$analysis2$relatedness
       ) |>
         select(!!!args$stratify_columns, rg, se, l95, u95)
 
