@@ -34,35 +34,25 @@ analysis <- CumulativeIncidenceAnalysis$new()
 describe("run", {
   it("produces different results if different cohorts and same method is used", {
     cif_c1 <- analysis$run(
-      tte              = tte |> select(-weight),
-      earliest_onset   = 0,
-      latest_onset     = 100
-    )
+     tte = tte |> select(-weight)
+   )
 
     cif_c2 <- analysis$run(
-      tte              = tte[relatives_trait_n > 0] |> select(-weight),
-      earliest_onset   = 0,
-      latest_onset     = 100
+      tte = tte[relatives_trait_n > 0] |> select(-weight)
     )
 
     expect_dataframe_not_equal(cif_c1, cif_c2)
 
     cif_c1 <- analysis$run(
-      tte              = tte |> mutate(weight = 1.0),
-      earliest_onset   = 0,
-      latest_onset     = 100
+      tte = tte |> mutate(weight = 1.0)
     )
 
     cif_c2 <- analysis$run(
-      tte              = tte[relatives_trait_n > 0],
-      earliest_onset   = 0,
-      latest_onset     = 100
+      tte = tte[relatives_trait_n > 0]
     )
 
     cif_c2_no_filter <- analysis$run(
-      tte              = tte,
-      earliest_onset   = 0,
-      latest_onset     = 100
+      tte = tte
     )
 
     expect_dataframe_not_equal(cif_c1, cif_c2)
@@ -70,66 +60,33 @@ describe("run", {
   })
 
   it("produces different results if weight is given", {
-    original <- analysis$run(
-      tte              = tte |> select(-weight),
-      earliest_onset   = 1,
-      latest_onset     = 100
-    ) |>
-      rename(
-        cif_original   = cif,
-        cases_original = cases
-      )
-
-    weighted <- analysis$run(
-      tte              = tte,
-      earliest_onset   = 1,
-      latest_onset     = 100
-    ) |>
-      rename(
-        cif_weighted   = cif,
-        cases_weighted = cases
-      )
+    original <- analysis$run(tte = tte |> select(-weight))
+    weighted <- analysis$run(tte = tte)
 
     combined <- inner_join(original, weighted, by = join_by(time)) |>
       mutate(
-        cif_diff   = abs(cif_original - cif_weighted),
-        cases_diff = abs(cases_original - cases_weighted)
+        cif_diff = abs(cif.x - cif.y)
       )
 
-    combined_diff <- combined |> filter(cif_diff > testthat_tolerance())
+    diff <- combined |>
+      filter(cif_diff > testthat_tolerance())
 
-    expect_true(nrow(combined) > 0)
-    expect_equal(nrow(combined), nrow(combined_diff))
+    expect_gt(nrow(combined), 0)
+    expect_equal(nrow(combined), nrow(diff))
   })
 
   it("produces same results if weight is set to 1", {
-    original <- analysis$run(
-      tte              = tte |> select(-weight),
-      earliest_onset   = 1,
-      latest_onset     = 100
-    ) |>
-      rename(
-        cif_original   = cif,
-        cases_original = cases
-      )
+    original <- analysis$run(tte = tte |> select(-weight))
+    weighted <- analysis$run(tte = tte |> mutate(weight = 1.0))
 
-    weighted <- analysis$run(
-      tte              = tte |> mutate(weight = 1.0),
-      earliest_onset   = 1,
-      latest_onset     = 100
-    ) |>
-      rename(
-        cif_weighted   = cif,
-        cases_weighted = cases
-      )
-
-    combined <- inner_join(original, weighted, by = join_by(time)) |>
+    diff <- inner_join(original, weighted, by = join_by(time)) |>
       mutate(
-        cif_diff   = abs(cif_original - cif_weighted),
-        cases_diff = abs(cases_original - cases_weighted)
+        cif_diff = abs(cif.x - cif.y),
       ) |>
-      filter(cif_diff > testthat_tolerance())
+      filter(
+        cif_diff > testthat_tolerance()
+      )
 
-    expect_equal(nrow(combined), 0)
+    expect_equal(nrow(diff), 0)
   })
 })

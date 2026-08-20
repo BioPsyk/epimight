@@ -68,7 +68,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
       return(results)
     },
-    run_weighted_single = function(tte, earliest_onset, latest_onset) {
+    run_weighted_single = function(tte) {
       trait_onset_time_max <- max(tte$trait_onset_time)
 
       weights <- tte |>
@@ -120,8 +120,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           cif = replace_na(lag(cif_acc), 0.0),
         ) |>
         filter(
-          trait_onset_time   >= earliest_onset,
-          trait_onset_time   <= latest_onset,
+          trait_onset_time >= 1,
           weight_event_1 > 0.0
         ) |>
         mutate(
@@ -142,10 +141,8 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
     #' Runs CIF on the given TTE data as a single group.
     #'
     #' @param tte Data.table of TTE data to use.
-    #' @param earliest_onset Integer with the earliest age of onset to use.
-    #' @param latest_onset Integer with the latest age of onset to use.
     #' @returns Risk estimations.
-    run_single = function(tte, earliest_onset, latest_onset) {
+    run_single = function(tte) {
       if (!is.data.table(tte)) {
         stop("Given TTE was not a data.table")
       }
@@ -160,7 +157,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
       if ("weight" %in% colnames(tte)) {
         return(
-          private$run_weighted_single(tte, earliest_onset, latest_onset)
+          private$run_weighted_single(tte)
         )
       }
 
@@ -179,7 +176,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         cif  = cuminc_results$est,
         var  = cuminc_results$var
       )[
-        time >= earliest_onset & time <= latest_onset,
+        time >= 1,
         head(.SD, 1),
         by = time
       ][
@@ -245,16 +242,6 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         stratify_columns = list(
           type  = "list",
           items = list(type = "string")
-        ),
-        earliest_onset = list(
-          type    = "integer",
-          default = 1,
-          minimum = 0
-        ),
-        latest_onset = list(
-          type    = "integer",
-          default = 100,
-          minimum = 0
         )
       )
 
@@ -264,11 +251,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
       if (!exists("stratify_columns", where = args) || length(args$stratify_columns) == 0) {
         return(
-          private$run_single(
-            tte            = args$tte,
-            earliest_onset = args$earliest_onset,
-            latest_onset   = args$latest_onset
-          )
+          private$run_single(args$tte)
         )
       }
 
@@ -289,11 +272,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
         if (nrow(group_tte) == 0) return(NULL)
 
-        group_results <- private$run_single(
-          tte            = group_tte,
-          earliest_onset = args$earliest_onset,
-          latest_onset   = args$latest_onset
-        )
+        group_results <- private$run_single(group_tte)
 
         if (is.null(group_results)) return(NULL)
 
