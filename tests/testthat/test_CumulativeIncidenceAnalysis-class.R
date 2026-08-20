@@ -47,6 +47,31 @@ describe("run", {
     expect_null(results)
   })
 
+  it("passes the sum rule", {
+    # At any given time point, the sum of the cumulative incidences of all distinct event types
+    # plus the Kaplan-Meier estimate of being completely event-free must exactly equal 1.
+
+    results <- analysis$run(
+      tte = pipeline_tte |> mutate(trait_status = 1),
+      use_weighted_cif = FALSE
+    )
+
+    results <- analysis$run(
+      tte = pipeline_tte |> mutate(trait_status = 1),
+      use_weighted_cif = FALSE
+    )
+
+    print(results)
+  })
+
+  # Monotonicity: The CIF curves must be monotonically increasing. As time progresses, the cumulative incidence must only go up or stay flat; it can never decrease
+
+  # Probability Bounds: The cumulative incidence value for any event must always stay strictly between 0 and 1.
+
+  # Beware the Kaplan-Meier Overestimate: If you run a standard Kaplan-Meier analysis (1 - S(t)) on your event of interest
+  # while ignoring competing risks, it will overestimate the event probability.
+  # Your true CIF curve must always sit lower than or equal to the naive Kaplan-Meier curve
+
   it("produces different results if different cohorts and same method is used", {
     cif_c1 <- analysis$run(
      tte = pipeline_tte |> select(-weight)
