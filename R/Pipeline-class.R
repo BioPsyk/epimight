@@ -127,15 +127,15 @@ Pipeline <- R6::R6Class( #nolint
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait = self$validation_rules$run$analysis1$trait
+            trait = self$validation_rules$run$analysis1$properties$trait
           )
         ),
         list(
           required   = FALSE,
           type       = "named_list",
           properties = list(
-            trait     = self$validation_rules$run$analysis2$trait,
-            relatives = self$validation_rules$run$analysis2$relatives
+            trait     = self$validation_rules$run$analysis2$properties$trait,
+            relatives = self$validation_rules$run$analysis2$properties$relatives
           )
         ),
         self$validation_rules$run$stratify_columns,
@@ -149,7 +149,7 @@ Pipeline <- R6::R6Class( #nolint
       stratify_columns <- args[[3]]
       use_weighted_cif <- args[[4]]
 
-      columns <- c("person_id", "failure_status", "failure_time")
+      columns <- c("person_id", "trait_status", "trait_onset_time")
 
       if (!is.null(stratify_columns) && is.list(stratify_columns)) {
         columns <- c(columns, unlist(stratify_columns))
@@ -162,7 +162,7 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       tte <- private$pool[
-        trait == proband_trait$id
+        trait == proband_trait$trait
       ][
         , .SD[1], by = "person_id"
       ][
@@ -173,7 +173,7 @@ Pipeline <- R6::R6Class( #nolint
 
       if (is.list(relatives_trait)) {
         relative_tte <- private$pool[
-          trait == relatives_trait$id & relatives_kind == relatives_trait$relatives_kind
+          trait == relatives_trait$trait & relatives == relatives_trait$relatives
         ][
           , .SD[1], by = "person_id"
         ][
@@ -182,8 +182,8 @@ Pipeline <- R6::R6Class( #nolint
 
         if (nrow(relative_tte) == 0) {
           stop(paste0(
-            "No family history TTE data found for trait \"", relatives_trait$id,
-            "\" and relationship kind \"", relatives_trait$relatives_kind, "\""
+            "No family history TTE data found for trait \"", relatives_trait$trait,
+            "\" and relationship kind \"", relatives_trait$relatives, "\""
           ))
         }
 
@@ -196,14 +196,14 @@ Pipeline <- R6::R6Class( #nolint
 
         if (isTRUE(use_weighted_cif)) {
           tte <- tte[
-            , weight := ifelse(relatives_trait_n > 0.0, relatives_trait_n / relatives, 0.0)
+            , weight := ifelse(relatives_trait_n > 0.0, relatives_trait_n / relatives_n, 0.0)
           ]
         }
 
         if (nrow(tte) == 0) {
           stop(paste0(
             "No probands with at least 1 relative (of kind \"",
-            relatives_trait$relatives_kind, "\") diagnosed with \"", relatives_trait$id, "\""
+            relatives_trait$relatives, "\") diagnosed with \"", relatives_trait$trait, "\""
           ))
         }
       }
@@ -311,33 +311,33 @@ Pipeline <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
-      cif_d1_pop <- self$run_cif("d1", "pop", args$trait1, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_d1_fh1 <- self$run_cif("d1", "fh1", args$trait1, args$trait1, args$stratify_columns, args$use_weighted_cif)
-      cif_d1_fh2 <- self$run_cif("d1", "fh2", args$trait1, args$trait2, args$stratify_columns, args$use_weighted_cif)
-      cif_d2_pop <- self$run_cif("d2", "pop", args$trait2, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_d2_fh2 <- self$run_cif("d2", "fh2", args$trait2, args$trait2, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_pop <- self$run_cif("t1", "pop", args$analysis1, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh1 <- self$run_cif("t1", "fh1", args$analysis1, args$trait1, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh2 <- self$run_cif("t1", "fh2", args$analysis1, args$trait2, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_pop <- self$run_cif("t2", "pop", args$analysis2, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_fh2 <- self$run_cif("t2", "fh2", args$analysis2, args$trait2, args$stratify_columns, args$use_weighted_cif)
 
-      h2_d1 <- self$run_h2("d1", args$trait1$relatives_coefficient, args$stratify_columns, cif_d1_pop, cif_d1_fh1)
-      h2_d2 <- self$run_h2("d1", args$trait2$relatives_coefficient, args$stratify_columns, cif_d2_pop, cif_d2_fh2)
+      h2_t1 <- self$run_h2("t1", args$trait1$relatives_coefficient, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
+      h2_t2 <- self$run_h2("t1", args$trait2$relatives_coefficient, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
 
       join_columns <- c(list("time"), args$stratify_columns)
       join_symbols <- rlang::syms(join_columns)
 
-      combined <- self$add_cif_prefix(cif_d1_pop, "d1", "pop", args$stratify_columns) |>
+      combined <- self$add_cif_prefix(cif_t1_pop, "t1", "pop", args$stratify_columns) |>
         inner_join(
-          self$add_cif_prefix(cif_d1_fh2, "d1", "fh2", args$stratify_columns),
+          self$add_cif_prefix(cif_t1_fh2, "t1", "fh2", args$stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_cif_prefix(cif_d2_pop, "d2", "pop", args$stratify_columns),
+          self$add_cif_prefix(cif_t2_pop, "t2", "pop", args$stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_h2_prefix(h2_d1, "d1", args$stratify_columns),
+          self$add_h2_prefix(h2_t1, "t1", args$stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_h2_prefix(h2_d2, "d2", args$stratify_columns),
+          self$add_h2_prefix(h2_t2, "t2", args$stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         self$max_time_by_stratification(args$stratify_columns)
@@ -355,13 +355,13 @@ Pipeline <- R6::R6Class( #nolint
       list(
         args = args,
         cif = rbindlist(list(
-          cif_d1_pop,
-          cif_d1_fh1,
-          cif_d1_fh2,
-          cif_d2_pop,
-          cif_d2_fh2
+          cif_t1_pop,
+          cif_t1_fh1,
+          cif_t1_fh2,
+          cif_t2_pop,
+          cif_t2_fh2
         )) |> select(-var, -se, -l95, -u95), # We do not produce these statistics with the weighted method.
-        h2 = rbindlist(list(h2_d1, h2_d2)),
+        h2 = rbindlist(list(h2_t1, h2_t2)),
         rg = rg
       )
     },
