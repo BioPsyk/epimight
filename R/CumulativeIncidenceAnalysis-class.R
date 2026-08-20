@@ -120,7 +120,6 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           cif = replace_na(lag(cif_acc), 0.0),
         ) |>
         filter(
-          trait_onset_time >= 1,
           weight_event_1 > 0.0
         ) |>
         mutate(
@@ -176,7 +175,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         cif  = cuminc_results$est,
         var  = cuminc_results$var
       )[
-        time >= 1,
+        ,
         head(.SD, 1),
         by = time
       ][

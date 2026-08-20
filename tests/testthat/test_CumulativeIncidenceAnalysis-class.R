@@ -66,6 +66,9 @@ describe("run", {
     combined <- inner_join(original, weighted, by = join_by(time)) |>
       mutate(
         cif_diff = abs(cif.x - cif.y)
+      ) |>
+      filter(
+        time >= 1
       )
 
     diff <- combined |>
