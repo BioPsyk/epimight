@@ -35,7 +35,7 @@ generate_relatives_trait_n <- function(tte, column_name) {
     )
 }
 
-generate_trait <- function(tte, mean, sd, end_of_study) {
+generate_trait <- function(tte, column_name, mean, sd, end_of_study) {
   if (missing(end_of_study)) {
     end_of_study <- Sys.Date()
   }
@@ -52,6 +52,7 @@ generate_trait <- function(tte, mean, sd, end_of_study) {
         end_of_study_year - birth_year,
         death_year - birth_year
       ),
+      trait = column_name,
       trait_status = ifelse(
         death_year > end_of_study_year,
         sample(

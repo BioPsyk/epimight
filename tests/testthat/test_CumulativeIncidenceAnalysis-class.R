@@ -10,7 +10,7 @@ source("../utils.R")
 
 set.seed(1)
 
-tte <- read_csv(
+pipeline_tte <- read_csv(
   "../data/pipeline-tte.csv",
   show_col_type = FALSE,
   col_types=cols(person_id = col_character()),
@@ -32,27 +32,33 @@ analysis <- CumulativeIncidenceAnalysis$new()
 #=================================================================================
 
 describe("run", {
+  it("it fails when person_id is not unique", {
+    expect_error(analysis$run(
+     tte = pipeline_tte |> mutate(person_id = 1)
+    ))
+  })
+
   it("produces different results if different cohorts and same method is used", {
     cif_c1 <- analysis$run(
-     tte = tte |> select(-weight)
+     tte = pipeline_tte |> select(-weight)
    )
 
     cif_c2 <- analysis$run(
-      tte = tte[relatives_trait_n > 0] |> select(-weight)
+      tte = pipeline_tte[relatives_trait_n > 0] |> select(-weight)
     )
 
     expect_dataframe_not_equal(cif_c1, cif_c2)
 
     cif_c1 <- analysis$run(
-      tte = tte |> mutate(weight = 1.0)
+      tte = pipeline_tte |> mutate(weight = 1.0)
     )
 
     cif_c2 <- analysis$run(
-      tte = tte[relatives_trait_n > 0]
+      tte = pipeline_tte[relatives_trait_n > 0]
     )
 
     cif_c2_no_filter <- analysis$run(
-      tte = tte
+      tte = pipeline_tte
     )
 
     expect_dataframe_not_equal(cif_c1, cif_c2)
@@ -60,8 +66,8 @@ describe("run", {
   })
 
   it("produces different results if weight is given", {
-    original <- analysis$run(tte = tte |> select(-weight))
-    weighted <- analysis$run(tte = tte)
+    original <- analysis$run(tte = pipeline_tte |> select(-weight))
+    weighted <- analysis$run(tte = pipeline_tte)
 
     combined <- inner_join(original, weighted, by = join_by(time)) |>
       mutate(
@@ -79,8 +85,8 @@ describe("run", {
   })
 
   it("produces same results if weight is set to 1", {
-    original <- analysis$run(tte = tte |> select(-weight))
-    weighted <- analysis$run(tte = tte |> mutate(weight = 1.0))
+    original <- analysis$run(tte = pipeline_tte |> select(-weight))
+    weighted <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0))
 
     diff <- inner_join(original, weighted, by = join_by(time)) |>
       mutate(
