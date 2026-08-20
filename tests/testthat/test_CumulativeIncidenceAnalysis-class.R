@@ -40,8 +40,8 @@ describe("run", {
 
   it("returns NULL when no individuals have the trait", {
     results <- analysis$run(
-                          tte = pipeline_tte |> mutate(trait_status = 0),
-                          use_weighted_cif = FALSE
+      tte = pipeline_tte |> mutate(trait_status = 0),
+      use_weighted_cif = FALSE
     )
 
     expect_null(results)
