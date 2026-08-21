@@ -377,23 +377,39 @@ ArgumentsValidator <- R6::R6Class( #nolint
     run = function(...) {
       args <- list(...)
 
-      if (self$is_named_list(self$rules)) {
-        for (key in names(self$rules)) {
-          args <- self$handle_rule(args, key)
-        }
-      } else {
-        for (i in seq_along(self$rules)) {
-          args <- self$handle_rule(args, i)
-        }
-      }
+      caller <- rlang::caller_env()
 
-      if (is.function(self$post_validation)) {
-        new_args <- self$post_validation(args, self$rules)
+      rlang::try_fetch({
+          if (self$is_named_list(self$rules)) {
+            for (key in names(self$rules)) {
+              args <- self$handle_rule(args, key)
+            }
+          } else {
+            for (i in seq_along(self$rules)) {
+              args <- self$handle_rule(args, i)
+            }
+          }
 
-        if (!is.null(new_args)) {
-          args <- new_args
+          if (is.function(self$post_validation)) {
+            new_args <- self$post_validation(args, self$rules)
+
+            if (!is.null(new_args)) {
+              args <- new_args
+            }
+          }
+        },
+        error = function(err) {
+          # We catch all validation errors and rethrow them as new
+          # errors with the context of the function that the validation was performed in.
+          # We do this so that the error only gives you a stacktrace to that function
+          # and not to the whole validation chain.
+          rlang::abort(
+            err$message,
+            call   = caller,
+            trace  = rlang::trace_back(bottom = caller)
+          )
         }
-      }
+      )
 
       return(args)
     }
