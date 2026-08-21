@@ -79,6 +79,9 @@ generate_trait <- function(tte, column_name, mean, sd, end_of_study) {
         max_age
       )
     ) |>
+    mutate(
+      trait_onset = abs(trait_onset) # Sometimes the onset is -0
+    ) |>
     select(-max_age, -onset_age)
 
   return(survival_data)
