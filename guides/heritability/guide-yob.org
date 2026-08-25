@@ -116,7 +116,7 @@ n_count <- 100000
 
 tte <- generate_random_tte(n_count)
 tte <- generate_failure(tte, 20, 10)
-tte <- generate_relatives_trait_n(tte, "relatives_trait_n") |>
+tte <- generate_relatives_n_trait(tte, "relatives_n_trait") |>
   select(-birth_year, -dead_at_year) |>
   relocate(relatives, .after = failure_time) |>
   as.data.table()
@@ -152,7 +152,7 @@ print(tte)
 19806:     99982      m 1981-04-06              0           45         3
 19807:     99984      f 1985-11-06              0           41         1
 19808:    100000      f 1987-04-11              0           39         1
-       relatives_trait_n
+       relatives_n_trait
     1:                   0
     2:                   0
     3:                   2
@@ -231,7 +231,7 @@ tte <- tte |>
   mutate(cohort = "all") |>
   union_all(
     tte |>
-      filter(relatives_trait_n > 0) |>
+      filter(relatives_n_trait > 0) |>
       mutate(cohort = "affected_relatives")
   )
 #+END_SRC
@@ -258,7 +258,7 @@ print(tte)
 24322:     99964      m 1993-02-02              0           33         3
 24323:     99965      f 1995-10-27              0           31         4
 24324:     99990      m 1981-08-04              0           45         3
-       relatives_trait_n birth_year             cohort
+       relatives_n_trait birth_year             cohort
     1:                   0         1986                all
     2:                   1         1990                all
     3:                   0         1993                all

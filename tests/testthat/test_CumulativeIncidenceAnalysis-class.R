@@ -16,13 +16,13 @@ pipeline_tte <- read_csv(
   col_types=cols(person_id = col_character()),
 ) |>
   mutate(
-    weight = ifelse(relatives_trait_n > 0.0, relatives_trait_n / relatives_n, 0.0)
+    weight = ifelse(relatives_n_trait > 0.0, relatives_n_trait / relatives_n, 0.0)
   ) |>
   filter(
     trait_name     == "SCZ",
     relatives_kind == "parents"
   ) |>
-  select(person_id, trait_status, trait_onset, weight, relatives_n, relatives_trait_n) |>
+  select(person_id, trait_status, trait_onset, weight, relatives_n, relatives_n_trait) |>
   as.data.table()
 
 analysis <- CumulativeIncidenceAnalysis$new()
@@ -218,7 +218,7 @@ describe("run", {
    )
 
     cif_c2 <- analysis$run(
-      tte = pipeline_tte[relatives_trait_n > 0] |> select(-weight)
+      tte = pipeline_tte[relatives_n_trait > 0] |> select(-weight)
     )
 
     expect_dataframe_not_equal(cif_c1, cif_c2)
@@ -228,7 +228,7 @@ describe("run", {
     )
 
     cif_c2 <- analysis$run(
-      tte = pipeline_tte[relatives_trait_n > 0]
+      tte = pipeline_tte[relatives_n_trait > 0]
     )
 
     cif_c2_no_filter <- analysis$run(

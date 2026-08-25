@@ -98,7 +98,7 @@ Pipeline <- R6::R6Class( #nolint
               minimum  = 0,
               required = TRUE
             ),
-            relatives_trait_n = list(
+            relatives_n_trait = list(
               type     = "integer",
               minimum  = 0,
               required = TRUE
@@ -177,7 +177,7 @@ Pipeline <- R6::R6Class( #nolint
         ][
           , .SD[1], by = "person_id"
         ][
-          , c("person_id", "relatives_kind", "relatives_n", "relatives_trait_n")
+          , c("person_id", "relatives_kind", "relatives_n", "relatives_n_trait")
         ]
 
         if (nrow(relative_tte) == 0) {
@@ -191,12 +191,12 @@ Pipeline <- R6::R6Class( #nolint
           relative_tte,
           on = .(person_id = person_id)
         ][
-          relatives_trait_n > 0
+          relatives_n_trait > 0
         ]
 
         if (isTRUE(use_weighted_cif)) {
           tte <- tte[
-            , weight := ifelse(relatives_trait_n > 0.0, relatives_trait_n / relatives_n, 0.0)
+            , weight := ifelse(relatives_n_trait > 0.0, relatives_n_trait / relatives_n, 0.0)
           ]
         }
 

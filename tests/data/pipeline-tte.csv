@@ -1,4 +1,4 @@
-person_id,birth_year,trait_name,trait_status,trait_onset,relatives_kind,relatives_n,relatives_trait_n
+person_id,birth_year,trait_name,trait_status,trait_onset,relatives_kind,relatives_n,relatives_n_trait
 1,2000,CAD,0,26,full_siblings,3,0
 1,2000,CAD,0,26,parents,3,0
 1,2000,SCZ,0,26,full_siblings,3,0

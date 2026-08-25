@@ -88,7 +88,7 @@
 file tte [
 <color:#255ba7><$ma_account{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **trait** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_trait_n** |
+| **person_id**  | **trait** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_n_trait** |
 | ...            | ...          | ...                | ...              | ...                   | ...                  | ...                     |
 <#76b354>| 99962 | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
 | 99962          | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |

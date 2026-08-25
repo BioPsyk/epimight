@@ -4,7 +4,7 @@ library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 # Generators
 #=================================================================================
 
-generate_relatives_trait_n_prob <- function(trait_status, relatives_n) {
+generate_relatives_n_trait_prob <- function(trait_status, relatives_n) {
   if (trait_status == 1) {
     unaffected_prob <- 0.45
   } else {
@@ -22,7 +22,7 @@ generate_relatives_trait_n_prob <- function(trait_status, relatives_n) {
   return(prob)
 }
 
-generate_relatives_trait_n <- function(tte, column_name) {
+generate_relatives_n_trait <- function(tte, column_name) {
   tte |>
     rowwise() |>
     mutate(
@@ -30,7 +30,7 @@ generate_relatives_trait_n <- function(tte, column_name) {
         0:relatives_n,
         1,
         replace = TRUE,
-        prob = generate_relatives_trait_n_prob(trait_status, relatives_n)
+        prob = generate_relatives_n_trait_prob(trait_status, relatives_n)
       )
     )
 }
@@ -129,47 +129,47 @@ generate_random_tte <- function(n_count, period_start, period_end) {
 generate_pipeline_tte <- function(n_count) {
   t1_fs_tte <- generate_random_tte(n_count)
   t1_fs_tte <- generate_trait(t1_fs_tte, "SCZ", 20, 10)
-  t1_fs_tte <- generate_relatives_trait_n(t1_fs_tte, "relatives_trait_n") |>
+  t1_fs_tte <- generate_relatives_n_trait(t1_fs_tte, "relatives_n_trait") |>
     relocate(trait_onset, .after = person_id) |>
     relocate(trait_status, .after = trait_onset) |>
     relocate(relatives_n, .after = trait_status) |>
-    relocate(relatives_trait_n, .after = relatives_n) |>
+    relocate(relatives_n_trait, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), relatives_kind = "full_siblings") |>
     as.data.table()
 
-  t2_fs_tte <- copy(t1_fs_tte |> select(-trait_onset, -trait_status, -relatives_trait_n, -trait_name, -relatives_kind))
+  t2_fs_tte <- copy(t1_fs_tte |> select(-trait_onset, -trait_status, -relatives_n_trait, -trait_name, -relatives_kind))
   t2_fs_tte <- generate_trait(t2_fs_tte, "CAD", 19, 11)
-  t2_fs_tte <- generate_relatives_trait_n(t2_fs_tte, "relatives_trait_n") |>
+  t2_fs_tte <- generate_relatives_n_trait(t2_fs_tte, "relatives_n_trait") |>
     relocate(trait_onset, .after = person_id) |>
     relocate(trait_status, .after = trait_onset) |>
     relocate(relatives_n, .after = trait_status) |>
-    relocate(relatives_trait_n, .after = relatives_n) |>
+    relocate(relatives_n_trait, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), relatives_kind = "full_siblings") |>
     as.data.table()
 
-  t1_p_tte <- copy(t1_fs_tte |> select(-trait_onset, -trait_status, -relatives_trait_n, -trait_name, -relatives_kind))
+  t1_p_tte <- copy(t1_fs_tte |> select(-trait_onset, -trait_status, -relatives_n_trait, -trait_name, -relatives_kind))
   t1_p_tte <- generate_trait(t1_p_tte, "SCZ", 20, 10)
-  t1_p_tte <- generate_relatives_trait_n(t1_p_tte, "relatives_trait_n") |>
+  t1_p_tte <- generate_relatives_n_trait(t1_p_tte, "relatives_n_trait") |>
     relocate(trait_onset, .after = person_id) |>
     relocate(trait_status, .after = trait_onset) |>
     relocate(relatives_n, .after = trait_status) |>
-    relocate(relatives_trait_n, .after = relatives_n) |>
+    relocate(relatives_n_trait, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), relatives_kind = "parents") |>
     as.data.table()
 
-  t2_p_tte <- copy(t1_fs_tte |> select(-trait_onset, -trait_status, -relatives_trait_n, -trait_name, -relatives_kind))
+  t2_p_tte <- copy(t1_fs_tte |> select(-trait_onset, -trait_status, -relatives_n_trait, -trait_name, -relatives_kind))
   t2_p_tte <- generate_trait(t2_p_tte, "CAD", 19, 11)
-  t2_p_tte <- generate_relatives_trait_n(t2_p_tte, "relatives_trait_n") |>
+  t2_p_tte <- generate_relatives_n_trait(t2_p_tte, "relatives_n_trait") |>
     relocate(trait_onset, .after = person_id) |>
     relocate(trait_status, .after = trait_onset) |>
     relocate(relatives_n, .after = trait_status) |>
-    relocate(relatives_trait_n, .after = relatives_n) |>
+    relocate(relatives_n_trait, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), relatives_kind = "parents") |>
     as.data.table()
 
   tte <- rbindlist(list(t1_fs_tte, t2_fs_tte, t1_p_tte, t2_p_tte)) |> select(-birth_date, -death_year) |>
     arrange(person_id, trait_name, relatives_kind) |>
-    select(person_id, birth_year, trait_name, trait_status, trait_onset, relatives_kind, relatives_n, relatives_trait_n)
+    select(person_id, birth_year, trait_name, trait_status, trait_onset, relatives_kind, relatives_n, relatives_n_trait)
 
   return(tte)
 }

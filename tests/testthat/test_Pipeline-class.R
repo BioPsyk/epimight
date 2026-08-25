@@ -49,7 +49,7 @@ describe("initialize", {
         trait_onset       = c(10, 10),
         relatives_kind    = c(10, 20), # Wrong type
         relatives_n       = c(1, 1),
-        relatives_trait_n = c(0, 0)
+        relatives_n_trait = c(0, 0)
       )
     ))
   })
@@ -64,7 +64,7 @@ describe("initialize", {
         trait_onset       = c(10, 20),
         relatives_kind    = c("parents", "parents"),
         relatives_n       = c(2, 2),
-        relatives_trait_n = c(0, 1)
+        relatives_n_trait = c(0, 1)
       )
     ))
   })
@@ -79,7 +79,7 @@ describe("initialize", {
         trait_onset       = c(10, 20),
         relatives_kind    = c("parents", "parents"),
         relatives_n       = c(2, 2),
-        relatives_trait_n = c(0, 1)
+        relatives_n_trait = c(0, 1)
       )
     )
   })
@@ -125,7 +125,7 @@ describe("get_tte", {
 
     expect_true(!("relatives_kind" %in% colnames(tte)))
     expect_true(!("relatives_n" %in% colnames(tte)))
-    expect_true(!("relatives_trait_n" %in% colnames(tte)))
+    expect_true(!("relatives_n_trait" %in% colnames(tte)))
     expect_true(!("weight" %in% colnames(tte)))
   })
 
@@ -142,7 +142,7 @@ describe("get_tte", {
 
     expect_true("relatives_kind" %in% colnames(tte))
     expect_true("relatives_n" %in% colnames(tte))
-    expect_true("relatives_trait_n" %in% colnames(tte))
+    expect_true("relatives_n_trait" %in% colnames(tte))
     expect_true("weight" %in% colnames(tte))
   })
 })
