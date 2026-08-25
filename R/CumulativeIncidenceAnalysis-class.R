@@ -71,7 +71,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
     run_weighted_single = function(tte) {
       trait_onset_max <- max(tte$trait_onset)
 
-      weights <- tte |>
+      tte |>
         mutate(
           weight_event_1 = ifelse(trait_status == 1, weight, 0.0),
           weight_event_n = ifelse(trait_status != 0, weight, 0.0),
@@ -100,11 +100,10 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         mutate(
           at_risk = cumsum(weight_all)
         ) |>
-        arrange(trait_onset)
-
-      weights |>
+        arrange(trait_onset) |>
         filter(weight_event_n > 0.0) |>
         mutate(
+          # Kaplan-Meier survival estimate
           surv = ifelse(
             at_risk > 0.0,
             cumprod(1.0 - weight_event_n / at_risk),
@@ -123,15 +122,25 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           weight_event_1 > 0.0
         ) |>
         mutate(
-          cases = cumsum(weight_event_1)
+          cases = cumsum(weight_event_1),
+          # Greenwoods formula
+          var = ifelse(
+            at_risk > 0.0,
+            (surv * surv) * cumsum(
+              weight_event_1 / (at_risk * (at_risk - weight_event_1))
+            ),
+            0.0
+          )
+        ) |>
+        mutate(
+          var = ifelse(trait_onset == 0, 0, lag(var))
         ) |>
         rename(time = trait_onset) |>
-        select(time, cif, cases) |>
+        select(time, cif, cases, var) |>
         mutate(
-          se  = 0.0,
-          l95 = 0.0,
-          u95 = 0.0,
-          var = 0.0
+          se  = sqrt(var),
+          l95 = cif - qnorm(0.975) * sqrt(var),
+          u95 = cif + qnorm(0.975) * sqrt(var),
         ) |>
         relocate(cases, .after = var) |>
         as.data.table()
