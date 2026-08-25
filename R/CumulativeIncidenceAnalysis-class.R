@@ -140,6 +140,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           l95 = cif - qnorm(0.975) * sqrt(var),
           u95 = cif + qnorm(0.975) * sqrt(var),
         ) |>
+        relocate(var, .after = u95) |>
         relocate(cases, .after = var) |>
         as.data.table()
     },
