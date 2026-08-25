@@ -257,21 +257,21 @@ describe("run", {
   #  expect_equal(nrow(diff), 0)
   #})
 
-  #it("produces no NA results", {
-  #  original <- analysis$run(tte = pipeline_tte |> select(-weight)) |>
-  #    filter(
-  #      is.na(cif) | is.na(se) | is.na(var)
-  #    )
+  it("produces no NA results", {
+    original <- analysis$run(tte = pipeline_tte |> select(-weight)) |>
+      filter(
+        if_any(everything(), ~ is.na(.))
+      )
 
-  #  expect_equal(nrow(original), 0)
+    expect_equal(nrow(original), 0)
 
-  #  weighted <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0)) |>
-  #    filter(
-  #      is.na(cif) | is.na(se) | is.na(var)
-  #    )
+    weighted <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0)) |>
+      filter(
+        if_any(everything(), ~ is.na(.))
+      )
 
-  #  expect_equal(nrow(weighted), 0)
-  #})
+    expect_equal(nrow(weighted), 0)
+  })
 
   it("produces same results as the unweighted method if all weights are set to 1", {
     original <- analysis$run(tte = pipeline_tte |> select(-weight))
