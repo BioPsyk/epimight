@@ -116,6 +116,14 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
             ),
             cif_acc
           ),
+          # Greenwoods formula
+          var = ifelse(
+            at_risk > 0.0,
+            (surv * surv) * cumsum(
+              weight_event_1 / (lag(at_risk) * (lag(at_risk) - weight_event_1))
+            ),
+            0.0
+          ),
           cif = replace_na(lag(cif_acc), 0.0),
         ) |>
         filter(
@@ -123,17 +131,6 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         ) |>
         mutate(
           cases = cumsum(weight_event_1),
-          # Greenwoods formula
-          var = ifelse(
-            at_risk > 0.0,
-            (surv * surv) * cumsum(
-              weight_event_1 / (at_risk * (at_risk - weight_event_1))
-            ),
-            0.0
-          )
-        ) |>
-        mutate(
-          var = ifelse(trait_onset == 0, 0, lag(var))
         ) |>
         rename(time = trait_onset) |>
         select(time, cif, cases, var) |>

@@ -257,20 +257,37 @@ describe("run", {
   #  expect_equal(nrow(diff), 0)
   #})
 
+  #it("produces no NA results", {
+  #  original <- analysis$run(tte = pipeline_tte |> select(-weight)) |>
+  #    filter(
+  #      is.na(cif) | is.na(se) | is.na(var)
+  #    )
+
+  #  expect_equal(nrow(original), 0)
+
+  #  weighted <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0)) |>
+  #    filter(
+  #      is.na(cif) | is.na(se) | is.na(var)
+  #    )
+
+  #  expect_equal(nrow(weighted), 0)
+  #})
+
   it("produces same results as the unweighted method if all weights are set to 1", {
     original <- analysis$run(tte = pipeline_tte |> select(-weight))
     weighted <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0))
 
     diff <- inner_join(original, weighted, by = join_by(time)) |>
       mutate(
-        cif_diff = abs(cif.x - cif.y),
-        var_diff = abs(var.x - var.y),
-      ) #|>
-      #filter(
-      #  cif_diff > testthat_tolerance()
-      #)
+        var_diff = abs(var.x - var.y)
+      ) |>
+      filter(
+        var_diff > testthat_tolerance()
+      )
 
     message("diff")
+    print(original)
+    print(weighted)
     print(diff |> select(time, var.x, var.y, var_diff))
     print(testthat_tolerance())
 
