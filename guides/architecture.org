@@ -88,7 +88,7 @@
 file tte [
 <color:#255ba7><$ma_account{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **trait** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_n_trait** |
+| **person_id**  | **trait** | **trait_status** | **trait_time** | **relationship_kind** | **relatives_amount** | **relatives_n_trait** |
 | ...            | ...          | ...                | ...              | ...                   | ...                  | ...                     |
 <#76b354>| 99962 | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
 | 99962          | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
@@ -133,3 +133,76 @@ meta ..> results
 #+CAPTION: Pipeline component diagram
 #+RESULTS: fig:pipeline-component-diagram
 [[file:./diagrams/pipeline-component-diagram.png]]
+
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:cif-flowchart
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ./diagrams/cif-flowchart.png :exports results
+@startuml
+!include <material/account>
+!include <material/account_search>
+!include <material/chart_line>
+!include <material/data>
+!include <material/database>
+!include <material/matrix>
+!include ./diagrams/ibp.puml
+
+file tte [
+<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE** (all traits and relatives, 100 000 rows)
+
+| **person_id**  | **trait_name** | **trait_status** | **trait_time** | **relatives_kind** | **relatives_n** | **relatives_n_trait** |
+| ...            | ...            | ...              | ...            | ...                | ...             | ...                   |
+| 99962          | SCZ            | 1                | 29             | parents            | 2               | 1                     |
+| 99962          | SCZ            | 1                | 29             | full_siblings      | 1               | 1                     |
+| 99962          | CAD            | 2                | 34             | parents            | 2               | 0                     |
+| 99962          | CAD            | 2                | 34             | full_siblings      | 1               | 0                     |
+]
+
+file chosen_trait [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **TTE** (one trait, on kind of relative, 10 000 rows)
+
+| **trait_status** | **trait_time** | **weight**  |
+| ...              | ...            |         0.2 |
+| 1                | 29             |         0.0 |
+| 1                | 29             |         0.5 |
+| 2                | 34             |         0.3 |
+| 2                | 34             |         1.0 |
+]
+
+file weight_sums [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Weight sums** (100 rows)
+
+| **trait_time** | **weight_all**  | **weight_event_1** | **weight_event_n** |
+| ...            |             0.2 |                    |                    |
+| 0              |             0.0 |                    |                    |
+| 1              |             0.5 |                    |                    |
+| 2              |             0.3 |                    |                    |
+| 3              |             1.0 |                    |                    |
+]
+
+rectangle "Order by trait_time, descending" as order_desc
+rectangle "Derive cumulative at_risk" as derive_at_risk
+
+file weight_sums [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Weight sums** (100 rows)
+
+| **trait_time** | **weight_all**  | **weight_event_1** | **weight_event_n** |
+| ...            |             0.2 |                    |                    |
+| 0              |             0.0 |                    |                    |
+| 1              |             0.5 |                    |                    |
+| 2              |             0.3 |                    |                    |
+| 3              |             1.0 |                    |                    |
+]
+
+rectangle "Order by trait_time, ascending" as order_asc
+
+tte --> chosen_trait
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Pipeline component diagram
+#+RESULTS: fig:cif-flowchart
+[[file:./diagrams/cif-flowchart.png]]
