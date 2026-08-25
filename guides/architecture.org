@@ -149,56 +149,80 @@ meta ..> results
 !include <material/matrix>
 !include ./diagrams/ibp.puml
 
-file tte [
-<color:#255ba7><$ma_account{scale=0.35}></color>  **TTE** (all traits and relatives, 100 000 rows)
-
-| **person_id**  | **trait_name** | **trait_status** | **trait_time** | **relatives_kind** | **relatives_n** | **relatives_n_trait** |
-| ...            | ...            | ...              | ...            | ...                | ...             | ...                   |
-| 99962          | SCZ            | 1                | 29             | parents            | 2               | 1                     |
-| 99962          | SCZ            | 1                | 29             | full_siblings      | 1               | 1                     |
-| 99962          | CAD            | 2                | 34             | parents            | 2               | 0                     |
-| 99962          | CAD            | 2                | 34             | full_siblings      | 1               | 0                     |
-]
-
 file chosen_trait [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **TTE** (one trait, on kind of relative, 10 000 rows)
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **TTE** (1 trait, 1 kind of relative, 100 000 rows)
 
-| **trait_status** | **trait_time** | **weight**  |
-| ...              | ...            |         0.2 |
-| 1                | 29             |         0.0 |
-| 1                | 29             |         0.5 |
-| 2                | 34             |         0.3 |
-| 2                | 34             |         1.0 |
+| **trait_time** | **trait_status** | **weight**  |
+| ...            | ...              |         ... |
+| 29             | 0                |         0.0 |
+| 29             | 1                |         0.5 |
+| 34             | 1                |         0.3 |
+| 34             | 2                |         1.0 |
+| ...            | ...              |         ... |
 ]
+
+rectangle "Sum weights, grouped by trait_time" as sum_weights
 
 file weight_sums [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Weight sums** (100 rows)
 
 | **trait_time** | **weight_all**  | **weight_event_1** | **weight_event_n** |
-| ...            |             0.2 |                    |                    |
-| 0              |             0.0 |                    |                    |
-| 1              |             0.5 |                    |                    |
-| 2              |             0.3 |                    |                    |
-| 3              |             1.0 |                    |                    |
+|              0 |            1101 |                321 |                321 |
+|              1 |            1345 |                196 |                196 |
+|              2 |            1396 |                227 |                227 |
+|              3 |            1351 |                223 |                223 |
+|              4 |            1381 |                220 |                220 |
+|              5 |            1344 |                239 |                239 |
+|              6 |            1418 |                288 |                288 |
+|            ... |             ... |                ... |                ... |
 ]
 
-rectangle "Order by trait_time, descending" as order_desc
-rectangle "Derive cumulative at_risk" as derive_at_risk
+rectangle "Derive at_risk" as derive_at_risk
 
-file weight_sums [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Weight sums** (100 rows)
+file at_risk_sums [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Weight sums and at_risk** (100 rows)
 
-| **trait_time** | **weight_all**  | **weight_event_1** | **weight_event_n** |
-| ...            |             0.2 |                    |                    |
-| 0              |             0.0 |                    |                    |
-| 1              |             0.5 |                    |                    |
-| 2              |             0.3 |                    |                    |
-| 3              |             1.0 |                    |                    |
+| **trait_time** | **weight_all**  | **weight_event_1** | **weight_event_n** | **at_risk** |
+|              0 |            1101 |                321 |                321 |      100000 |
+|              1 |            1345 |                196 |                196 |       98899 |
+|              2 |            1396 |                227 |                227 |       97554 |
+|              3 |            1351 |                223 |                223 |       96158 |
+|              4 |            1381 |                220 |                220 |       94807 |
+|              5 |            1344 |                239 |                239 |       93426 |
+|              6 |            1418 |                288 |                288 |       92082 |
+|              7 |            1447 |                268 |                268 |       90664 |
+|              8 |            1467 |                308 |                308 |       89217 |
+|            ... |             ... |                ... |                ... |         ... |
 ]
 
-rectangle "Order by trait_time, ascending" as order_asc
+file results [
+<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Results** (53 rows)
 
-tte --> chosen_trait
+| **cif**     | **var **     |
+| 0.000000000 | 0.000000e+00 |
+| 0.003210000 | 3.199696e-08 |
+| 0.005185458 | 5.174118e-08 |
+| 0.007500308 | 7.505161e-08 |
+| 0.009802014 | 9.840599e-08 |
+| 0.012099772 | 1.218927e-07 |
+| 0.014626993 | 1.479247e-07 |
+|         ... |          ... |
+]
+
+rectangle "surv = cumprod(\n  1.0 - weight_event_n / at_risk\n)" as derive_surv
+rectangle "cif_acc = cumsum(\n  lag(surv) * weight_event_1 / at_risk\n)" as derive_cif_acc
+rectangle "var = (surv * surv) * cumsum(\n  weight_event_1 / (at_risk * (at_risk - weight_event_1))\n)" as derive_var
+rectangle "lag(cif)\nlag(var)" as lag_cif_var
+
+chosen_trait --> sum_weights
+sum_weights --> weight_sums
+weight_sums --> derive_at_risk
+derive_at_risk --> at_risk_sums
+at_risk_sums --> derive_surv
+derive_surv --> derive_cif_acc
+derive_cif_acc --> derive_var
+derive_var --> lag_cif_var
+lag_cif_var --> results
 @enduml
 #+END_SRC
 
