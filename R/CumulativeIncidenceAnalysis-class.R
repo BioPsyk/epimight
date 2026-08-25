@@ -123,13 +123,13 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
               weight_event_1 / (at_risk * (at_risk - weight_event_1))
             ),
             0.0
-          ),
-          cif = replace_na(lag(cif_acc), 0.0),
+          )
         ) |>
         filter(
           weight_event_1 > 0.0
         ) |>
         mutate(
+          cif   = ifelse(trait_onset == 0, 0, lag(cif_acc)),
           cases = cumsum(weight_event_1),
           var   = ifelse(trait_onset == 0, 0, lag(var))
         ) |>
