@@ -179,13 +179,13 @@ file "**CIF**" as cif_t2_pop #54adef
 file "**CIF**" as cif_t2_fh2 #54adef
 file "**H2**" as h2_t1 #dd2e44
 file "**H2**" as h2_t2 #54adef
-file "**RG**" as rg #ffd600
+file "**RG**" as rg #c254ef
 
 legend left
   <#silver>|= Color|= Trait |
   |<#dd2e44>|Trait 1        |
   |<#54adef>|Trait 2        |
-  |<#ffd600>|Trait 1 vs 2   |
+  |<#c254ef>|Trait 1 vs 2   |
 endlegend
 
 pop --> fh1
