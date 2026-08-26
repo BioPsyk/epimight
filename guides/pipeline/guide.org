@@ -89,7 +89,7 @@ data and how you run the pipeline on said data.
 
 * How it works
 
-The pipeline produces a genetic correlation between 2 binary traits:
+The pipeline uses a binary trait model to estimate genetic correlation between 2 traits:
 
 | Term | Description |
 |------+-------------|
@@ -117,12 +117,12 @@ That is used in 3 different analyzes:
 You can think of the pipeline as a set of data transformations, where each
 transformation has inputs and a single output. Some examples of data transformations:
 
-- Filtering out cohort individuals from population TTE data
-- Producing CIF from cohorts TTE data
+- Filtering out individuals from population TTE data
+- Producing population CIF from population TTE data
 - Producing H2 from population CIF and family history CIF
 
-The diagram below represents all data transformations that the pipeline consists of,
-where the starting node is the population TTE data and the end node is the genetic correlation.
+The diagram below represents the data transformations that the pipeline consists of,
+where the start node is the population TTE data and the end node is the genetic correlation.
 
 The color represents from which trait the individual status/onset was used in the analysis.
 The middle CIF (cross trait) is a bit special, since it uses trait 1 status/onset of individuals
