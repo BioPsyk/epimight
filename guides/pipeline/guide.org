@@ -89,7 +89,7 @@ data and how you run the pipeline on said data.
 
 * How it works
 
-The pipeline produces a genetic correlation between 2 traits:
+The pipeline produces a genetic correlation between 2 binary traits:
 
 | Term | Description |
 |------+-------------|
@@ -101,8 +101,8 @@ By using time-to-event data of 3 different cohorts:
 | Term  | Description                                                          |
 |-------+----------------------------------------------------------------------|
 | ~pop~ | Population or "target cohort"                                        |
-| ~fh1~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~t1~ |
-| ~fh2~ | Individuals from ~pop~, with at least 1 relative diagnosed with ~t2~ |
+| ~fh1~ | Individuals from ~pop~, with at least 1 relative that has trait ~t1~ |
+| ~fh2~ | Individuals from ~pop~, with at least 1 relative that has trait ~t2~ |
 
 Note: ~fh~ is short for "family history".
 
@@ -126,6 +126,16 @@ It produces 7 intermediate results that the genetic correlation is derived from:
 | ~h2_t1~      | Heritability of trait 1                     |
 | ~h2_t2~      | Heritability of trait 2                     |
 
+You can think of the cohorts and analysis results as a DAG
+(directed acyclic graph), where each node represents a piece of
+data and each arrow represents a transformation:
+
+- The starting node is the TTE data for the population
+- That data is transformed into the TTE data for the cohorts
+- The TTE data for the 3 cohorts is then transformed into the CIF results
+- The CIF results is then transformed into the H2 results
+- All the CIF and H2 results are finally transformed into the RG results
+
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
 #+NAME: fig:pipeline-dag
@@ -135,7 +145,6 @@ It produces 7 intermediate results that the genetic correlation is derived from:
 !include <material7.4.47/AccountUser/AccountGroup>
 !include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
 !include ../diagrams/ibp.puml
-
 
 skinparam nodesep 80
 skinparam ranksep 50
@@ -166,23 +175,23 @@ skinparam ranksep 50
 
 skinparam defaultTextAlignment center
 
-title "**Data flow**\nCohorts and analysis results"
+title "**Data transformations**\nCohorts and analysis results"
 
 card "<$mdiAccountGroup{scale=1}>\nPopulation" as pop
 card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nTrait 1" as fh1
 card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nTrait 2" as fh2
-file "**CIF**" as cif_t1_pop #dt2e44
-file "**CIF**" as cif_t1_fh1 #dt2e44
-file "**CIF**" as cif_t1_fh2 #dt2e44
+file "**CIF**" as cif_t1_pop #dd2e44
+file "**CIF**" as cif_t1_fh1 #dd2e44
+file "**CIF**" as cif_t1_fh2 #dd2e44
 file "**CIF**" as cif_t2_pop #54adef
 file "**CIF**" as cif_t2_fh2 #54adef
-file "**H2**" as h2_t1 #dt2e44
+file "**H2**" as h2_t1 #dd2e44
 file "**H2**" as h2_t2 #54adef
-file "**RG**" as rg #fft600
+file "**RG**" as rg #ffd600
 
 legend left
   <#silver>|= Color|= Trait|
-  |<#dt2e44>|Trait 1|
+  |<#dd2e44>|Trait 1|
   |<#54adef>|Trait 2|
 endlegend
 
@@ -205,7 +214,6 @@ cif_t1_pop --> rg
 cif_t2_pop --> rg
 h2_t1 --> rg
 h2_t2 --> rg
-
 @enduml
 #+END_SRC
 
@@ -231,7 +239,6 @@ And the cohorts as:
 
 The pipeline starts by producing the CIF results for the two traits from the
 ~pop~ cohort.
-
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
