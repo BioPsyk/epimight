@@ -89,7 +89,7 @@ data and how you run the pipeline on said data.
 
 * How it works
 
-The pipeline uses a binary trait model to estimate genetic correlation between 2 traits:
+The pipeline estimates genetic correlation between binary traits using time-to-event data.
 
 | Term | Description |
 |------+-------------|
@@ -211,25 +211,92 @@ h2_t2 --> rg
 #+END_SRC
 
 #+ATTR_LATEX: :placement [H]
-#+CAPTION: Pipeline results
+#+CAPTION: Pipeline data transformations
 #+RESULTS: fig:pipeline-data-transformations
 [[file:../diagrams/pipeline-data-transformations.png]]
 
-The first thing needed to run the pipeline is the TTE data of the population cohort, which must have 2
-rows per individual (one for each trait):
 
-- Trait 1
-  - What trait status the individual have
-  - At what age (in years) did the individual get the trait status
-  - How many relatives does the individual have
-  - How many of those relatives have the trait
-  - What kind of relatives are they (parents, full siblings, cousins, etc.)
-- Trait 2
-  - What trait status the individual have
-  - At what age (in years) did the individual get the trait status
-  - How many relatives does the individual have
-  - How many of those relatives have the trait
-  - What kind of relatives are they (parents, full siblings, cousins, etc.)
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:pipeline-data-format
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/pipeline-data-format.png :exports results
+@startuml
+!include <material7.4.47/AccountUser/AccountGroup>
+!include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
+!include ../diagrams/ibp.puml
+
+skinparam nodesep 80
+skinparam ranksep 50
+
+<style>
+  root {
+    FontColor #111111
+  }
+
+  title {
+    LineColor transparent
+  }
+
+  file {
+    LineColor #333333
+  }
+
+  rectangle {
+    LineColor #333333
+  }
+
+  card {
+    RoundCorner     0
+    BackgroundColor transparent
+    LineColor       transparent
+  }
+</style>
+
+skinparam defaultTextAlignment center
+
+file genealogy [
+<color:#255ba7><$mdiHumanMaleFemaleChild{scale=0.35}></color>  **Genealogy**
+
+| **person_id**  | **relative_id**  | **relative_kind** |
+| 99962          | 71999            | mother            |
+| 99962          | 62133            | father            |
+| 99962          | 99963            | brother           |
+| ...            | ...              | ...               |
+]
+
+file pheno [
+<color:#255ba7><$mdiHumanMaleFemaleChild{scale=0.35}></color>  **Phenotypes**
+
+| **person_id**  | **relative_id**  | **relative_kind** |
+| 99962          | 71999            | mother            |
+| 99962          | 62133            | father            |
+| 99962          | 99963            | brother           |
+| ...            | ...              | ...               |
+]
+
+file tte [
+<color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
+
+| **person_id**  | **birth_year**   | **trait_name** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_n**      | **relatives_n_trait**   |
+| ...            | ...              | ...            | ...                | ...              | ...                   | ...                  | ...                     |
+<#76b354>| 99962 | 1999             | SCZ            | 1                  | 29               | PO                    | 2                    | 1                       |
+| 99962          | 1999             | SCZ            | 1                  | 29               | FS                    | 1                    | 1                       |
+<#76b354>| 99962 | 1999             | CAD            | 2                  | 34               | PO                    | 2                    | 0                       |
+| 99962          | 1999             | CAD            | 2                  | 34               | FS                    | 1                    | 0                       |
+<#76b354>| 99963 | 2000             | SCZ            | 1                  | 28               | PO                    | 3                    | 1                       |
+| 99963          | 2000             | SCZ            | 1                  | 28               | FS                    | 2                    | 1                       |
+<#76b354>| 99963 | 2000             | CAD            | 0                  | 33               | PO                    | 3                    | 0                       |
+| 99963          | 2000             | CAD            | 0                  | 33               | FS                    | 2                    | 0                       |
+]
+
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Pipeline data format
+#+RESULTS: fig:pipeline-data-format
+[[file:../diagrams/pipeline-data-format.png]]
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -252,16 +319,16 @@ skinparam ranksep 80
 file tte [
 <color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **birth_year** | **trait** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_amount** | **relatives_n_trait** |
-| ...            | ...              | ...          | ...                | ...              | ...                   | ...                  | ...                     |
-<#76b354>| 99962 | 1999             | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
-| 99962          | 1999             | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
-<#76b354>| 99962 | 1999             | CAD          | 2                  | 34               | PO                    | 2                    | 0                       |
-| 99962          | 1999             | CAD          | 2                  | 34               | FS                    | 1                    | 0                       |
-<#76b354>| 99963 | 2000             | SCZ          | 1                  | 28               | PO                    | 3                    | 1                       |
-| 99963          | 2000             | SCZ          | 1                  | 28               | FS                    | 2                    | 1                       |
-<#76b354>| 99963 | 2000             | CAD          | 0                  | 33               | PO                    | 3                    | 0                       |
-| 99963          | 2000             | CAD          | 0                  | 33               | FS                    | 2                    | 0                       |
+| **person_id**  | **birth_year**   | **trait_name** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_n**      | **relatives_n_trait**   |
+| ...            | ...              | ...            | ...                | ...              | ...                   | ...                  | ...                     |
+<#76b354>| 99962 | 1999             | SCZ            | 1                  | 29               | PO                    | 2                    | 1                       |
+| 99962          | 1999             | SCZ            | 1                  | 29               | FS                    | 1                    | 1                       |
+<#76b354>| 99962 | 1999             | CAD            | 2                  | 34               | PO                    | 2                    | 0                       |
+| 99962          | 1999             | CAD            | 2                  | 34               | FS                    | 1                    | 0                       |
+<#76b354>| 99963 | 2000             | SCZ            | 1                  | 28               | PO                    | 3                    | 1                       |
+| 99963          | 2000             | SCZ            | 1                  | 28               | FS                    | 2                    | 1                       |
+<#76b354>| 99963 | 2000             | CAD            | 0                  | 33               | PO                    | 3                    | 0                       |
+| 99963          | 2000             | CAD            | 0                  | 33               | FS                    | 2                    | 0                       |
 ]
 
 rectangle "**Trait 1**\nSCZ" as trait1 #76b354
@@ -370,14 +437,6 @@ results --> combined_rg
 #+CAPTION: Pipeline component diagram
 #+RESULTS: fig:pipeline-component-diagram
 [[file:../diagrams/pipeline-component-diagram.png]]
-
-The basic concept of the pipeline is pretty simple, you create a dataset that contains
-time-to-event for all traits and types of relatives you want to analyse. You feed this
-dataset to the pipeline when you create it. Then you tell the pipeline which pair of traits
-and type of relatives you want to analyse and it will output cumulative incidences, heritabilities
-and genetic correlations.
-
-The most work you have to do is to format the data in a way that the pipeline expects.
 
 * Creating the time-to-event data
 
