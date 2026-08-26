@@ -98,11 +98,11 @@ The pipeline produces a genetic correlation between 2 binary traits:
 
 By using time-to-event data of 3 different cohorts:
 
-| Term  | Description                                                          |
-|-------+----------------------------------------------------------------------|
-| ~pop~ | Population or "target cohort"                                        |
-| ~fh1~ | Individuals from ~pop~, with at least 1 relative that has trait ~t1~ |
-| ~fh2~ | Individuals from ~pop~, with at least 1 relative that has trait ~t2~ |
+| Term  | Description                                                           |
+|-------+-----------------------------------------------------------------------|
+| ~pop~ | Population or "target cohort"                                         |
+| ~fh1~ | Individuals from ~pop~, with at least 1 relative that have trait ~t1~ |
+| ~fh2~ | Individuals from ~pop~, with at least 1 relative that have trait ~t2~ |
 
 Note: ~fh~ is short for "family history".
 
@@ -124,9 +124,9 @@ transformation has inputs and a single output. Some examples of data transformat
 The diagram below represents all data transformations that the pipeline consists of,
 where the starting node is the population TTE data and the end node is the genetic correlation.
 
-The color represents which individual trait status was used in the analysis.
-The middle CIF (cross trait) is a bit special, since it uses individual trait 1 status of individuals
-with at least one relative that have trait 2.
+The color represents from which trait the individual status/onset was used in the analysis.
+The middle CIF (cross trait) is a bit special, since it uses trait 1 status/onset of individuals
+that have at least one relative with trait 2.
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
