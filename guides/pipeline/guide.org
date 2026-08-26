@@ -169,9 +169,9 @@ skinparam defaultTextAlignment center
 
 title "**Pipeline data transformations**"
 
-card "<$mdiAccountGroup{scale=1}>\nPopulation" as pop
-card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nTrait 1" as fh1
-card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nTrait 2" as fh2
+card "<$mdiAccountGroup{scale=1}>\n**Population**" as pop
+card "<$mdiHumanMaleFemaleChild{scale=1}>\n**Family history**\nWith trait 1" as fh1
+card "<$mdiHumanMaleFemaleChild{scale=1}>\n**Family history**\nWith trait 2" as fh2
 file "**CIF**" as cif_t1_pop #dd2e44
 file "**CIF**" as cif_t1_fh1 #dd2e44
 file "**CIF**" as cif_t1_fh2 #dd2e44
