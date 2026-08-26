@@ -90,18 +90,26 @@ data and how you run the pipeline on said data.
 * How it works
 
 The pipeline estimates genetic correlation between 2 binary traits using time-to-event data
-of individuals and their relatives.
+of individuals and their relatives in a target cohort.
 
-In order for the pipeline to work, it needs to know
+Let's say we want to study genetic correlation between earliest diagnosis of schizophrenia
+and coronary artery disease in full siblings.
 
+For each trait we then need the following information of each individual in the target cohort:
 
+- Trait status (0 = censored, 1 = diagnosed, 2 = competing risk)
+- Trait onset (age of individual at status)
+- Amount of full siblings
+- Amount of diagnosed full siblings
 
 | Term | Description |
 |------+-------------|
 | ~t1~ | Trait 1     |
 | ~t2~ | Trait 2     |
 
-By using time-to-event data of 3 different cohorts:
+Let's say that our traits should be defined as "earliest diagnosis" and the ~t1~ is for schizophrenia
+and ~t2~ is for coronary artery disease.
+
 
 | Term  | Description                                                           |
 |-------+-----------------------------------------------------------------------|
