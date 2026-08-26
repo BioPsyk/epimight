@@ -215,37 +215,21 @@ h2_t2 --> rg
 #+RESULTS: fig:pipeline-data-transformations
 [[file:../diagrams/pipeline-data-transformations.png]]
 
-These different results
+The first thing needed to run the pipeline is the TTE data of the population cohort, which must have 2
+rows per individual (one for each trait):
 
-| Term         | Description                                     |
-|--------------+-------------------------------------------------|
-| ~cif_t1_pop~ | CIF of trait 1 from population cohort           |
-| ~cif_t1_fh1~ | CIF of trait 1 from family history 1 cohort     |
-| ~cif_t1_fh2~ | CIF of trait 1 from family history 2 cohort     |
-| ~cif_t2_pop~ | CIF of trait 2 from population cohort           |
-| ~cif_t2_fh2~ | CIF of trait 2 from family history 2 cohort     |
-| ~h2_t1~      | Heritability of trait 1                         |
-| ~h2_t2~      | Heritability of trait 2                         |
-| ~rg~         | Genetic correlation between trait 1 and trait 2 |
-
-
-Let's say way we want to answer this research question:
-"What is the genetic correlation between schizophrenia and coronary artery disease
-using Danish millenials (people born from 1981 to 1996) and their full siblings?"
-
-We would then define the traits as:
-
-- ~t1~ :: Schizophrenia
-- ~t2~ :: Coronary artery disease
-
-And the cohorts as:
-
-- ~pop~ :: Danish millenials
-- ~fh1~ :: Danish millenials, with at least one full sibling diagnosed with ~t1~
-- ~fh2~ :: Danish millenials, with at least one full sibling diagnosed with ~t2~
-
-The pipeline starts by producing the CIF results for the two traits from the
-~pop~ cohort.
+- Trait 1
+  - What trait status the individual have
+  - At what age (in years) did the individual get the trait status
+  - How many relatives does the individual have
+  - How many of those relatives have the trait
+  - What kind of relatives are they (parents, full siblings, cousins, etc.)
+- Trait 2
+  - What trait status the individual have
+  - At what age (in years) did the individual get the trait status
+  - How many relatives does the individual have
+  - How many of those relatives have the trait
+  - What kind of relatives are they (parents, full siblings, cousins, etc.)
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
