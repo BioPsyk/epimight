@@ -167,7 +167,7 @@ skinparam ranksep 50
 
 skinparam defaultTextAlignment center
 
-title "**Data transformations**\nCohorts and analysis results"
+title "**Pipeline data transformations**"
 
 card "<$mdiAccountGroup{scale=1}>\nPopulation" as pop
 card "<$mdiHumanMaleFemaleChild{scale=1}>\nFamily history\nTrait 1" as fh1
