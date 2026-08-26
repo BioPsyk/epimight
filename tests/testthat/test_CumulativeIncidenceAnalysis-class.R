@@ -258,6 +258,37 @@ describe("run", {
     expect_equal(nrow(combined), nrow(diff))
   })
 
+  it("handles multiple competing risks as single competing risk", {
+    original <- analysis$run(tte = pipeline_tte)
+    multiple <- analysis$run(
+      tte = pipeline_tte |>
+        mutate(
+          trait_status = ifelse(
+            trait_status == 2,
+            sample(
+              seq(2, 10),
+              1,
+              replace = TRUE
+            ),
+            trait_status
+          )
+        )
+    )
+
+    combined <- inner_join(original, multiple, by = join_by(time)) |>
+      mutate(
+        cif_diff = abs(cif.x - cif.y)
+      ) |>
+      filter(
+        time >= 1
+      )
+
+    diff <- combined |>
+      filter(cif_diff > testthat_tolerance())
+
+    expect_equal(nrow(diff), 0)
+  })
+
   it("produces same results as the unweighted method if all weights are set to 1", {
     original <- analysis$run(tte = pipeline_tte |> select(-weight))
     weighted <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0))

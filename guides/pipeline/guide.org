@@ -89,7 +89,12 @@ data and how you run the pipeline on said data.
 
 * How it works
 
-The pipeline estimates genetic correlation between binary traits using time-to-event data.
+The pipeline estimates genetic correlation between 2 binary traits using time-to-event data
+of individuals and their relatives.
+
+In order for the pipeline to work, it needs to know
+
+
 
 | Term | Description |
 |------+-------------|
