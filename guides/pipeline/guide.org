@@ -116,8 +116,7 @@ The first step is producing 2 additional cohorts from the target cohort, so that
 | ~fh2~        | Individuals with at least 1 full sibling that have trait 2 |
 
 The next step is to estimate cumulative incidences for the 2 traits and 3 cohorts.
-This step produces 5 different cumulative incidences by using a trait
-and a cohort:
+This step produces 5 different cumulative incidence trait and cohort combinations:
 
 | Abbreviation | Description                                 |
 |--------------+---------------------------------------------|
