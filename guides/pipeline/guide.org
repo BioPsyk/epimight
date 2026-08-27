@@ -563,7 +563,7 @@ results$rg |> tail(10)
 
 * Meta-analyzing the results
 
-When using stratification, we can meta-analyze the results simply by passing the results inte the ~run_meta~ function:
+When using stratification, we can meta-analyze the results simply by passing the results into the ~run_meta~ function:
 
 #+BEGIN_SRC R :exports code :results output
 meta <- pipeline$run_meta(results)
