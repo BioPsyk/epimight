@@ -496,7 +496,7 @@ Pipeline <- R6::R6Class( #nolint
       )
 
       return(list(
-        #cif = cif_meta,
+        cif = cif_meta,
         h2  = h2_meta,
         rg  = rg_meta
       ))
