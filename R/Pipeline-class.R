@@ -351,7 +351,10 @@ Pipeline <- R6::R6Class( #nolint
       if (nrow(rg) == 0) stop("No genetic correlation results produced")
 
       list(
-        args = args,
+        metadata = list(
+          version   = packageVersion(methods::getPackageName()),
+          arguments = args
+        ),
         cif = rbindlist(list(
           cif_t1_pop,
           cif_t1_fh1,
@@ -365,45 +368,51 @@ Pipeline <- R6::R6Class( #nolint
     },
     run_meta = function(results) {
       validator <- ArgumentsValidator$new(
-        args = list(
+        metadata = list(
           required   = TRUE,
           type       = "named_list",
-          properties = self$validation_rules$run
+          properties = list(
+            version = list(
+              required   = TRUE,
+              type       = "string"
+            ),
+            arguments = list(
+              required   = TRUE,
+              type       = "named_list",
+              properties = self$validation_rules$run
+            )
+          )
         ),
-        #cif = list(
-        #  required = TRUE,
-        #  type     = "data.table",
-        #  columns  = list(
-        #    trait = list(
-        #      type     = "string",
-        #      required = TRUE
-        #    ),
-        #    cohort = list(
-        #      type     = "string",
-        #      required = TRUE
-        #    ),
-        #    cif = list(
-        #      type     = "numeric",
-        #      required = TRUE
-        #    ),
-        #    cif_var = list(
-        #      type = "numeric"
-        #    ),
-        #    cif_se = list(
-        #      type = "numeric"
-        #    ),
-        #    cif_l95 = list(
-        #      type = "numeric"
-        #    ),
-        #    cif_u95 = list(
-        #      type = "numeric"
-        #    ),
-        #    cif_cases = list(
-        #      type     = "numeric",
-        #      required = TRUE
-        #    )
-        #  )
-        #),
+        cif = list(
+          required = TRUE,
+          type     = "data.table",
+          columns  = list(
+            trait = list(
+              type     = "string",
+              required = TRUE
+            ),
+            cohort = list(
+              type     = "string",
+              required = TRUE
+            ),
+            cif = list(
+              type     = "numeric",
+              required = TRUE
+            ),
+            se = list(
+              type     = "numeric",
+              required = TRUE
+            ),
+            l95 = list(
+              type     = "numeric",
+              required = TRUE
+            ),
+            u95 = list(
+              type     = "numeric",
+              required = TRUE
+            )
+          )
+        ),
         h2 = list(
           required = TRUE,
           type     = "data.table",
@@ -458,13 +467,13 @@ Pipeline <- R6::R6Class( #nolint
       #---------------------------------------------------------------------------------
       # Cumulative incidence
 
-      #cif_meta <- private$analyses$core$run_meta(
-      #  estimates        = args$cif,
-      #  estimate_column  = "cif",
-      #  se_column        = "cif_se",
-      #  stratify_columns = list("trait", "cohort", "time")
-      #) |>
-      #  select(trait, cohort, everything())
+      cif_meta <- private$analyses$core$run_meta(
+        estimates        = args$cif,
+        estimate_column  = "cif",
+        se_column        = "se",
+        stratify_columns = list("trait", "cohort", "time")
+      ) |>
+        select(trait, cohort, everything())
 
       #---------------------------------------------------------------------------------
       # Heritability
