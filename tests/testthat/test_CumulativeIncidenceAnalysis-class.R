@@ -19,10 +19,10 @@ pipeline_tte <- read_csv(
     weight = ifelse(relatives_n_trait > 0.0, relatives_n_trait / relatives_n, 0.0)
   ) |>
   filter(
-    trait_name     == "SCZ",
+    trait     == "SCZ",
     relatives_kind == "parents"
   ) |>
-  select(person_id, trait_status, trait_onset, weight, relatives_n, relatives_n_trait) |>
+  select(person_id, trait_status, trait_time, weight, relatives_n, relatives_n_trait) |>
   as.data.table()
 
 analysis <- CumulativeIncidenceAnalysis$new()
@@ -36,14 +36,14 @@ describe("run", {
     expect_error(analysis$run(
       tte = data.table(
         trait_status = c(1, 0),
-        trait_onset  = c(20, 21)
+        trait_time  = c(20, 21)
       )
     ))
 
     expect_error(analysis$run(
       tte = data.table(
         person_id    = c("abc1", "abc2"),
-        trait_onset  = c(20, 21)
+        trait_time  = c(20, 21)
       )
     ))
 
@@ -60,7 +60,7 @@ describe("run", {
       tte = data.table(
         person_id    = c(1, 2),
         trait_status = c(1, 0),
-        trait_onset  = c(20, 21)
+        trait_time  = c(20, 21)
       )
     ))
 
@@ -68,7 +68,7 @@ describe("run", {
       tte = data.table(
         person_id    = c("abc1", "abc2"),
         trait_status = c(1, 0),
-        trait_onset  = c(-20, -21)
+        trait_time  = c(-20, -21)
       )
     ))
 
@@ -76,7 +76,7 @@ describe("run", {
       tte = data.table(
         person_id    = c("abc1", "abc2"),
         trait_status = c(-2, 99),
-        trait_onset  = c(20, 21)
+        trait_time  = c(20, 21)
       )
     ))
 
@@ -84,7 +84,7 @@ describe("run", {
       tte = data.table(
         person_id    = c("abc1", "abc2"),
         trait_status = c(1, 0),
-        trait_onset  = c(20, 21),
+        trait_time  = c(20, 21),
         weight       = c(-2, 3)
       )
     ))
@@ -95,7 +95,7 @@ describe("run", {
       tte = data.table(
         person_id    = c("abc1", "abc1"),
         trait_status = c(1, 0),
-        trait_onset  = c(20, 21)
+        trait_time  = c(20, 21)
       )
     ))
   })
@@ -105,7 +105,7 @@ describe("run", {
       tte = data.table(
         person_id    = c("abc1", "abc2"),
         trait_status = c(0, 0),
-        trait_onset  = c(20, 21)
+        trait_time  = c(20, 21)
       )
     )
 
@@ -115,7 +115,7 @@ describe("run", {
       tte = data.table(
         person_id    = c("abc1", "abc2"),
         trait_status = c(0, 0),
-        trait_onset  = c(20, 21)
+        trait_time  = c(20, 21)
       ),
       weight = c(0.5, 0.2)
     )

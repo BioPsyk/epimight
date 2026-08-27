@@ -52,7 +52,7 @@ generate_trait <- function(tte, column_name, mean, sd, end_of_study) {
         end_of_study_year - birth_year,
         death_year - birth_year
       ),
-      trait_name = column_name,
+      trait = column_name,
       trait_status = ifelse(
         death_year > end_of_study_year,
         sample(
@@ -69,7 +69,7 @@ generate_trait <- function(tte, column_name, mean, sd, end_of_study) {
         )
       ),
       onset_age = round(rnorm(1, mean = mean, sd = sd)),
-      trait_onset = ifelse(
+      trait_time = ifelse(
         trait_status == 1,
         case_when(
           onset_age < 0 ~ 0,
@@ -80,7 +80,7 @@ generate_trait <- function(tte, column_name, mean, sd, end_of_study) {
       )
     ) |>
     mutate(
-      trait_onset = abs(trait_onset) # Sometimes the onset is -0
+      trait_time = abs(trait_time) # Sometimes the onset is -0
     ) |>
     select(-max_age, -onset_age)
 
@@ -130,46 +130,46 @@ generate_pipeline_tte <- function(n_count) {
   t1_fs_tte <- generate_random_tte(n_count)
   t1_fs_tte <- generate_trait(t1_fs_tte, "SCZ", 20, 10)
   t1_fs_tte <- generate_relatives_n_trait(t1_fs_tte, "relatives_n_trait") |>
-    relocate(trait_onset, .after = person_id) |>
-    relocate(trait_status, .after = trait_onset) |>
+    relocate(trait_time, .after = person_id) |>
+    relocate(trait_status, .after = trait_time) |>
     relocate(relatives_n, .after = trait_status) |>
     relocate(relatives_n_trait, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), relatives_kind = "full_siblings") |>
     as.data.table()
 
-  t2_fs_tte <- copy(t1_fs_tte |> select(-trait_onset, -trait_status, -relatives_n_trait, -trait_name, -relatives_kind))
+  t2_fs_tte <- copy(t1_fs_tte |> select(-trait_time, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
   t2_fs_tte <- generate_trait(t2_fs_tte, "CAD", 19, 11)
   t2_fs_tte <- generate_relatives_n_trait(t2_fs_tte, "relatives_n_trait") |>
-    relocate(trait_onset, .after = person_id) |>
-    relocate(trait_status, .after = trait_onset) |>
+    relocate(trait_time, .after = person_id) |>
+    relocate(trait_status, .after = trait_time) |>
     relocate(relatives_n, .after = trait_status) |>
     relocate(relatives_n_trait, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), relatives_kind = "full_siblings") |>
     as.data.table()
 
-  t1_p_tte <- copy(t1_fs_tte |> select(-trait_onset, -trait_status, -relatives_n_trait, -trait_name, -relatives_kind))
+  t1_p_tte <- copy(t1_fs_tte |> select(-trait_time, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
   t1_p_tte <- generate_trait(t1_p_tte, "SCZ", 20, 10)
   t1_p_tte <- generate_relatives_n_trait(t1_p_tte, "relatives_n_trait") |>
-    relocate(trait_onset, .after = person_id) |>
-    relocate(trait_status, .after = trait_onset) |>
+    relocate(trait_time, .after = person_id) |>
+    relocate(trait_status, .after = trait_time) |>
     relocate(relatives_n, .after = trait_status) |>
     relocate(relatives_n_trait, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), relatives_kind = "parents") |>
     as.data.table()
 
-  t2_p_tte <- copy(t1_fs_tte |> select(-trait_onset, -trait_status, -relatives_n_trait, -trait_name, -relatives_kind))
+  t2_p_tte <- copy(t1_fs_tte |> select(-trait_time, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
   t2_p_tte <- generate_trait(t2_p_tte, "CAD", 19, 11)
   t2_p_tte <- generate_relatives_n_trait(t2_p_tte, "relatives_n_trait") |>
-    relocate(trait_onset, .after = person_id) |>
-    relocate(trait_status, .after = trait_onset) |>
+    relocate(trait_time, .after = person_id) |>
+    relocate(trait_status, .after = trait_time) |>
     relocate(relatives_n, .after = trait_status) |>
     relocate(relatives_n_trait, .after = relatives_n) |>
     mutate(person_id = as.character(person_id), relatives_kind = "parents") |>
     as.data.table()
 
   tte <- rbindlist(list(t1_fs_tte, t2_fs_tte, t1_p_tte, t2_p_tte)) |> select(-birth_date, -death_year) |>
-    arrange(person_id, trait_name, relatives_kind) |>
-    select(person_id, birth_year, trait_name, trait_status, trait_onset, relatives_kind, relatives_n, relatives_n_trait)
+    arrange(person_id, trait, relatives_kind) |>
+    select(person_id, birth_year, trait, trait_status, trait_time, relatives_kind, relatives_n, relatives_n_trait)
 
   return(tte)
 }

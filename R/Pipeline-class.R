@@ -16,11 +16,11 @@ Pipeline <- R6::R6Class( #nolint
   public = list(
     validation_rules = list(
       run = list(
-        trait1 = list(
+        analysis1 = list(
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait_name = list(
+            trait = list(
               required = TRUE,
               type     = "string"
             ),
@@ -34,11 +34,11 @@ Pipeline <- R6::R6Class( #nolint
             )
           )
         ),
-        trait2 = list(
+        analysis2 = list(
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait_name = list(
+            trait = list(
               required = TRUE,
               type     = "string"
             ),
@@ -75,7 +75,7 @@ Pipeline <- R6::R6Class( #nolint
               type     = "string",
               required = TRUE
             ),
-            trait_name = list(
+            trait = list(
               type     = "string",
               required = TRUE
             ),
@@ -84,7 +84,7 @@ Pipeline <- R6::R6Class( #nolint
               enum     = list(0, 1, 2),
               required = TRUE
             ),
-            trait_onset = list(
+            trait_time = list(
               type     = "numeric",
               minimum  = 0,
               required = TRUE
@@ -127,15 +127,15 @@ Pipeline <- R6::R6Class( #nolint
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait_name = self$validation_rules$run$trait1$properties$trait_name
+            trait = self$validation_rules$run$analysis1$properties$trait
           )
         ),
         list(
           required   = FALSE,
           type       = "named_list",
           properties = list(
-            trait_name     = self$validation_rules$run$trait2$properties$trait_name,
-            relatives_kind = self$validation_rules$run$trait2$properties$relatives_kind
+            trait     = self$validation_rules$run$analysis2$properties$trait,
+            relatives_kind = self$validation_rules$run$analysis2$properties$relatives_kind
           )
         ),
         self$validation_rules$run$stratify_columns,
@@ -149,7 +149,7 @@ Pipeline <- R6::R6Class( #nolint
       stratify_columns <- args[[3]]
       use_weighted_cif <- args[[4]]
 
-      columns <- c("person_id", "trait_status", "trait_onset")
+      columns <- c("person_id", "trait_status", "trait_time")
 
       if (!is.null(stratify_columns) && is.list(stratify_columns)) {
         columns <- c(columns, unlist(stratify_columns))
@@ -162,7 +162,7 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       tte <- private$pool[
-        trait_name == proband_trait$trait_name
+        trait == proband_trait$trait
       ][
         , .SD[1], by = "person_id"
       ][
@@ -173,7 +173,7 @@ Pipeline <- R6::R6Class( #nolint
 
       if (is.list(relatives_trait)) {
         relative_tte <- private$pool[
-          trait_name == relatives_trait$trait_name & relatives_kind == relatives_trait$relatives_kind
+          trait == relatives_trait$trait & relatives_kind == relatives_trait$relatives_kind
         ][
           , .SD[1], by = "person_id"
         ][
@@ -182,7 +182,7 @@ Pipeline <- R6::R6Class( #nolint
 
         if (nrow(relative_tte) == 0) {
           stop(paste0(
-            "No family history TTE data found for trait \"", relatives_trait$trait_name,
+            "No family history TTE data found for trait \"", relatives_trait$trait,
             "\" and relationship kind \"", relatives_trait$relatives_kind, "\""
           ))
         }
@@ -203,7 +203,7 @@ Pipeline <- R6::R6Class( #nolint
         if (nrow(tte) == 0) {
           stop(paste0(
             "No probands with at least 1 relative (of kind \"",
-            relatives_trait$relatives_kind, "\") diagnosed with \"", relatives_trait$trait_name, "\""
+            relatives_trait$relatives_kind, "\") diagnosed with \"", relatives_trait$trait, "\""
           ))
         }
       }
@@ -309,14 +309,14 @@ Pipeline <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
-      cif_t1_pop <- self$run_cif("t1", "pop", args$trait1, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh1 <- self$run_cif("t1", "fh1", args$trait1, args$trait1, args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh2 <- self$run_cif("t1", "fh2", args$trait1, args$trait2, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_pop <- self$run_cif("t2", "pop", args$trait2, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_fh2 <- self$run_cif("t2", "fh2", args$trait2, args$trait2, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_pop <- self$run_cif("t1", "pop", args$analysis1, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh1 <- self$run_cif("t1", "fh1", args$analysis1, args$analysis1, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh2 <- self$run_cif("t1", "fh2", args$analysis1, args$analysis2, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_pop <- self$run_cif("t2", "pop", args$analysis2, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_fh2 <- self$run_cif("t2", "fh2", args$analysis2, args$analysis2, args$stratify_columns, args$use_weighted_cif)
 
-      h2_t1 <- self$run_h2("t1", args$trait1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
-      h2_t2 <- self$run_h2("t1", args$trait2$relatedness, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
+      h2_t1 <- self$run_h2("t1", args$analysis1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
+      h2_t2 <- self$run_h2("t2", args$analysis2$relatedness, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
 
       join_columns <- c(list("time"), args$stratify_columns)
       join_symbols <- rlang::syms(join_columns)
@@ -344,7 +344,7 @@ Pipeline <- R6::R6Class( #nolint
 
       rg <- private$analyses$rg$run(
         estimates   = combined,
-        relatedness = args$trait2$relatedness
+        relatedness = args$analysis2$relatedness
       ) |>
         select(!!!args$stratify_columns, rg, se, l95, u95)
 

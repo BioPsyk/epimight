@@ -291,7 +291,7 @@ file pheno [
 file tte [
 <color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **birth_year**   | **trait_name** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_n**      | **relatives_n_trait**   |
+| **person_id**  | **birth_year**   | **trait** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_n**      | **relatives_n_trait**   |
 | ...            | ...              | ...            | ...                | ...              | ...                   | ...                  | ...                     |
 <#76b354>| 99962 | 1999             | SCZ            | 1                  | 29               | PO                    | 2                    | 1                       |
 | 99962          | 1999             | SCZ            | 1                  | 29               | FS                    | 1                    | 1                       |
@@ -332,7 +332,7 @@ skinparam ranksep 80
 file tte [
 <color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **birth_year**   | **trait_name** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_n**      | **relatives_n_trait**   |
+| **person_id**  | **birth_year**   | **trait** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_n**      | **relatives_n_trait**   |
 | ...            | ...              | ...            | ...                | ...              | ...                   | ...                  | ...                     |
 <#76b354>| 99962 | 1999             | SCZ            | 1                  | 29               | PO                    | 2                    | 1                       |
 | 99962          | 1999             | SCZ            | 1                  | 29               | FS                    | 1                    | 1                       |
@@ -616,12 +616,12 @@ stratifying on birth year, we would run:
 #+BEGIN_SRC R :exports code :results output
 results <- pipeline$run(
   trait1 = list(
-    trait_name     = "SCZ",
+    trait          = "SCZ",
     relatives_kind = "parents",
     relatedness    = 0.5
   ),
   trait2 = list(
-    trait_name     = "CAD",
+    trait          = "CAD",
     relatives_kind = "full_siblings",
     relatedness    = 0.5
   ),
