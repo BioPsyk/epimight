@@ -473,9 +473,6 @@ meta <- pipeline$run_meta(results)
 #+END_SRC
 
 #+RESULTS:
-: [1m[33mError[39m in `private$analyses$core$run_meta()`:[22m
-: [33m![39m Data.table column 'estimates[[se]]' did not exist: trait, cohort, birth_year, time, cif, cases
-: [90mRun `rlang::last_trace()` to see where the error occurred.[39m
 
 ** Heritability
 
