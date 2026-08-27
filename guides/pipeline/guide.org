@@ -93,39 +93,26 @@ The pipeline estimates genetic correlation between 2 binary traits using time-to
 of individuals and their relatives in a target cohort.
 
 Let's say we want to estimate genetic correlation between earliest diagnosis of schizophrenia
-and coronary artery disease in full siblings.
+and coronary artery disease in full siblings. Schizophrenia will be trait 1 (~t1~) and
+coronary artery disease will be trait 2 (~t2~).
 
-For each trait we then need the following information of each individual in the target cohort:
+For each trait the pipeline then need the following information of each individual in the target cohort:
 
 - Trait status (0 = censored, 1 = diagnosed, 2 = competing risk)
-- Trait onset (age of individual at status)
+- Trait time (individual's age at status)
 - Amount of full siblings
-- Amount of diagnosed full siblings
+- Amount of full siblings with trait
 
-| Term | Description |
-|------+-------------|
-| ~t1~ | Trait 1     |
-| ~t2~ | Trait 2     |
+From that information the pipeline creates 2 additional cohorts, so that there are 3 cohorts in total:
 
-Let's say that our traits should be defined as "earliest diagnosis" and the ~t1~ is for schizophrenia
-and ~t2~ is for coronary artery disease.
+| Abbreviation | Description                                                |
+|--------------+------------------------------------------------------------|
+| ~pop~        | Population or "target cohort"                              |
+| ~fh1~        | Individuals with at least 1 full sibling that have trait 1 |
+| ~fh2~        | Individuals with at least 1 full sibling that have trait 2 |
 
 
-| Term  | Description                                                           |
-|-------+-----------------------------------------------------------------------|
-| ~pop~ | Population or "target cohort"                                         |
-| ~fh1~ | Individuals from ~pop~, with at least 1 relative that have trait ~t1~ |
-| ~fh2~ | Individuals from ~pop~, with at least 1 relative that have trait ~t2~ |
 
-Note: ~fh~ is short for "family history".
-
-That is used in 3 different analyzes:
-
-| Term  | Description                                                                            |
-|-------+----------------------------------------------------------------------------------------|
-| ~cif~ | Cumulative incidence function                                                          |
-| ~h2~  | Heritability                                                                           |
-| ~rg~  | Genetic correlation                                                                    |
 
 You can think of the pipeline as a set of data transformations, where each
 transformation has inputs and a single output. Some examples of data transformations:
