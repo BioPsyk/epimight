@@ -103,7 +103,7 @@ For each trait the pipeline needs the following information of each individual i
 - Amount of full siblings
 - Amount of full siblings with trait
 
-Once the pipeline has all needed information it can begin producing the genetic correlation.
+Once the pipeline has all needed information, it can begin producing the genetic correlation.
 You can think of this process as a series of steps that take inputs and produce outputs.
 
 The first step is producing 2 additional cohorts from the target cohort, so that there are
