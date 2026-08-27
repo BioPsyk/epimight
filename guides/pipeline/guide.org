@@ -235,87 +235,6 @@ h2_t2 --> rg
 [[file:../diagrams/pipeline-data-flow.png]]
 
 
-#+LATEX: \vspace{0.5cm}
-#+LATEX: \begin{center}
-#+NAME: fig:pipeline-data-format
-#+ATTR_HTML: :style max-width: 100%;
-#+BEGIN_SRC plantuml :file ../diagrams/pipeline-data-format.png :exports results
-@startuml
-!include <material7.4.47/AccountUser/AccountGroup>
-!include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
-!include ../diagrams/ibp.puml
-
-skinparam nodesep 80
-skinparam ranksep 50
-
-<style>
-  root {
-    FontColor #111111
-  }
-
-  title {
-    LineColor transparent
-  }
-
-  file {
-    LineColor #333333
-  }
-
-  rectangle {
-    LineColor #333333
-  }
-
-  card {
-    RoundCorner     0
-    BackgroundColor transparent
-    LineColor       transparent
-  }
-</style>
-
-skinparam defaultTextAlignment center
-
-file genealogy [
-<color:#255ba7><$mdiHumanMaleFemaleChild{scale=0.35}></color>  **Genealogy**
-
-| **person_id**  | **relative_id**  | **relative_kind** |
-| 99962          | 71999            | mother            |
-| 99962          | 62133            | father            |
-| 99962          | 99963            | brother           |
-| ...            | ...              | ...               |
-]
-
-file pheno [
-<color:#255ba7><$mdiHumanMaleFemaleChild{scale=0.35}></color>  **Phenotypes**
-
-| **person_id**  | **relative_id**  | **relative_kind** |
-| 99962          | 71999            | mother            |
-| 99962          | 62133            | father            |
-| 99962          | 99963            | brother           |
-| ...            | ...              | ...               |
-]
-
-file tte [
-<color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
-
-| **person_id**  | **birth_year**   | **trait** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_n**      | **relatives_n_trait**   |
-| ...            | ...              | ...            | ...                | ...              | ...                   | ...                  | ...                     |
-<#76b354>| 99962 | 1999             | SCZ            | 1                  | 29               | PO                    | 2                    | 1                       |
-| 99962          | 1999             | SCZ            | 1                  | 29               | FS                    | 1                    | 1                       |
-<#76b354>| 99962 | 1999             | CAD            | 2                  | 34               | PO                    | 2                    | 0                       |
-| 99962          | 1999             | CAD            | 2                  | 34               | FS                    | 1                    | 0                       |
-<#76b354>| 99963 | 2000             | SCZ            | 1                  | 28               | PO                    | 3                    | 1                       |
-| 99963          | 2000             | SCZ            | 1                  | 28               | FS                    | 2                    | 1                       |
-<#76b354>| 99963 | 2000             | CAD            | 0                  | 33               | PO                    | 3                    | 0                       |
-| 99963          | 2000             | CAD            | 0                  | 33               | FS                    | 2                    | 0                       |
-]
-
-@enduml
-#+END_SRC
-
-#+ATTR_LATEX: :placement [H]
-#+CAPTION: Pipeline data format
-#+RESULTS: fig:pipeline-data-format
-[[file:../diagrams/pipeline-data-format.png]]
 
 * Creating the time-to-event data
 
@@ -722,3 +641,86 @@ results --> combined_rg
 #+CAPTION: Pipeline component diagram
 #+RESULTS: fig:pipeline-component-diagram
 [[file:../diagrams/pipeline-component-diagram.png]]
+
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:pipeline-data-format
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/pipeline-data-format.png :exports results
+@startuml
+!include <material7.4.47/AccountUser/AccountGroup>
+!include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
+!include ../diagrams/ibp.puml
+
+skinparam nodesep 80
+skinparam ranksep 50
+
+<style>
+  root {
+    FontColor #111111
+  }
+
+  title {
+    LineColor transparent
+  }
+
+  file {
+    LineColor #333333
+  }
+
+  rectangle {
+    LineColor #333333
+  }
+
+  card {
+    RoundCorner     0
+    BackgroundColor transparent
+    LineColor       transparent
+  }
+</style>
+
+skinparam defaultTextAlignment center
+
+file genealogy [
+<color:#255ba7><$mdiHumanMaleFemaleChild{scale=0.35}></color>  **Genealogy**
+
+| **person_id**  | **relative_id**  | **relative_kind** |
+| 99962          | 71999            | mother            |
+| 99962          | 62133            | father            |
+| 99962          | 99963            | brother           |
+| ...            | ...              | ...               |
+]
+
+file pheno [
+<color:#255ba7><$mdiHumanMaleFemaleChild{scale=0.35}></color>  **Phenotypes**
+
+| **person_id**  | **relative_id**  | **relative_kind** |
+| 99962          | 71999            | mother            |
+| 99962          | 62133            | father            |
+| 99962          | 99963            | brother           |
+| ...            | ...              | ...               |
+]
+
+file tte [
+<color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
+
+| **person_id**  | **birth_year**   | **trait** | **failure_status** | **failure_time** | **relatives_kind**    | **relatives_n**      | **relatives_n_trait**   |
+| ...            | ...              | ...            | ...                | ...              | ...                   | ...                  | ...                     |
+<#76b354>| 99962 | 1999             | SCZ            | 1                  | 29               | PO                    | 2                    | 1                       |
+| 99962          | 1999             | SCZ            | 1                  | 29               | FS                    | 1                    | 1                       |
+<#76b354>| 99962 | 1999             | CAD            | 2                  | 34               | PO                    | 2                    | 0                       |
+| 99962          | 1999             | CAD            | 2                  | 34               | FS                    | 1                    | 0                       |
+<#76b354>| 99963 | 2000             | SCZ            | 1                  | 28               | PO                    | 3                    | 1                       |
+| 99963          | 2000             | SCZ            | 1                  | 28               | FS                    | 2                    | 1                       |
+<#76b354>| 99963 | 2000             | CAD            | 0                  | 33               | PO                    | 3                    | 0                       |
+| 99963          | 2000             | CAD            | 0                  | 33               | FS                    | 2                    | 0                       |
+]
+
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Pipeline data format
+#+RESULTS: fig:pipeline-data-format
+[[file:../diagrams/pipeline-data-format.png]]
