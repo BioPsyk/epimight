@@ -352,7 +352,7 @@ Pipeline <- R6::R6Class( #nolint
 
       list(
         metadata = list(
-          version   = packageVersion(methods::getPackageName()),
+          version   = as.character(packageVersion(methods::getPackageName())),
           arguments = args
         ),
         cif = rbindlist(list(
@@ -361,7 +361,7 @@ Pipeline <- R6::R6Class( #nolint
           cif_t1_fh2,
           cif_t2_pop,
           cif_t2_fh2
-        )) |> select(-var, -se, -l95, -u95), # We do not produce these statistics with the weighted method.
+        )),
         h2 = rbindlist(list(h2_t1, h2_t2)),
         rg = rg
       )
