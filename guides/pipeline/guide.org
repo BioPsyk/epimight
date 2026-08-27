@@ -96,14 +96,18 @@ Let's say we want to estimate genetic correlation between earliest diagnosis of 
 and coronary artery disease in full siblings. Schizophrenia will be trait 1 (~t1~) and
 coronary artery disease will be trait 2 (~t2~).
 
-For each trait the pipeline then need the following information of each individual in the target cohort:
+For each trait the pipeline needs the following information of each individual in the target cohort:
 
 - Trait status (0 = censored, 1 = diagnosed, 2 = competing risk)
 - Trait time (individual's age at status)
 - Amount of full siblings
 - Amount of full siblings with trait
 
-From that information the pipeline creates 2 additional cohorts, so that there are 3 cohorts in total:
+Once the pipeline has all needed information it can begin producing the genetic correlation.
+You can think of this process as a series of steps that take inputs and produce outputs.
+
+The first step is producing 2 additional cohorts from the target cohort, so that there are
+3 cohorts in total:
 
 | Abbreviation | Description                                                |
 |--------------+------------------------------------------------------------|
@@ -111,28 +115,43 @@ From that information the pipeline creates 2 additional cohorts, so that there a
 | ~fh1~        | Individuals with at least 1 full sibling that have trait 1 |
 | ~fh2~        | Individuals with at least 1 full sibling that have trait 2 |
 
+The next step is to estimate cumulative incidences for the 2 traits and 3 cohorts.
+This step produces 5 different cumulative incidences by using a trait
+and a cohort:
 
+| Abbreviation | Description                                 |
+|--------------+---------------------------------------------|
+| ~cif_t1_pop~ | CIF of trait 1 from population cohort       |
+| ~cif_t1_fh1~ | CIF of trait 1 from family history 1 cohort |
+| ~cif_t1_fh2~ | CIF of trait 1 from family history 2 cohort |
+| ~cif_t2_pop~ | CIF of trait 2 from population cohort       |
+| ~cif_t2_fh2~ | CIF of trait 2 from family history 2 cohort |
 
+The next step is to estimate heritability for the 2 traits. This is done
+by comparing the cumulative incidences of a trait in the target cohort and the
+family history cohort of the trait:
 
-You can think of the pipeline as a set of data transformations, where each
-transformation has inputs and a single output. Some examples of data transformations:
+| Abbreviation | Description             | Created from                  |
+|--------------+-------------------------+-------------------------------|
+| ~h2_t1~      | Heritability of trait 1 | ~cif_t1_pop~ and ~cif_t1_fh1~ |
+| ~h2_t2~      | Heritability of trait 2 | ~cif_t2_pop~ and ~cif_t2_fh2~ |
 
-- Filtering out individuals from population TTE data
-- Producing population CIF from population TTE data
-- Producing H2 from population CIF and family history CIF
+The final step is to estimate the genetic correlation between the 2 traits,
+which is done by using:
 
-The diagram below represents the data transformations that the pipeline consists of,
-where the start node is the population TTE data and the end node is the genetic correlation.
+- CIF of trait 1 of the target cohort
+- CIF of trait 2 of the target cohort
+- CIF of trait 1 of the family history 2 cohort (cross trait)
+- H2 of trait 1
+- H2 of trait 2
 
-The color represents from which trait the individual status/onset was used in the analysis.
-The middle CIF (cross trait) is a bit special, since it uses trait 1 status/onset of individuals
-that have at least one relative with trait 2.
+The diagram below visualizes how data flows between these steps:
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
-#+NAME: fig:pipeline-data-transformations
+#+NAME: fig:pipeline-data-flow
 #+ATTR_HTML: :style max-width: 100%;
-#+BEGIN_SRC plantuml :file ../diagrams/pipeline-data-transformations.png :exports results
+#+BEGIN_SRC plantuml :file ../diagrams/pipeline-data-flow.png :exports results
 @startuml
 !include <material7.4.47/AccountUser/AccountGroup>
 !include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
@@ -167,7 +186,7 @@ skinparam ranksep 50
 
 skinparam defaultTextAlignment center
 
-title "**Pipeline data transformations**"
+title "**Pipeline data flow**"
 
 card "<$mdiAccountGroup{scale=1}>\n**Population**" as pop
 card "<$mdiHumanMaleFemaleChild{scale=1}>\n**Family history**\nWith trait 1" as fh1
@@ -211,9 +230,9 @@ h2_t2 --> rg
 #+END_SRC
 
 #+ATTR_LATEX: :placement [H]
-#+CAPTION: Pipeline data transformations
-#+RESULTS: fig:pipeline-data-transformations
-[[file:../diagrams/pipeline-data-transformations.png]]
+#+CAPTION: Pipeline data flow
+#+RESULTS: fig:pipeline-data-flow
+[[file:../diagrams/pipeline-data-flow.png]]
 
 
 #+LATEX: \vspace{0.5cm}
