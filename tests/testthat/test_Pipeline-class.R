@@ -91,7 +91,7 @@ describe("get_tte", {
       list(
         index_trait     = "CAD",
         relatives_trait = "SCZ",
-        relatives_kind  = "full_siblings"
+        relatives_kind  = "half_siblings"
       ),
       list("unknown")
     ))
@@ -102,7 +102,7 @@ describe("get_tte", {
       list(
         index_trait     = "CAD",
         relatives_trait = "unknown",
-        relatives_kind  = "full_siblings"
+        relatives_kind  = "half_siblings"
       ),
       list("birth_year")
     ))
@@ -111,7 +111,7 @@ describe("get_tte", {
       list(
         index_trait     = "unknown",
         relatives_trait = "SCZ",
-        relatives_kind  = "full_siblings"
+        relatives_kind  = "half_siblings"
       ),
       list("birth_year")
     ))
@@ -235,14 +235,14 @@ describe("run", {
       heritability2 = list(
         index_trait     = "CAD",
         relatives_trait = "CAD",
-        relatives_kind  = "full_siblings",
-        relatedness     = 0.5
+        relatives_kind  = "half_siblings",
+        relatedness     = 0.25
       ),
       genetic_correlation = list(
         index_trait     = "SCZ",
         relatives_trait = "CAD",
-        relatives_kind  = "full_siblings",
-        relatedness     = 0.5
+        relatives_kind  = "half_siblings",
+        relatedness     = 0.25
       ),
       stratify_columns = list("birth_year"),
       use_weighted_cif = FALSE
@@ -258,14 +258,14 @@ describe("run", {
       heritability2 = list(
         index_trait     = "CAD",
         relatives_trait = "CAD",
-        relatives_kind  = "full_siblings",
-        relatedness     = 0.5
+        relatives_kind  = "half_siblings",
+        relatedness     = 0.25
       ),
       genetic_correlation = list(
         index_trait     = "SCZ",
         relatives_trait = "CAD",
-        relatives_kind  = "full_siblings",
-        relatedness     = 0.5
+        relatives_kind  = "half_siblings",
+        relatedness     = 0.25
       ),
       stratify_columns = list("birth_year"),
       use_weighted_cif = TRUE
