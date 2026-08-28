@@ -89,7 +89,7 @@ data and how you run the pipeline on said data.
 
 * How it works
 
-The pipeline estimates genetic correlation (~rg~) between 2 binary traits in a target cohort:
+The pipeline estimates genetic correlation (~rg~) between 2 binary traits in a population/target cohort:
 
 | Abbreviation | Description |
 |--------------+-------------|
@@ -103,9 +103,9 @@ In order to do that it must first estimate the heritability (~h2~) of the two tr
 | ~h2_t1~      | Heritability of trait 1 |
 | ~h2_t2~      | Heritability of trait 2 |
 
-It estimates heritability by comparing the cumulative incidence (~cif~) of the trait in the target
+It estimates heritability by comparing the cumulative incidence (~cif~) of the trait in the population
 cohort and a family history cohort. The pipeline constructs the family history cohort by only keeping
-individuals in the target cohort that has at least 1 relative with the trait. This means that for
+individuals in the population cohort that has at least 1 relative with the trait. This means that for
 each heritability estimate, the pipeline needs to know:
 
 1. Which trait status/age to use in the 2 ~cif~ analyses and the family history cohort filter
@@ -161,7 +161,7 @@ legend left
   |<#54adef>|Trait 2 index, trait 2 relatives|
 endlegend
 
-rectangle "<$mdiAccountGroup{scale=1}>\n**Target cohort**\n""pop""" as pop {
+rectangle "<$mdiAccountGroup{scale=1}>\n**Population cohort**\n""pop""" as pop {
   rectangle "<$mdiHumanMaleFemaleChild{scale=1}>\n**Family history 1 cohort**\n1 >= relative with trait 1\n""fh1""" as fh1
   rectangle "<$mdiHumanMaleFemaleChild{scale=1}>\n**Family history 2 cohort**\n1 >= relative with trait 2\n""fh2""" as fh2
 }
