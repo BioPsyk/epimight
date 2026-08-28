@@ -136,16 +136,11 @@ Pipeline <- R6::R6Class( #nolint
         self$validation_rules$run$use_weighted_cif
       )
 
-      print(validator$rules)
-
-      stop("asd")
-
       args <- validator$run(...)
 
-      proband_trait    <- args[[1]]
-      relatives_trait  <- args[[2]]
-      stratify_columns <- args[[3]]
-      use_weighted_cif <- args[[4]]
+      analysis         <- args[[1]]
+      stratify_columns <- args[[2]]
+      use_weighted_cif <- args[[3]]
 
       columns <- c("person_id", "trait_status", "trait_age")
 
@@ -160,33 +155,33 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       tte <- private$pool[
-        trait == proband_trait$trait
+        trait == analysis$index_trait
       ][
         , .SD[1], by = "person_id"
       ][
         , ..columns
       ]
 
-      if (nrow(tte) == 0) stop(paste0("No proband TTE data found for trait", proband_trait))
+      if (nrow(tte) == 0) stop(paste0("No proband TTE data found for trait ", analysis$index_trait))
 
-      if (is.list(relatives_trait)) {
-        relative_tte <- private$pool[
-          trait == relatives_trait$trait & relatives_kind == relatives_trait$relatives_kind
+      if ("relatives_trait" %in% names(analysis) && "relatives_kind" %in% names(analysis)) {
+        relatives_tte <- private$pool[
+          trait == analysis$relatives_trait & relatives_kind == analysis$relatives_kind
         ][
           , .SD[1], by = "person_id"
         ][
           , c("person_id", "relatives_kind", "relatives_n", "relatives_n_trait")
         ]
 
-        if (nrow(relative_tte) == 0) {
+        if (nrow(relatives_tte) == 0) {
           stop(paste0(
-            "No family history TTE data found for trait \"", relatives_trait$trait,
-            "\" and relationship kind \"", relatives_trait$relatives_kind, "\""
+            "No family history TTE data found for trait \"", analysis$relatives_trait,
+            "\" and relationship kind \"", analysis$relatives_kind, "\""
           ))
         }
 
         tte <- tte[
-          relative_tte,
+          relatives_tte,
           on = .(person_id = person_id)
         ][
           relatives_n_trait > 0
@@ -201,7 +196,7 @@ Pipeline <- R6::R6Class( #nolint
         if (nrow(tte) == 0) {
           stop(paste0(
             "No probands with at least 1 relative (of kind \"",
-            relatives_trait$relatives_kind, "\") diagnosed with \"", relatives_trait$trait, "\""
+            analysis$relatives_kind, "\") diagnosed with \"", analysis$relatives_trait, "\""
           ))
         }
       }

@@ -110,7 +110,7 @@ describe("get_tte", {
     expect_error(pipeline$get_tte(
       list(
         index_trait     = "unknown",
-        relatives_trait = "SZC",
+        relatives_trait = "SCZ",
         relatives_kind  = "full_siblings"
       ),
       list("birth_year")
@@ -121,7 +121,7 @@ describe("get_tte", {
     expect_error(pipeline$get_tte(
       list(
         index_trait     = "CAD",
-        relatives_trait = "SZC",
+        relatives_trait = "SCZ",
         relatives_kind  = "unknown"
       ),
       list("birth_year")
