@@ -370,9 +370,6 @@ Besides the actual TTE data, the pipeline needs to know:
 
 - Which trait, kinds of relatives and relatedness to use for heritability 1
 - Which trait, kinds of relatives and relatedness to use for heritability 2
-- Which trait, kinds of relatives and relatedness to use for cross cif/genetic correlation
-
-Once it has the data and these 3 choices, it can produce a genetic correlation.
 
 The next chapters shows you how this works in practice.
 
