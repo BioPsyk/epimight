@@ -295,99 +295,77 @@ t3_rel -UP-> rg
 #+RESULTS: fig:rg-data-flow
 [[file:../diagrams/rg-data-flow.png]]
 
+To summarize, the pipeline needs a set of individuals which for each trait it needs to know:
 
+- The individuals trait status (0 = censored, 1 = affected, 2 = competing risk)
+- The individuals age at status (in years)
+- How many relatives the individual have of the specific kind
+- How many of those relatives have the trait
 
-* Creating the time-to-event data
+The pipeline accepts this data as a ~data.table~ with the following columns:
 
-We need to be able to uniquely identify every individual in our sample population.
-In the test data of this guide we use a unique number for each individual:
+| Column name         | Description                                    |
+|---------------------+------------------------------------------------|
+| ~person_id~         | Unique identifier of the individual            |
+| ~trait~             | Identifier of the trait                        |
+| ~trait_status~      | 0 = censored, 1 = affected, 2 = competing risk |
+| ~trait_age~         | Age of individual at the time of status        |
+| ~relatives_kind~    | Identifier of the kind of relatives            |
+| ~relatives_n~       | Amount of relatives                            |
+| ~relatives_n_trait~ | Amount of relatives with trait                 |
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |> distinct(person_id) |> tail(4)
-#+END_SRC
-
-#+RESULTS:
-| person_id |
-|-----------|
-|     99996 |
-|     99997 |
-|     99998 |
-|     99999 |
-
-Then we need to have the stratification data of each individual (in our example, we stratify on birth year):
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |>
-  distinct(person_id, birth_year) |>
-  tail(4)
-#+END_SRC
-
-#+RESULTS:
-| person_id | birth_year |
-|-----------+------------|
-|     99996 |       2004 |
-|     99997 |       1992 |
-|     99998 |       1989 |
-|     99999 |       1971 |
-
-Then for each kind of relative, we need to know many relatives each individual has. In the test data
-of this guide, there are two kinds of relatives:
+Here's an example of what that data would look like for a single trait (first diagnosis of Schizophrenia)
+and where the relatives are full siblings:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
-  distinct(person_id, birth_year, relatives_kind, relatives_n) |>
-  tail(4 * 2)
+  select(person_id, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
+  filter(trait == "SCZ", relatives_kind == "full_siblings") |>
+  tail(10)
 #+END_SRC
 
 #+RESULTS:
-| person_id | birth_year | relatives_kind | relatives_n |
-|-----------+------------+----------------+-------------|
-|     99996 |       2004 | full_siblings  |           3 |
-|     99996 |       2004 | parents        |           3 |
-|     99997 |       1992 | full_siblings  |           2 |
-|     99997 |       1992 | parents        |           2 |
-|     99998 |       1989 | full_siblings  |           1 |
-|     99998 |       1989 | parents        |           1 |
-|     99999 |       1971 | full_siblings  |           4 |
-|     99999 |       1971 | parents        |           4 |
+| person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
+|-----------+-------+--------------+-----------+----------------+-------------+-------------------|
+|     99990 | SCZ   |            0 |        33 | full_siblings  |           0 |                 0 |
+|     99991 | SCZ   |            0 |         4 | full_siblings  |           4 |                 0 |
+|     99992 | SCZ   |            0 |        70 | full_siblings  |           5 |                 2 |
+|     99993 | SCZ   |            0 |        53 | full_siblings  |           1 |                 1 |
+|     99994 | SCZ   |            0 |        66 | full_siblings  |           4 |                 0 |
+|     99995 | SCZ   |            0 |        10 | full_siblings  |           2 |                 0 |
+|     99996 | SCZ   |            0 |        22 | full_siblings  |           3 |                 0 |
+|     99997 | SCZ   |            1 |         0 | full_siblings  |           2 |                 0 |
+|     99998 | SCZ   |            0 |        37 | full_siblings  |           1 |                 1 |
+|     99999 | SCZ   |            0 |        55 | full_siblings  |           4 |                 0 |
 
-Note that you are free to use whatever label you want in the ~relatives_kind~ column.
-The label is only used to filter out rows for cohorts selection.
-
-Then for each trait, we need to know:
-
-- The label of the trait
-- The failure status/time of the individual
-- How many relatives were diagnosed with the trait
-
-Since there are 2 traits and 2 kinds of relatives, each individual gets 4 rows:
+The pipeline uses a single ~data.table~ for all traits and relative kinds, if you for example have *2* different traits,
+*2* different relative kinds and *100 000* individuals, the data table will have *400 000* rows (2 * 2 * 100000), it
+would look like this:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |> tail(4 * 4)
+tte |>
+  select(person_id, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
+  tail(10)
 #+END_SRC
 
 #+RESULTS:
-| person_id | birth_year | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
-|-----------+------------+-------+--------------+-----------+----------------+-------------+-------------------|
-|     99996 |       2004 | CAD   |            0 |        22 | full_siblings  |           3 |                 0 |
-|     99996 |       2004 | CAD   |            0 |        22 | parents        |           3 |                 0 |
-|     99996 |       2004 | SCZ   |            0 |        22 | full_siblings  |           3 |                 0 |
-|     99996 |       2004 | SCZ   |            0 |        22 | parents        |           3 |                 0 |
-|     99997 |       1992 | CAD   |            0 |        34 | full_siblings  |           2 |                 0 |
-|     99997 |       1992 | CAD   |            0 |        34 | parents        |           2 |                 0 |
-|     99997 |       1992 | SCZ   |            1 |         0 | full_siblings  |           2 |                 0 |
-|     99997 |       1992 | SCZ   |            0 |        34 | parents        |           2 |                 0 |
-|     99998 |       1989 | CAD   |            0 |        37 | full_siblings  |           1 |                 1 |
-|     99998 |       1989 | CAD   |            0 |        37 | parents        |           1 |                 1 |
-|     99998 |       1989 | SCZ   |            0 |        37 | full_siblings  |           1 |                 1 |
-|     99998 |       1989 | SCZ   |            0 |        37 | parents        |           1 |                 0 |
-|     99999 |       1971 | CAD   |            0 |        55 | full_siblings  |           4 |                 4 |
-|     99999 |       1971 | CAD   |            0 |        55 | parents        |           4 |                 0 |
-|     99999 |       1971 | SCZ   |            0 |        55 | full_siblings  |           4 |                 0 |
-|     99999 |       1971 | SCZ   |            0 |        55 | parents        |           4 |                 0 |
+| person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
+|-----------+-------+--------------+-----------+----------------+-------------+-------------------|
+|     99997 | SCZ   |            1 |         0 | full_siblings  |           2 |                 0 |
+|     99997 | SCZ   |            0 |        34 | parents        |           2 |                 0 |
+|     99998 | CAD   |            0 |        37 | full_siblings  |           1 |                 1 |
+|     99998 | CAD   |            0 |        37 | parents        |           1 |                 1 |
+|     99998 | SCZ   |            0 |        37 | full_siblings  |           1 |                 1 |
+|     99998 | SCZ   |            0 |        37 | parents        |           1 |                 0 |
+|     99999 | CAD   |            0 |        55 | full_siblings  |           4 |                 4 |
+|     99999 | CAD   |            0 |        55 | parents        |           4 |                 0 |
+|     99999 | SCZ   |            0 |        55 | full_siblings  |           4 |                 0 |
+|     99999 | SCZ   |            0 |        55 | parents        |           4 |                 0 |
 
-Note that you are free to use whatever label you want in the ~trait~ column.
-The label is only used to filter out rows for trait selection.
+This ~data.table~ is called the time-to-event "pool". It's called a "pool" because all data is kept
+there and only the relevant rows are pulled out when a genetic correlation is produced.
+
+
 
 * Setting up the pipeline
 
