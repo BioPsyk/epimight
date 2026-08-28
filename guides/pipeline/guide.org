@@ -157,8 +157,9 @@ title "**Heritability data flow**"
 
 legend left
   <#silver>|= Color|= Trait usage |
-  |<#dd2e44>|Trait 1 index, trait 1 relatives|
-  |<#54adef>|Trait 2 index, trait 2 relatives|
+  |<#dd2e44>|Index trait 1, Relatives trait 1|
+  |<#54adef>|Index trait 2, Relatives trait 2|
+  |<#c254ef>|Index trait 1, Relatives trait 2|
 endlegend
 
 rectangle "<$mdiAccountGroup{scale=1}>\n**Population cohort**\n""pop""" as pop {
@@ -263,9 +264,9 @@ title "**Genetic correlation data flow**"
 
 legend left
   <#silver>|= Color|= Trait usage |
-  |<#dd2e44>|Trait 1 index, trait 1 relatives|
-  |<#54adef>|Trait 2 index, trait 2 relatives|
-  |<#c254ef>|Trait 1 index, trait 2 relatives|
+  |<#dd2e44>|Index trait 1, Relatives trait 1|
+  |<#54adef>|Index trait 2, Relatives trait 2|
+  |<#c254ef>|Index trait 1, Relatives trait 2|
 endlegend
 
 file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #dd2e44
