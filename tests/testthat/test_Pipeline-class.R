@@ -236,6 +236,36 @@ describe("run", {
         relatives_kind  = "half_siblings",
         relatedness     = 0.25
       ),
+      use_weighted_cif = FALSE
+    )
+
+    weighted_results <- pipeline$run(
+      heritability1 = list(
+        index_trait     = "SCZ",
+        relatives_kind  = "parents",
+        relatedness     = 0.5
+      ),
+      heritability2 = list(
+        index_trait     = "CAD",
+        relatives_kind  = "half_siblings",
+        relatedness     = 0.25
+      ),
+      use_weighted_cif = TRUE
+    )
+
+    expect_dataframe_not_equal(results$rg, weighted_results$rg)
+
+    results <- pipeline$run(
+      heritability1 = list(
+        index_trait     = "SCZ",
+        relatives_kind  = "parents",
+        relatedness     = 0.5
+      ),
+      heritability2 = list(
+        index_trait     = "CAD",
+        relatives_kind  = "half_siblings",
+        relatedness     = 0.25
+      ),
       stratify_columns = list("birth_year"),
       use_weighted_cif = FALSE
     )
