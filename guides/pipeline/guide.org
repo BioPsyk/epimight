@@ -156,7 +156,7 @@ skinparam defaultTextAlignment center
 title "**Heritability data flow**"
 
 legend left
-  <#silver>|= Color|= Individuals trait status/age |
+  <#silver>|= Color|= Trait usage |
   |<#dd2e44>|Trait 1 index, trait 1 relatives|
   |<#54adef>|Trait 2 index, trait 2 relatives|
 endlegend
@@ -263,7 +263,7 @@ skinparam defaultTextAlignment center
 title "**Genetic correlation data flow**"
 
 legend left
-  <#silver>|= Color|= Individuals trait status/age |
+  <#silver>|= Color|= Trait usage |
   |<#dd2e44>|Trait 1 index, trait 1 relatives|
   |<#54adef>|Trait 2 index, trait 2 relatives|
   |<#c254ef>|Trait 1 index, trait 2 relatives|
