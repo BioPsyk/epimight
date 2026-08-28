@@ -38,12 +38,12 @@ benchmarks <- list(
       heritability1 = list(
         index_trait    = "SCZ",
         relatives_kind = "parents",
-        relatedness    = 0.5,
+        relatedness    = 0.5
       ),
       heritability2 = list(
         index_trait    = "CAD",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25,
+        relatedness    = 0.25
       )
     )
 
@@ -56,12 +56,12 @@ benchmarks <- list(
       heritability1 = list(
         index_trait    = "SCZ",
         relatives_kind = "parents",
-        relatedness    = 0.5,
+        relatedness    = 0.5
       ),
       heritability2 = list(
         index_trait    = "CAD",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25,
+        relatedness    = 0.25
       ),
       stratify_columns = list("birth_year")
     )
@@ -75,12 +75,12 @@ benchmarks <- list(
       heritability1 = list(
         index_trait    = "SCZ",
         relatives_kind = "parents",
-        relatedness    = 0.5,
+        relatedness    = 0.5
       ),
       heritability2 = list(
         index_trait    = "CAD",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25,
+        relatedness    = 0.25
       ),
       use_weighted_cif = TRUE
     )
@@ -94,12 +94,12 @@ benchmarks <- list(
       heritability1 = list(
         index_trait    = "SCZ",
         relatives_kind = "parents",
-        relatedness    = 0.5,
+        relatedness    = 0.5
       ),
       heritability2 = list(
         index_trait    = "CAD",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25,
+        relatedness    = 0.25
       ),
       stratify_columns = list("birth_year"),
       use_weighted_cif = TRUE
