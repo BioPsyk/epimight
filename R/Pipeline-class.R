@@ -19,8 +19,12 @@ Pipeline <- R6::R6Class( #nolint
         required   = TRUE,
         type       = "named_list",
         properties = list(
-          trait = list(
+          index_trait = list(
             required = TRUE,
+            type     = "string"
+          ),
+          relatives_trait = list(
+            required = FALSE,
             type     = "string"
           ),
           relatives_kind = list(
@@ -101,6 +105,7 @@ Pipeline <- R6::R6Class( #nolint
           default = TRUE
         )
       )
+      self$validation_rules$run$genetic_correlation$relatives_trait$required <- TRUE
     },
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and

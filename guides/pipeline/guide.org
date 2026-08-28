@@ -430,6 +430,8 @@ This will output a named list that has the following members:
 | h2       | All heritabilities as a ~data.table~                        |
 | rg       | All genetic correlations as a ~data.table~                  |
 
+By default the genetic correlation will be estimated from
+
 ** Cumulative incidence
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
