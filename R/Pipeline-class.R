@@ -118,20 +118,27 @@ Pipeline <- R6::R6Class( #nolint
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait = self$validation_rules$analysis$properties$trait
-          )
-        ),
-        list(
-          required   = FALSE,
-          type       = "named_list",
-          properties = list(
-            trait          = self$validation_rules$analysis$properties$trait,
-            relatives_kind = self$validation_rules$analysis$properties$relatives_kind
+            index_trait = list(
+              required = TRUE,
+              type     = "string"
+            ),
+            relatives_trait = list(
+              required = FALSE,
+              type     = "string"
+            ),
+            relatives_kind = list(
+              required = FALSE,
+              type     = "string"
+            )
           )
         ),
         self$validation_rules$run$stratify_columns,
         self$validation_rules$run$use_weighted_cif
       )
+
+      print(validator$rules)
+
+      stop("asd")
 
       args <- validator$run(...)
 
@@ -238,8 +245,8 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
-    run_cif = function(trait_key, cohort_key, proband_trait, relatives_trait, stratify_columns, use_weighted_cif) {
-      tte <- self$get_tte(proband_trait, relatives_trait, stratify_columns, use_weighted_cif)
+    run_cif = function(trait_key, cohort_key, analysis, stratify_columns, use_weighted_cif) {
+      tte <- self$get_tte(analysis, stratify_columns, use_weighted_cif)
       cif <- private$analyses$cif$run(
         tte              = tte,
         stratify_columns = stratify_columns
@@ -308,11 +315,11 @@ Pipeline <- R6::R6Class( #nolint
       fh2 <- args$heritability2$relatives_kind
       fh3 <- args$genetic_correlation$relatives_kind
 
-      cif_t1_pop <- self$run_cif(t1, "pop", args$heritability1, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh1 <- self$run_cif(t1, fh1, args$heritability1, args$heritability1, args$stratify_columns, args$use_weighted_cif)
-      cif_cross  <- self$run_cif(t3, fh3, args$genetic_correlation, args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_pop <- self$run_cif(t2, "pop", args$heritability2, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_fh2 <- self$run_cif(t2, fh2, args$heritability2, args$heritability2, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_pop <- self$run_cif(t1, "pop", args$heritability1, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh1 <- self$run_cif(t1, fh1, args$heritability1, args$stratify_columns, args$use_weighted_cif)
+      cif_cross  <- self$run_cif(t3, fh3, args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_pop <- self$run_cif(t2, "pop", args$heritability2, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_fh2 <- self$run_cif(t2, fh2, args$heritability2, args$stratify_columns, args$use_weighted_cif)
 
       h2_t1 <- self$run_h2(t1, args$heritability1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
       h2_t2 <- self$run_h2(t2, args$heritability2$relatedness, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
