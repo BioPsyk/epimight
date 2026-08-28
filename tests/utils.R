@@ -134,7 +134,7 @@ generate_pipeline_tte <- function(n_count) {
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
     relocate(relatives_n_trait, .after = relatives_n) |>
-    mutate(person_id = as.character(person_id), relatives_kind = "full_siblings") |>
+    mutate(person_id = as.character(person_id), relatives_kind = "half_siblings") |>
     as.data.table()
 
   t2_fs_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
@@ -144,7 +144,7 @@ generate_pipeline_tte <- function(n_count) {
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
     relocate(relatives_n_trait, .after = relatives_n) |>
-    mutate(person_id = as.character(person_id), relatives_kind = "full_siblings") |>
+    mutate(person_id = as.character(person_id), relatives_kind = "half_siblings") |>
     as.data.table()
 
   t1_p_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))

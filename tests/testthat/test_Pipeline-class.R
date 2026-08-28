@@ -227,19 +227,21 @@ describe("run", {
   it("produces different result when using weighted cif", {
     results <- pipeline$run(
       heritability1 = list(
-        index_trait    = "SCZ",
-        relatives_kind = "parents",
-        relatedness    = 0.5
+        index_trait     = "SCZ",
+        relatives_trait = "SCZ",
+        relatives_kind  = "parents",
+        relatedness     = 0.5
       ),
       heritability2 = list(
-        index_trait    = "CAD",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      ),
-      genetic_correlation = list(
         index_trait     = "CAD",
         relatives_trait = "CAD",
-        relatives_kind  = "parents",
+        relatives_kind  = "full_siblings",
+        relatedness     = 0.5
+      ),
+      genetic_correlation = list(
+        index_trait     = "SCZ",
+        relatives_trait = "CAD",
+        relatives_kind  = "full_siblings",
         relatedness     = 0.5
       ),
       stratify_columns = list("birth_year"),
@@ -248,19 +250,21 @@ describe("run", {
 
     weighted_results <- pipeline$run(
       heritability1 = list(
-        index_trait    = "SCZ",
-        relatives_kind = "parents",
-        relatedness    = 0.5
+        index_trait     = "SCZ",
+        relatives_trait = "SCZ",
+        relatives_kind  = "parents",
+        relatedness     = 0.5
       ),
       heritability2 = list(
-        index_trait    = "CAD",
-        relatives_kind = "parents",
-        relatedness    = 0.5
+        index_trait     = "CAD",
+        relatives_trait = "CAD",
+        relatives_kind  = "full_siblings",
+        relatedness     = 0.5
       ),
       genetic_correlation = list(
         index_trait     = "SCZ",
         relatives_trait = "CAD",
-        relatives_kind  = "parents",
+        relatives_kind  = "full_siblings",
         relatedness     = 0.5
       ),
       stratify_columns = list("birth_year"),

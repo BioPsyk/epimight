@@ -316,28 +316,28 @@ The pipeline accepts this data as a ~data.table~ with the following columns:
 | ~relatives_n_trait~ | Amount of relatives with trait                 |
 
 Here's an example of what that data would look like for a single trait (first diagnosis of Schizophrenia)
-and where the relatives are full siblings:
+and where the relatives are half siblings:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
   select(person_id, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
-  filter(trait == "SCZ", relatives_kind == "full_siblings") |>
+  filter(trait == "SCZ", relatives_kind == "half_siblings") |>
   tail(10)
 #+END_SRC
 
 #+RESULTS:
 | person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
 |-----------+-------+--------------+-----------+----------------+-------------+-------------------|
-|     99990 | SCZ   |            0 |        33 | full_siblings  |           0 |                 0 |
-|     99991 | SCZ   |            0 |         4 | full_siblings  |           4 |                 0 |
-|     99992 | SCZ   |            0 |        70 | full_siblings  |           5 |                 2 |
-|     99993 | SCZ   |            0 |        53 | full_siblings  |           1 |                 1 |
-|     99994 | SCZ   |            0 |        66 | full_siblings  |           4 |                 0 |
-|     99995 | SCZ   |            0 |        10 | full_siblings  |           2 |                 0 |
-|     99996 | SCZ   |            0 |        22 | full_siblings  |           3 |                 0 |
-|     99997 | SCZ   |            1 |         0 | full_siblings  |           2 |                 0 |
-|     99998 | SCZ   |            0 |        37 | full_siblings  |           1 |                 1 |
-|     99999 | SCZ   |            0 |        55 | full_siblings  |           4 |                 0 |
+|     99990 | SCZ   |            0 |        33 | half_siblings  |           0 |                 0 |
+|     99991 | SCZ   |            0 |         4 | half_siblings  |           4 |                 0 |
+|     99992 | SCZ   |            0 |        70 | half_siblings  |           5 |                 2 |
+|     99993 | SCZ   |            0 |        53 | half_siblings  |           1 |                 1 |
+|     99994 | SCZ   |            0 |        66 | half_siblings  |           4 |                 0 |
+|     99995 | SCZ   |            0 |        10 | half_siblings  |           2 |                 0 |
+|     99996 | SCZ   |            0 |        22 | half_siblings  |           3 |                 0 |
+|     99997 | SCZ   |            1 |         0 | half_siblings  |           2 |                 0 |
+|     99998 | SCZ   |            0 |        37 | half_siblings  |           1 |                 1 |
+|     99999 | SCZ   |            0 |        55 | half_siblings  |           4 |                 0 |
 
 The pipeline uses a single ~data.table~ for all traits and relative kinds, so if you for example have *2* different traits,
 *2* different relative kinds and *100 000* individuals, the data table will have *400 000* rows.
@@ -352,15 +352,15 @@ tte |>
 #+RESULTS:
 | person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
 |-----------+-------+--------------+-----------+----------------+-------------+-------------------|
-|     99997 | SCZ   |            1 |         0 | full_siblings  |           2 |                 0 |
+|     99997 | SCZ   |            1 |         0 | half_siblings  |           2 |                 0 |
 |     99997 | SCZ   |            0 |        34 | parents        |           2 |                 0 |
-|     99998 | CAD   |            0 |        37 | full_siblings  |           1 |                 1 |
+|     99998 | CAD   |            0 |        37 | half_siblings  |           1 |                 1 |
 |     99998 | CAD   |            0 |        37 | parents        |           1 |                 1 |
-|     99998 | SCZ   |            0 |        37 | full_siblings  |           1 |                 1 |
+|     99998 | SCZ   |            0 |        37 | half_siblings  |           1 |                 1 |
 |     99998 | SCZ   |            0 |        37 | parents        |           1 |                 0 |
-|     99999 | CAD   |            0 |        55 | full_siblings  |           4 |                 4 |
+|     99999 | CAD   |            0 |        55 | half_siblings  |           4 |                 4 |
 |     99999 | CAD   |            0 |        55 | parents        |           4 |                 0 |
-|     99999 | SCZ   |            0 |        55 | full_siblings  |           4 |                 0 |
+|     99999 | SCZ   |            0 |        55 | half_siblings  |           4 |                 0 |
 |     99999 | SCZ   |            0 |        55 | parents        |           4 |                 0 |
 
 This ~data.table~ is called the time-to-event "pool". It's called a "pool" because all data is kept
@@ -406,6 +406,13 @@ Now the pool is full of data and you can start running the pipeline to produce g
 Let's say we want to produce a genetic correlation between first diagnosis of "Schizophrenia" and
 "Coronary Artery Disease" using parents as relatives. And we want to stratify the results on the
 newly added column ~birth_year~ that contains the individuals birth year. We would then run:
+
+analysis = list(
+  index_trait     = "SCZ",
+  relatives_trait = "SCZ",
+  relatives_kinds = "parents",
+  relatedness     = 0.5
+)
 
 #+BEGIN_SRC R :exports code :results output
 results <- pipeline$run(
