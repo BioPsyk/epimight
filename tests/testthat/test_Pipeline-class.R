@@ -228,19 +228,11 @@ describe("run", {
     results <- pipeline$run(
       heritability1 = list(
         index_trait     = "SCZ",
-        relatives_trait = "SCZ",
         relatives_kind  = "parents",
         relatedness     = 0.5
       ),
       heritability2 = list(
         index_trait     = "CAD",
-        relatives_trait = "CAD",
-        relatives_kind  = "half_siblings",
-        relatedness     = 0.25
-      ),
-      genetic_correlation = list(
-        index_trait     = "SCZ",
-        relatives_trait = "CAD",
         relatives_kind  = "half_siblings",
         relatedness     = 0.25
       ),
@@ -251,19 +243,11 @@ describe("run", {
     weighted_results <- pipeline$run(
       heritability1 = list(
         index_trait     = "SCZ",
-        relatives_trait = "SCZ",
         relatives_kind  = "parents",
         relatedness     = 0.5
       ),
       heritability2 = list(
         index_trait     = "CAD",
-        relatives_trait = "CAD",
-        relatives_kind  = "half_siblings",
-        relatedness     = 0.25
-      ),
-      genetic_correlation = list(
-        index_trait     = "SCZ",
-        relatives_trait = "CAD",
         relatives_kind  = "half_siblings",
         relatedness     = 0.25
       ),
