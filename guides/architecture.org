@@ -88,7 +88,7 @@
 file tte [
 <color:#255ba7><$ma_account{scale=0.35}></color>  **Time-to-event**
 
-| **person_id**  | **trait** | **trait_status** | **trait_time** | **relationship_kind** | **relatives_amount** | **relatives_n_trait** |
+| **person_id**  | **trait** | **trait_status** | **trait_age** | **relationship_kind** | **relatives_amount** | **relatives_n_trait** |
 | ...            | ...          | ...                | ...              | ...                   | ...                  | ...                     |
 <#76b354>| 99962 | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
 | 99962          | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
@@ -152,7 +152,7 @@ meta ..> results
 file chosen_trait [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **TTE** (1 trait, 1 kind of relative, 100 000 rows)
 
-| **trait_time** | **trait_status** | **weight**  |
+| **trait_age** | **trait_status** | **weight**  |
 | ...            | ...              |         ... |
 | 29             | 0                |         0.0 |
 | 29             | 1                |         0.5 |
@@ -161,12 +161,12 @@ file chosen_trait [
 | ...            | ...              |         ... |
 ]
 
-rectangle "Sum weights, grouped by trait_time" as sum_weights
+rectangle "Sum weights, grouped by trait_age" as sum_weights
 
 file weight_sums [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Weight sums** (100 rows)
 
-| **trait_time** | **weight_all**  | **weight_event_1** | **weight_event_n** |
+| **trait_age** | **weight_all**  | **weight_event_1** | **weight_event_n** |
 |              0 |            1101 |                321 |                321 |
 |              1 |            1345 |                196 |                196 |
 |              2 |            1396 |                227 |                227 |
@@ -182,7 +182,7 @@ rectangle "Derive at_risk" as derive_at_risk
 file at_risk_sums [
 <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Weight sums and at_risk** (100 rows)
 
-| **trait_time** | **weight_all**  | **weight_event_1** | **weight_event_n** | **at_risk** |
+| **trait_age** | **weight_all**  | **weight_event_1** | **weight_event_n** | **at_risk** |
 |              0 |            1101 |                321 |                321 |      100000 |
 |              1 |            1345 |                196 |                196 |       98899 |
 |              2 |            1396 |                227 |                227 |       97554 |

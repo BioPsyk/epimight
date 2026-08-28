@@ -46,7 +46,7 @@ describe("initialize", {
         birth_year        = c(1950, 1951),
         trait             = c("SCZ", "CAD"),
         trait_status      = c(0, 1),
-        trait_time       = c(10, 10),
+        trait_age        = c(10, 10),
         relatives_kind    = c(10, 20), # Wrong type
         relatives_n       = c(1, 1),
         relatives_n_trait = c(0, 0)
@@ -61,7 +61,7 @@ describe("initialize", {
         birth_year        = c(1950, 1951),
         trait             = c("SCZ", "CAD"),
         trait_status      = c(0, 1),
-        trait_time       = c(10, 20),
+        trait_age       = c(10, 20),
         relatives_kind    = c("parents", "parents"),
         relatives_n       = c(2, 2),
         relatives_n_trait = c(0, 1)
@@ -76,7 +76,7 @@ describe("initialize", {
         birth_year        = c(1950, 1951),
         trait             = c("SCZ", "CAD"),
         trait_status      = c(0, 1),
-        trait_time       = c(10, 20),
+        trait_age       = c(10, 20),
         relatives_kind    = c("parents", "parents"),
         relatives_n       = c(2, 2),
         relatives_n_trait = c(0, 1)

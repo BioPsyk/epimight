@@ -90,7 +90,7 @@ data and how you run the pipeline on said data.
 * How it works
 
 The pipeline estimates genetic correlation between 2 binary traits using time-to-event data
-of individuals and their relatives in a target cohort.
+of individuals and their relatives.
 
 Let's say we want to estimate genetic correlation between earliest diagnosis of schizophrenia
 and coronary artery disease in full siblings. Schizophrenia will be trait 1 (~t1~) and
@@ -305,7 +305,7 @@ tte |> tail(4 * 4)
 #+END_SRC
 
 #+RESULTS:
-| person_id | birth_year | trait | trait_status | trait_time | relatives_kind | relatives_n | relatives_n_trait |
+| person_id | birth_year | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
 |-----------+------------+-------+--------------+------------+----------------+-------------+-------------------|
 |     99996 |       2004 | CAD   |            0 |         22 | full_siblings  |           3 |                 0 |
 |     99996 |       2004 | CAD   |            0 |         22 | parents        |           3 |                 0 |
@@ -366,7 +366,7 @@ The supplied pool must be a ~data.table~ with the following required columns:
     - ~0~ (censored)
     - ~1~ (had trait)
     - ~2~ (competing risk)
-- ~trait_time~
+- ~trait_age~
   - Must be numeric, minimum ~0.0~
 - ~relatives_kind~
   - Must be a string

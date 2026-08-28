@@ -15,51 +15,23 @@ Pipeline <- R6::R6Class( #nolint
   ),
   public = list(
     validation_rules = list(
-      run = list(
-        analysis1 = list(
-          required   = TRUE,
-          type       = "named_list",
-          properties = list(
-            trait = list(
-              required = TRUE,
-              type     = "string"
-            ),
-            relatives_kind = list(
-              required = TRUE,
-              type     = "string"
-            ),
-            relatedness = list(
-              required = TRUE,
-              type     = "numeric"
-            )
+      analysis = list(
+        required   = TRUE,
+        type       = "named_list",
+        properties = list(
+          trait = list(
+            required = TRUE,
+            type     = "string"
+          ),
+          relatives_kind = list(
+            required = TRUE,
+            type     = "string"
+          ),
+          relatedness = list(
+            required = TRUE,
+            type     = "numeric",
+            minimum  = 0
           )
-        ),
-        analysis2 = list(
-          required   = TRUE,
-          type       = "named_list",
-          properties = list(
-            trait = list(
-              required = TRUE,
-              type     = "string"
-            ),
-            relatives_kind = list(
-              required = TRUE,
-              type     = "string"
-            ),
-            relatedness = list(
-              required = TRUE,
-              type     = "numeric"
-            )
-          )
-        ),
-        stratify_columns = list(
-          type    = "list",
-          items   = list(type = "string"),
-          default = list()
-        ),
-        use_weighted_cif = list(
-          type    = "logical",
-          default = TRUE
         )
       )
     ),
@@ -84,7 +56,7 @@ Pipeline <- R6::R6Class( #nolint
               enum     = list(0, 1, 2),
               required = TRUE
             ),
-            trait_time = list(
+            trait_age = list(
               type     = "numeric",
               minimum  = 0,
               required = TRUE
@@ -115,7 +87,20 @@ Pipeline <- R6::R6Class( #nolint
         cif  = CumulativeIncidenceAnalysis$new(),
         rg   = GeneticCorrelationAnalysis$new()
       )
-
+      self$validation_rules$run = list(
+        heritability1       = self$validation_rules$analysis,
+        heritability2       = self$validation_rules$analysis,
+        genetic_correlation = self$validation_rules$analysis,
+        stratify_columns = list(
+          type    = "list",
+          items   = list(type = "string"),
+          default = list()
+        ),
+        use_weighted_cif = list(
+          type    = "logical",
+          default = TRUE
+        )
+      )
     },
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and
@@ -127,15 +112,15 @@ Pipeline <- R6::R6Class( #nolint
           required   = TRUE,
           type       = "named_list",
           properties = list(
-            trait = self$validation_rules$run$analysis1$properties$trait
+            trait = self$validation_rules$analysis$properties$trait
           )
         ),
         list(
           required   = FALSE,
           type       = "named_list",
           properties = list(
-            trait     = self$validation_rules$run$analysis2$properties$trait,
-            relatives_kind = self$validation_rules$run$analysis2$properties$relatives_kind
+            trait          = self$validation_rules$analysis$properties$trait,
+            relatives_kind = self$validation_rules$analysis$properties$relatives_kind
           )
         ),
         self$validation_rules$run$stratify_columns,
@@ -149,7 +134,7 @@ Pipeline <- R6::R6Class( #nolint
       stratify_columns <- args[[3]]
       use_weighted_cif <- args[[4]]
 
-      columns <- c("person_id", "trait_status", "trait_time")
+      columns <- c("person_id", "trait_status", "trait_age")
 
       if (!is.null(stratify_columns) && is.list(stratify_columns)) {
         columns <- c(columns, unlist(stratify_columns))

@@ -69,38 +69,38 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       return(results)
     },
     run_weighted_single = function(tte) {
-      trait_time_max <- max(tte$trait_time)
+      trait_age_max <- max(tte$trait_age)
 
       tte |>
         mutate(
           weight_event_1 = ifelse(trait_status == 1, weight, 0.0),
           weight_event_n = ifelse(trait_status != 0, weight, 0.0),
         ) |>
-        group_by(trait_time) |>
+        group_by(trait_age) |>
         summarise(
           weight_all     = sum(weight),
           weight_event_1 = sum(weight_event_1),
           weight_event_n = sum(weight_event_n)
         ) |>
         ungroup() |>
-        # Make sure we have a row for `trait_time` from 0 up to `trait_time_max`
+        # Make sure we have a row for `trait_age` from 0 up to `trait_age_max`
         right_join(
           data.table(
-            trait_time = seq(0, trait_time_max)
+            trait_age = seq(0, trait_age_max)
           ),
-          by = join_by(trait_time)
+          by = join_by(trait_age)
         ) |>
         # The failure times that were filled in will have NA's in missing columns,
         # so we make sure to replace them with 0.0
         mutate(
           across(everything(), ~ replace_na(.x, 0.0))
         ) |>
-        # Risk needs to be accumulated starting from the largest trait_time value
-        arrange(desc(trait_time)) |>
+        # Risk needs to be accumulated starting from the largest trait_age value
+        arrange(desc(trait_age)) |>
         mutate(
           at_risk = cumsum(weight_all)
         ) |>
-        arrange(trait_time) |>
+        arrange(trait_age) |>
         filter(weight_event_n > 0.0) |>
         mutate(
           # Kaplan-Meier survival estimate
@@ -129,11 +129,11 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           weight_event_1 > 0.0
         ) |>
         mutate(
-          cif   = ifelse(trait_time == 0, 0, lag(cif_acc)),
+          cif   = ifelse(trait_age == 0, 0, lag(cif_acc)),
           cases = cumsum(weight_event_1),
-          var   = ifelse(trait_time == 0, 0, lag(var))
+          var   = ifelse(trait_age == 0, 0, lag(var))
         ) |>
-        rename(time = trait_time) |>
+        rename(time = trait_age) |>
         select(time, cif, cases, var) |>
         mutate(
           se  = sqrt(var),
@@ -154,7 +154,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         stop("Given TTE was not a data.table")
       }
 
-      counts <- tte[, .N, by = .(trait_status, trait_time)]
+      counts <- tte[, .N, by = .(trait_status, trait_age)]
 
       # This check is needed because if we only have censored invidivuals
       # then cuminc will fail with an internal error.
@@ -171,7 +171,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       # We want to use the results from group 1 and for the status 1 (affected),
       # therefor we use the name `1 1` when selecting the data from the cuminc results:
       cuminc_results <- cuminc(
-        ftime   = tte$trait_time,
+        ftime   = tte$trait_age,
         fstatus = tte$trait_status,
         cencode = 0
       )$`1 1`
@@ -201,7 +201,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       results <- counts[
         trait_status == 1,
         .(
-          time         = trait_time,
+          time         = trait_age,
           cases_amount = N
         )
       ][
@@ -242,7 +242,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
               required = TRUE,
               minimum  = 0
             ),
-            trait_time = list(
+            trait_age = list(
               type     = "integer",
               required = TRUE,
               minimum  = 0
