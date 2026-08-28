@@ -375,7 +375,7 @@ The next chapters shows you how this works in practice.
 
 * Running the pipeline
 
-To setup the pipeline, we start by importing the epimight library and loading the [[../../tests/data/pipeline-tte.csv][pipeline-tts.csv]]:
+To setup the pipeline, we start by importing the epimight library and loading the test dataset [[../../tests/data/pipeline-tte.csv][pipeline-tts.csv]]:
 
 #+BEGIN_SRC R :exports code :eval no
 library(dplyr)
