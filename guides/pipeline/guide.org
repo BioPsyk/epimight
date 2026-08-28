@@ -89,8 +89,89 @@ data and how you run the pipeline on said data.
 
 * How it works
 
-The pipeline estimates genetic correlation between 2 binary traits using time-to-event data
-of individuals and their relatives.
+The pipeline estimates genetic correlation (~rg~) between 2 binary traits:
+
+| Abbreviation | Description |
+|--------------+-------------|
+| ~t1~         | Trait 1     |
+| ~t2~         | Trait 2     |
+
+In order to do that it must first estimate the heritability (~h2~) of the two traits:
+
+| Abbreviation | Description             |
+|--------------+-------------------------|
+| ~h2_t1~      | Heritability of trait 1 |
+| ~h2_t2~      | Heritability of trait 2 |
+
+Heritability is estimated by comparing the cumulative incidence (~cif~) of the selected trait in the
+target cohort and the family history cohort. The family history cohort is a subset of the target
+cohort, that contains individuals with at least 1 relative that have the selected trait.
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:h2-data-flow
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/h2-data-flow.png :exports results
+@startuml
+!include <material7.4.47/AccountUser/AccountGroup>
+!include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
+!include ../diagrams/ibp.puml
+
+skinparam nodesep 80
+skinparam ranksep 50
+
+<style>
+  root {
+    FontColor #111111
+  }
+
+  title {
+    LineColor transparent
+  }
+
+  file {
+    LineColor #333333
+  }
+
+  rectangle {
+    LineColor #333333
+  }
+
+  card {
+    RoundCorner     0
+    BackgroundColor transparent
+    LineColor       transparent
+  }
+</style>
+
+skinparam defaultTextAlignment center
+
+title "**Heritability data flow**"
+
+rectangle "<$mdiAccountGroup{scale=1}>\n**Target cohort**" as pop {
+  rectangle "<$mdiHumanMaleFemaleChild{scale=1}>\n**Family history cohort**" as fh
+}
+
+file "**CIF**" as cif_pop
+file "**CIF**" as cif_fh
+file "**H2**" as h2
+
+pop --> cif_pop
+fh --> cif_fh
+
+cif_pop --> h2
+cif_fh --> h2
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Heritability data flow
+#+RESULTS: fig:h2-data-flow
+[[file:../diagrams/h2-data-flow.png]]
+
+
+
+
 
 Let's say we want to estimate genetic correlation between earliest diagnosis of schizophrenia
 and coronary artery disease in full siblings. Schizophrenia will be trait 1 (~t1~) and
