@@ -372,9 +372,11 @@ Besides the actual TTE data, the pipeline needs to know:
 - Which trait, kinds of relatives and relatedness to use for heritability 2
 - Which trait, kinds of relatives and relatedness to use for cross cif/genetic correlation
 
+Once it has the data and these 3 choices, it can produce a genetic correlation.
 
+The next chapters shows you how this works in practice.
 
-* Setting up the pipeline
+* Running the pipeline
 
 To setup the pipeline, we start by importing the epimight library:
 
@@ -383,9 +385,7 @@ library(dplyr)
 library(readr)
 library(data.table)
 library(epimight)
-#+END_SRC
 
-#+BEGIN_SRC R :exports none :eval no
 tte <- read_csv(
   "./test-tte.csv",
   show_col_type = FALSE,
@@ -393,40 +393,17 @@ tte <- read_csv(
 ) |> as.data.table()
 #+END_SRC
 
-And then create a new instance with our TTE pool (the variable ~tte~ is the data table shown in the previous chapter):
+And then create a new instance with our TTE pool:
 
 #+BEGIN_SRC R :exports both
 pipeline <- Pipeline$new(pool = tte)
 #+END_SRC
 
-#+RESULTS:
+Now the pool is full of data and you can start running the pipeline to produce genetic correlations between specific traits.
 
-The supplied pool must be a ~data.table~ with the following required columns:
-
-- ~person_id~
-  - Must be a string
-  - (Using integers can break joining operations if the values are very large)
-- ~trait~
-  - Must be a string
-- ~trait_status~
-  - Must be one of these integers:
-    - ~0~ (censored)
-    - ~1~ (had trait)
-    - ~2~ (competing risk)
-- ~trait_age~
-  - Must be numeric, minimum ~0.0~
-- ~relatives_kind~
-  - Must be a string
-- ~relatives_n~
-  - Must be an integer, minimum ~0~
-- ~relatives_n_trait~
-  - Must be an integer, minimum ~0~
-
-It accepts any additional columns used for stratification.
-
-* Running the pipeline
-
-After creating the pipeline instance, we run the pipeline by supplying the ~run~ function with:
+Let's say we want to produce a genetic correlation between first diagnosis of "Schizophrenia" and
+"Coronary Artery Disease" using parents as relatives. Suppose we added a column that contains the birth year
+of the individual and we want to stratify the results on that column. We would then run:
 
 #+BEGIN_SRC R :exports code :results output
 results <- pipeline$run(
@@ -437,22 +414,21 @@ results <- pipeline$run(
   ),
   heritability2 = list(
     trait          = "CAD",
-    relatives_kind = "full_siblings",
-    relatedness    = 0.5
-  ),
-  genetic_correlation = list(
-    trait          = "CAD",
-    relatives_kind = "full_siblings",
+    relatives_kind = "parents",
     relatedness    = 0.5
   ),
   stratify_columns = list("birth_year")
 )
 #+END_SRC
 
-#+RESULTS:
+This will output a named list that has the following members:
 
-This will give us the genetic correlation between the two traits and all the intermediate results (cif and h2)
-in a named list with the members ~cif~, ~h2~ and ~rg~ that contain the results as ~data.tables~.
+| Name     | Description                                                 |
+|----------+-------------------------------------------------------------|
+| metadata | Contains the version of pipeline and the arguments supplied |
+| cif      | All cumulative incidences as a ~data.table~                 |
+| h2       | All heritabilities as a ~data.table~                        |
+| rg       | All genetic correlations as a ~data.table~                  |
 
 ** Cumulative incidence
 
