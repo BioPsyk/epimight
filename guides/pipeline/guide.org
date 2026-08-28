@@ -217,15 +217,8 @@ Once the pipeline has estimated that final cumulative incidence, it has produced
 | ~h2_t2~      | Heritability of trait 2                   |
 | ~cif_cross~  | CIF of trait 1 in family history 2 cohort |
 
-The genetic correlation analysis only uses 5 of these estimates:
-
-| Abbreviation | Description                               |
-|--------------+-------------------------------------------|
-| ~cif_t1_pop~ | CIF of trait 1 in target cohort           |
-| ~cif_t2_pop~ | CIF of trait 2 in target cohort           |
-| ~h2_t1~      | Heritability of trait 1                   |
-| ~h2_t2~      | Heritability of trait 2                   |
-| ~cif_cross~  | CIF of trait 1 in family history 2 cohort |
+The pipeline estimates the genetic correlation from 5 of these estimates and the relatedness of the
+relatives in the family history 2 cohort:
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
