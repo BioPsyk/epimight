@@ -211,7 +211,7 @@ Pipeline <- R6::R6Class( #nolint
     #' stratification combination will have multiple rows, like this:
     #'
     #'   |------+------------+--------+------------+------|
-    #'   | time | birth_year | sex |  estimates | case |
+    #'   | time | birth_year | sex    |  estimates | case |
     #'   |------+------------+--------+------------+------|
     #'   |   43 |       1981 | f      | 0.10639881 |  141 |
     #'   |   42 |       1981 | f      | 0.09763101 |  131 |
@@ -225,7 +225,7 @@ Pipeline <- R6::R6Class( #nolint
     #' on this dataset would produce:
     #'
     #' |------+------------+--------+------------+------|
-    #' | time | birth_year | sex |  estimates | case |
+    #' | time | birth_year | sex    |  estimates | case |
     #' |------+------------+--------+------------+------|
     #' |   43 |       1981 | f      | 0.10639881 |  141 |
     #' |   43 |       1981 | m      | 0.09816850 |  134 |
