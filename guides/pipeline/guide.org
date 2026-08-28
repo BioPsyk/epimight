@@ -159,7 +159,6 @@ legend left
   <#silver>|= Color|= Trait usage |
   |<#dd2e44>|Index trait 1, Relatives trait 1|
   |<#54adef>|Index trait 2, Relatives trait 2|
-  |<#c254ef>|Index trait 1, Relatives trait 2|
 endlegend
 
 rectangle "<$mdiAccountGroup{scale=1}>\n**Population cohort**\n""pop""" as pop {
@@ -277,7 +276,7 @@ file "**H2**\n""h2_t2""" as h2_t2 #54adef
 
 file "**CIF**\n""cif_cross""" as cif_cross #c254ef
 
-file "**RG**\n""rg_t1_t2""" as rg
+file "**RG**\n""rg_t1_t2""" as rg #c254ef
 
 rectangle "Relatedness" as t3_rel
 
