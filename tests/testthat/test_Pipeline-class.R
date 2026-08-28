@@ -154,40 +154,55 @@ describe("run", {
 
   it("fails when traits are not found", {
     expect_error(pipeline$run(
-      analysis1 = list(
+      heritability1 = list(
         trait          = "unknown",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
-      analysis2 = list(
+      heritability2 = list(
         trait          = "CAD",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
+      genetic_correlation = list(
+        trait          = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
+      )
     ))
 
     expect_error(pipeline$run(
-      analysis1 = list(
+      heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
-      analysis2 = list(
+      heritability2 = list(
         trait          = "unknown",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
+      genetic_correlation = list(
+        trait          = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
+      )
     ))
   })
 
   it("fails when stratify column cannot be found in TTE dataset", {
     expect_error(pipeline$run(
-      analysis1 = list(
+      heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
-      analysis2 = list(
+      heritability2 = list(
+        trait          = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
+      ),
+      genetic_correlation = list(
         trait          = "CAD",
         relatives_kind = "parents",
         relatedness    = 0.5
@@ -198,12 +213,17 @@ describe("run", {
 
   it("produces different result when using weighted cif", {
     results <- pipeline$run(
-      analysis1 = list(
+      heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
-      analysis2 = list(
+      heritability2 = list(
+        trait          = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
+      ),
+      genetic_correlation = list(
         trait          = "CAD",
         relatives_kind = "parents",
         relatedness    = 0.5
@@ -213,12 +233,17 @@ describe("run", {
     )
 
     weighted_results <- pipeline$run(
-      analysis1 = list(
+      heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
-      analysis2 = list(
+      heritability2 = list(
+        trait          = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
+      ),
+      genetic_correlation = list(
         trait          = "CAD",
         relatives_kind = "parents",
         relatedness    = 0.5
