@@ -241,22 +241,26 @@ Pipeline <- R6::R6Class( #nolint
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
     run_cif = function(analysis, stratify_columns, use_weighted_cif) {
-      trait_key  <- analysis$index_trait
-      cohort_key <- "pop"
-
-      if ("relatives_trait" %in% names(analysis) && "relatives_kind" %in% names(analysis)) {
-        cohort_key <- paste0(analysis$relatives_trait, "_", analysis$relatives_kind)
-      }
-
       tte <- self$get_tte(analysis, stratify_columns, use_weighted_cif)
       cif <- private$analyses$cif$run(
         tte              = tte,
         stratify_columns = stratify_columns
       ) |>
-        mutate(trait = trait_key, cohort = cohort_key) |>
-        select(trait, cohort, all_of(unlist(stratify_columns)), time, everything())
+        mutate(
+          index_trait     = analysis$index_trait,
+          relatives_trait = ifelse("relatives_trait" %in% names(analysis), analysis$relatives_trait, NA),
+          relatives_kind  = ifelse("relatives_kind" %in% names(analysis), analysis$relatives_kind, NA)
+        ) |>
+        select(
+          index_trait,
+          relatives_trait,
+          relatives_kind,
+          all_of(unlist(stratify_columns)),
+          time,
+          everything()
+        )
 
-      if (is.null(cif)) stop(paste0("No TTE events found when producing cif_", trait_key, "_", cohort_key))
+      if (is.null(cif)) stop(paste0("No TTE events found when producing cif_", index_trait_, "_", relatives_trait_, "_", realtives_kind_))
 
       return(cif)
     },
@@ -281,8 +285,8 @@ Pipeline <- R6::R6Class( #nolint
         cif         = cif,
         relatedness = analysis$relatedness
       ) |>
-        mutate(trait = analysis$index_trait) |>
-        select(trait, time, !!!stratify_symbols, h2, se, l95, u95)
+        mutate(index_trait = analysis$index_trait) |>
+        select(index_trait, time, !!!stratify_symbols, h2, se, l95, u95)
 
       if (is.null(h2)) stop(paste0("No valid results found when producing h2_", trait_key))
 
@@ -404,11 +408,15 @@ Pipeline <- R6::R6Class( #nolint
           required = TRUE,
           type     = "data.table",
           columns  = list(
-            trait = list(
+            index_trait = list(
               type     = "string",
               required = TRUE
             ),
-            cohort = list(
+            relatives_trait = list(
+              type     = "string",
+              required = TRUE
+            ),
+            relatives_kind = list(
               type     = "string",
               required = TRUE
             ),
@@ -434,7 +442,7 @@ Pipeline <- R6::R6Class( #nolint
           required = TRUE,
           type     = "data.table",
           columns  = list(
-            trait = list(
+            index_trait = list(
               type     = "string",
               required = TRUE
             ),
@@ -488,9 +496,9 @@ Pipeline <- R6::R6Class( #nolint
         estimates        = args$cif,
         estimate_column  = "cif",
         se_column        = "se",
-        stratify_columns = list("trait", "cohort", "time")
+        stratify_columns = list("index_trait", "relatives_trait", "relatives_kind", "time")
       ) |>
-        select(trait, cohort, everything())
+        select(index_trait, relatives_trait, relatives_kind, everything())
 
       #---------------------------------------------------------------------------------
       # Heritability
@@ -499,9 +507,9 @@ Pipeline <- R6::R6Class( #nolint
         estimates        = args$h2,
         estimate_column  = "h2",
         se_column        = "se",
-        stratify_columns = list("trait")
+        stratify_columns = list("index_trait")
       ) |>
-        select(trait, everything())
+        select(index_trait, everything())
 
       #---------------------------------------------------------------------------------
       # Genetic correlation
