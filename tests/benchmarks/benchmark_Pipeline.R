@@ -44,7 +44,8 @@ benchmarks <- list(
         index_trait    = "CAD",
         relatives_kind = "half_siblings",
         relatedness    = 0.25
-      )
+      ),
+      use_weighted_cif = FALSE
     )
 
     if (nrow(results$cif) == 0) {
@@ -63,7 +64,8 @@ benchmarks <- list(
         relatives_kind = "half_siblings",
         relatedness    = 0.25
       ),
-      stratify_columns = list("birth_year")
+      stratify_columns = list("birth_year"),
+      use_weighted_cif = FALSE
     )
 
     if (nrow(results$cif) == 0) {
