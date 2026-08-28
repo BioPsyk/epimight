@@ -281,10 +281,10 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that removes prefixes from column names that the function `run_h2` adds
     #' to its results.
-    add_h2_prefix = function(h2, trait_key, stratify_columns) {
+    add_h2_prefix = function(h2, prefix, stratify_columns) {
       h2 |>
         select(!!!stratify_columns, time, h2) |>
-        rename_with(~ paste0(trait_key, "_", .), .cols = c(h2))
+        rename_with(~ paste0(prefix, "_", .), .cols = c(h2))
     },
     #' @description
     #' Runs a single analysis using the given two traits, relationship kind, straitfy colums
@@ -294,14 +294,22 @@ Pipeline <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
-      cif_t1_pop <- self$run_cif("t1", "pop", args$heritability1, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh1 <- self$run_cif("t1", "fh1", args$heritability1, args$heritability1, args$stratify_columns, args$use_weighted_cif)
-      cif_cross <- self$run_cif("t1", "fh2", args$genetic_correlation, args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_pop <- self$run_cif("t2", "pop", args$heritability2, NA, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_fh2 <- self$run_cif("t2", "fh2", args$heritability2, args$heritability2, args$stratify_columns, args$use_weighted_cif)
+      t1 <- args$heritability1$trait
+      t2 <- args$heritability2$trait
+      t3 <- args$genetic_correlation$trait
 
-      h2_t1 <- self$run_h2("t1", args$heritability1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
-      h2_t2 <- self$run_h2("t2", args$heritability2$relatedness, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
+      fh1 <- args$heritability1$relatives_kind
+      fh2 <- args$heritability2$relatives_kind
+      fh3 <- args$genetic_correlation$relatives_kind
+
+      cif_t1_pop <- self$run_cif(t1, "pop", args$heritability1, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh1 <- self$run_cif(t1, fh1, args$heritability1, args$heritability1, args$stratify_columns, args$use_weighted_cif)
+      cif_cross  <- self$run_cif(t3, fh3, args$genetic_correlation, args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_pop <- self$run_cif(t2, "pop", args$heritability2, NA, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_fh2 <- self$run_cif(t2, fh2, args$heritability2, args$heritability2, args$stratify_columns, args$use_weighted_cif)
+
+      h2_t1 <- self$run_h2(t1, args$heritability1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
+      h2_t2 <- self$run_h2(t2, args$heritability2$relatedness, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
 
       join_columns <- c(list("time"), args$stratify_columns)
       join_symbols <- rlang::syms(join_columns)
@@ -329,7 +337,7 @@ Pipeline <- R6::R6Class( #nolint
 
       rg <- private$analyses$rg$run(
         estimates   = combined,
-        relatedness = args$heritability2$relatedness
+        relatedness = args$genetic_correlation$relatedness
       ) |>
         select(!!!args$stratify_columns, rg, se, l95, u95)
 
