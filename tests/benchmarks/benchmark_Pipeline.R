@@ -24,7 +24,7 @@ tte <- read_csv(
   col_types = cols(person_id = col_character()),
 ) |> as.data.table()
 
-samples <- tte |> filter(trait == "SCZ", relationship_kind == "PO") |> nrow()
+samples <- tte |> filter(trait == "SCZ", relatives_kind == "parents") |> nrow()
 
 pipeline <- Pipeline$new(pool = tte)
 
@@ -35,13 +35,16 @@ pipeline <- Pipeline$new(pool = tte)
 benchmarks <- list(
   "CIF, H2, RG" = function() {
     results <- pipeline$run(
-      trait1 = list(
-        id = "SCZ"
+      heritability1 = list(
+        index_trait    = "SCZ"
+        relatives_kind = "parents",
+        relatedness    = 0.5,
       ),
-      trait2 = list(
-        id = "CAD"
-      ),
-      relationship_kind = "PO"
+      heritability2 = list(
+        index_trait    = "CAD"
+        relatives_kind = "half_siblings",
+        relatedness    = 0.25,
+      )
     )
 
     if (nrow(results$cif) == 0) {
@@ -50,13 +53,16 @@ benchmarks <- list(
   },
   "CIF, H2, RG (1 strat)" = function() {
     results <- pipeline$run(
-      trait1 = list(
-        id = "SCZ"
+      heritability1 = list(
+        index_trait    = "SCZ"
+        relatives_kind = "parents",
+        relatedness    = 0.5,
       ),
-      trait2 = list(
-        id = "CAD"
+      heritability2 = list(
+        index_trait    = "CAD"
+        relatives_kind = "half_siblings",
+        relatedness    = 0.25,
       ),
-      relationship_kind = "PO",
       stratify_columns = list("birth_year")
     )
 
@@ -66,13 +72,16 @@ benchmarks <- list(
   },
   "weighted CIF, H2, RG" = function() {
     results <- pipeline$run(
-      trait1 = list(
-        id = "SCZ"
+      heritability1 = list(
+        index_trait    = "SCZ"
+        relatives_kind = "parents",
+        relatedness    = 0.5,
       ),
-      trait2 = list(
-        id = "CAD"
+      heritability2 = list(
+        index_trait    = "CAD"
+        relatives_kind = "half_siblings",
+        relatedness    = 0.25,
       ),
-      relationship_kind = "PO",
       use_weighted_cif = TRUE
     )
 
@@ -82,13 +91,16 @@ benchmarks <- list(
   },
   "weighted CIF, H2, RG (1 strat)" = function() {
     results <- pipeline$run(
-      trait1 = list(
-        id = "SCZ"
+      heritability1 = list(
+        index_trait    = "SCZ"
+        relatives_kind = "parents",
+        relatedness    = 0.5,
       ),
-      trait2 = list(
-        id = "CAD"
+      heritability2 = list(
+        index_trait    = "CAD"
+        relatives_kind = "half_siblings",
+        relatedness    = 0.25,
       ),
-      relationship_kind = "PO",
       stratify_columns = list("birth_year"),
       use_weighted_cif = TRUE
     )
