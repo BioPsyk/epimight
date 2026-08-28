@@ -295,11 +295,12 @@ t3_rel -UP-> rg
 #+RESULTS: fig:rg-data-flow
 [[file:../diagrams/rg-data-flow.png]]
 
-To summarize, the pipeline needs a set of individuals which for each trait it needs to know:
+To produce all of these estimates the pipeline needs a set of individuals, which for each trait contains:
 
 - The individuals trait status (0 = censored, 1 = affected, 2 = competing risk)
 - The individuals age at status (in years)
-- How many relatives the individual have of the specific kind
+- The kind of relatives
+- How many relatives the individual have of the specific relatives kind
 - How many of those relatives have the trait
 
 The pipeline accepts this data as a ~data.table~ with the following columns:
@@ -338,9 +339,9 @@ tte |>
 |     99998 | SCZ   |            0 |        37 | full_siblings  |           1 |                 1 |
 |     99999 | SCZ   |            0 |        55 | full_siblings  |           4 |                 0 |
 
-The pipeline uses a single ~data.table~ for all traits and relative kinds, if you for example have *2* different traits,
-*2* different relative kinds and *100 000* individuals, the data table will have *400 000* rows (2 * 2 * 100000), it
-would look like this:
+The pipeline uses a single ~data.table~ for all traits and relative kinds, so if you for example have *2* different traits,
+*2* different relative kinds and *100 000* individuals, the data table will have *400 000* rows.
+Here's an example of what that would look like:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
@@ -364,6 +365,12 @@ tte |>
 
 This ~data.table~ is called the time-to-event "pool". It's called a "pool" because all data is kept
 there and only the relevant rows are pulled out when a genetic correlation is produced.
+
+Besides the actual TTE data, the pipeline needs to know:
+
+- Which trait, kinds of relatives and relatedness to use for heritability 1
+- Which trait, kinds of relatives and relatedness to use for heritability 2
+- Which trait, kinds of relatives and relatedness to use for cross cif/genetic correlation
 
 
 
