@@ -36,12 +36,12 @@ benchmarks <- list(
   "CIF, H2, RG" = function() {
     results <- pipeline$run(
       heritability1 = list(
-        index_trait    = "SCZ"
+        index_trait    = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5,
       ),
       heritability2 = list(
-        index_trait    = "CAD"
+        index_trait    = "CAD",
         relatives_kind = "half_siblings",
         relatedness    = 0.25,
       )
@@ -54,12 +54,12 @@ benchmarks <- list(
   "CIF, H2, RG (1 strat)" = function() {
     results <- pipeline$run(
       heritability1 = list(
-        index_trait    = "SCZ"
+        index_trait    = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5,
       ),
       heritability2 = list(
-        index_trait    = "CAD"
+        index_trait    = "CAD",
         relatives_kind = "half_siblings",
         relatedness    = 0.25,
       ),
@@ -73,12 +73,12 @@ benchmarks <- list(
   "weighted CIF, H2, RG" = function() {
     results <- pipeline$run(
       heritability1 = list(
-        index_trait    = "SCZ"
+        index_trait    = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5,
       ),
       heritability2 = list(
-        index_trait    = "CAD"
+        index_trait    = "CAD",
         relatives_kind = "half_siblings",
         relatedness    = 0.25,
       ),
@@ -92,12 +92,12 @@ benchmarks <- list(
   "weighted CIF, H2, RG (1 strat)" = function() {
     results <- pipeline$run(
       heritability1 = list(
-        index_trait    = "SCZ"
+        index_trait    = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5,
       ),
       heritability2 = list(
-        index_trait    = "CAD"
+        index_trait    = "CAD",
         relatives_kind = "half_siblings",
         relatedness    = 0.25,
       ),
