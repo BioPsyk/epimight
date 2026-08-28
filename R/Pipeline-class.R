@@ -273,10 +273,10 @@ Pipeline <- R6::R6Class( #nolint
 
       return(h2)
     },
-    add_cif_prefix = function(cif, trait_key, cohort_key, stratify_columns) {
+    add_cif_prefix = function(cif, prefix, stratify_columns) {
       cif |>
         select(!!!stratify_columns, time, cif, cases) |>
-        rename_with(~ paste0(trait_key, "_", cohort_key, "_", .), .cols = c(cif, cases))
+        rename_with(~ paste0(prefix, "_", .), .cols = c(cif, cases))
     },
     #' @description
     #' Helper that removes prefixes from column names that the function `run_h2` adds
@@ -296,7 +296,7 @@ Pipeline <- R6::R6Class( #nolint
 
       cif_t1_pop <- self$run_cif("t1", "pop", args$heritability1, NA, args$stratify_columns, args$use_weighted_cif)
       cif_t1_fh1 <- self$run_cif("t1", "fh1", args$heritability1, args$heritability1, args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh2 <- self$run_cif("t1", "fh2", args$heritability1, args$heritability2, args$stratify_columns, args$use_weighted_cif)
+      cif_cross <- self$run_cif("t1", "fh2", args$genetic_correlation, args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
       cif_t2_pop <- self$run_cif("t2", "pop", args$heritability2, NA, args$stratify_columns, args$use_weighted_cif)
       cif_t2_fh2 <- self$run_cif("t2", "fh2", args$heritability2, args$heritability2, args$stratify_columns, args$use_weighted_cif)
 
@@ -306,13 +306,13 @@ Pipeline <- R6::R6Class( #nolint
       join_columns <- c(list("time"), args$stratify_columns)
       join_symbols <- rlang::syms(join_columns)
 
-      combined <- self$add_cif_prefix(cif_t1_pop, "t1", "pop", args$stratify_columns) |>
+      combined <- self$add_cif_prefix(cif_t1_pop, "t1_pop", args$stratify_columns) |>
         inner_join(
-          self$add_cif_prefix(cif_t1_fh2, "t1", "fh2", args$stratify_columns),
+          self$add_cif_prefix(cif_cross, "cross", args$stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_cif_prefix(cif_t2_pop, "t2", "pop", args$stratify_columns),
+          self$add_cif_prefix(cif_t2_pop, "t2_pop", args$stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
@@ -343,7 +343,7 @@ Pipeline <- R6::R6Class( #nolint
         cif = rbindlist(list(
           cif_t1_pop,
           cif_t1_fh1,
-          cif_t1_fh2,
+          cif_cross,
           cif_t2_pop,
           cif_t2_fh2
         )),

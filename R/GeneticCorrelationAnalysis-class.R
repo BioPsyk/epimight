@@ -79,8 +79,8 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
           columns = list(
             t1_pop_cif   = list(type = "numeric", required = TRUE),
             t1_pop_cases = list(type = "numeric", required = TRUE),
-            t1_fh2_cif   = list(type = "numeric", required = TRUE),
-            t1_fh2_cases = list(type = "numeric", required = TRUE),
+            cross_cif    = list(type = "numeric", required = TRUE),
+            cross_cases  = list(type = "numeric", required = TRUE),
             t2_pop_cif   = list(type = "numeric", required = TRUE),
             t2_pop_cases = list(type = "numeric", required = TRUE),
             t1_h2        = list(type = "numeric", required = TRUE),
@@ -105,10 +105,10 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
         results <- self$calculate_rg(
           estimates$id,
           estimates$t1_pop_cif,
-          estimates$t1_fh2_cif,
+          estimates$cross_cif,
           estimates$t2_pop_cif,
           estimates$t1_pop_cases,
-          estimates$t1_fh2_cases,
+          estimates$cross_cases,
           estimates$t2_pop_cases,
           estimates$t1_h2,
           estimates$t2_h2,
