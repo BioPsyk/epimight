@@ -402,18 +402,18 @@ pipeline <- Pipeline$new(pool = tte)
 Now the pool is full of data and you can start running the pipeline to produce genetic correlations between specific traits.
 
 Let's say we want to produce a genetic correlation between first diagnosis of "Schizophrenia" and
-"Coronary Artery Disease" using parents as relatives. Suppose we added a column that contains the birth year
-of the individual and we want to stratify the results on that column. We would then run:
+"Coronary Artery Disease" using parents as relatives. And we want to stratify the results on the
+newly added column ~birth_year~ that contains the individuals birth year. We would then run:
 
 #+BEGIN_SRC R :exports code :results output
 results <- pipeline$run(
   heritability1 = list(
-    trait          = "SCZ",
+    index_trait    = "SCZ",
     relatives_kind = "parents",
     relatedness    = 0.5
   ),
   heritability2 = list(
-    trait          = "CAD",
+    index_trait    = "CAD",
     relatives_kind = "parents",
     relatedness    = 0.5
   ),

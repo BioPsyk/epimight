@@ -91,7 +91,7 @@ Pipeline <- R6::R6Class( #nolint
         cif  = CumulativeIncidenceAnalysis$new(),
         rg   = GeneticCorrelationAnalysis$new()
       )
-      self$validation_rules$run = list(
+      self$validation_rules$run <- list(
         heritability1       = self$validation_rules$analysis,
         heritability2       = self$validation_rules$analysis,
         genetic_correlation = self$validation_rules$analysis,
@@ -105,6 +105,7 @@ Pipeline <- R6::R6Class( #nolint
           default = TRUE
         )
       )
+      self$validation_rules$run$genetic_correlation$required                 <- FALSE
       self$validation_rules$run$genetic_correlation$relatives_trait$required <- TRUE
     },
     #' @description
