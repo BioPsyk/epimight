@@ -375,7 +375,7 @@ The next chapters shows you how this works in practice.
 
 * Running the pipeline
 
-To setup the pipeline, we start by importing the epimight library:
+To setup the pipeline, we start by importing the epimight library and loading the [[../../tests/data/pipeline-tte.csv][pipeline-tts.csv]]:
 
 #+BEGIN_SRC R :exports code :eval no
 library(dplyr)
@@ -384,7 +384,7 @@ library(data.table)
 library(epimight)
 
 tte <- read_csv(
-  "./test-tte.csv",
+  "./pipeline-tte.csv",
   show_col_type = FALSE,
   col_types = cols(person_id = col_character()),
 ) |> as.data.table()
