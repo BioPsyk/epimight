@@ -278,8 +278,7 @@ Pipeline <- R6::R6Class( #nolint
           fh_cif    = cif.y,
           fh_cases  = cases.y
         ) |>
-        select(time, !!!stratify_symbols, pop_cif, pop_cases, fh_cif, fh_cases) |>
-        self$max_time_by_stratification(stratify_columns)
+        select(time, !!!stratify_symbols, pop_cif, pop_cases, fh_cif, fh_cases)
 
       h2 <- private$analyses$h2$run(
         cif         = cif,
@@ -361,7 +360,7 @@ Pipeline <- R6::R6Class( #nolint
         ) |>
         self$max_time_by_stratification(args$stratify_columns)
 
-      if (nrow(combined) == 0) stop("After joining h2 results for both traits no data was left")
+      if (nrow(combined) == 0) stop("After joining all cif and h2 results no data was left")
 
       rg <- private$analyses$rg$run(
         estimates   = combined,
