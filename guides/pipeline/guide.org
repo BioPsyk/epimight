@@ -89,7 +89,7 @@ data and how you run the pipeline on said data.
 
 * How it works
 
-The pipeline estimates genetic correlation (~rg~) between 2 binary traits:
+The pipeline estimates genetic correlation (~rg~) between 2 binary traits in a target cohort:
 
 | Abbreviation | Description |
 |--------------+-------------|
@@ -103,9 +103,15 @@ In order to do that it must first estimate the heritability (~h2~) of the two tr
 | ~h2_t1~      | Heritability of trait 1 |
 | ~h2_t2~      | Heritability of trait 2 |
 
-Heritability is estimated by comparing the cumulative incidence (~cif~) of the selected trait in the
-target cohort and the family history cohort. The family history cohort is a subset of the target
-cohort, that contains individuals with at least 1 relative that have the selected trait.
+It estimates heritability by comparing the cumulative incidence (~cif~) of the trait in the target
+cohort and a family history cohort. The pipeline constructs the family history cohort by only keeping
+individuals in the target cohort that has at least 1 relative with the trait. This means that for
+each heritability estimate, the pipeline needs to know:
+
+1. Which trait status/age to use in the 2 ~cif~ analyses and the family history cohort filter
+2. Which kind of relatives to use in the family history cohort filter
+
+"Kind of relatives" in this context means parents, full siblings, cousins or any other "kind" of relative.
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -116,6 +122,7 @@ cohort, that contains individuals with at least 1 relative that have the selecte
 !include <material7.4.47/AccountUser/AccountGroup>
 !include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
 !include ../diagrams/ibp.puml
+left to right direction
 
 skinparam nodesep 80
 skinparam ranksep 50
@@ -148,19 +155,36 @@ skinparam defaultTextAlignment center
 
 title "**Heritability data flow**"
 
-rectangle "<$mdiAccountGroup{scale=1}>\n**Target cohort**" as pop {
-  rectangle "<$mdiHumanMaleFemaleChild{scale=1}>\n**Family history cohort**" as fh
+legend left
+  <#silver>|= Color|= Individuals trait status/age |
+  |<#dd2e44>|Trait 1|
+  |<#54adef>|Trait 2|
+endlegend
+
+rectangle "<$mdiAccountGroup{scale=1}>\n**Target cohort**\n""pop""" as pop {
+  rectangle "<$mdiHumanMaleFemaleChild{scale=1}>\n**Family history 1 cohort**\n1 >= relative with trait 1\n""fh1""" as fh1
+  rectangle "<$mdiHumanMaleFemaleChild{scale=1}>\n**Family history 2 cohort**\n1 >= relative with trait 2\n""fh2""" as fh2
 }
 
-file "**CIF**" as cif_pop
-file "**CIF**" as cif_fh
-file "**H2**" as h2
+file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #dd2e44
+file "**CIF**\n""cif_t1_fh1""" as cif_t1_fh1 #dd2e44
+file "**H2**\n""h2_t1""" as h2_t1 #dd2e44
 
-pop --> cif_pop
-fh --> cif_fh
+file "**CIF**\n""cif_t2_pop""" as cif_t2_pop #54adef
+file "**CIF**\n""cif_t2_fh2""" as cif_t2_fh2 #54adef
+file "**H2**\n""h2_t2""" as h2_t2 #54adef
 
-cif_pop --> h2
-cif_fh --> h2
+pop --> cif_t1_pop
+fh1 --> cif_t1_fh1
+
+cif_t1_pop --> h2_t1
+cif_t1_fh1 --> h2_t1
+
+pop --> cif_t2_pop
+fh2 --> cif_t2_fh2
+
+cif_t2_pop --> h2_t2
+cif_t2_fh2 --> h2_t2
 @enduml
 #+END_SRC
 
@@ -168,6 +192,32 @@ cif_fh --> h2
 #+CAPTION: Heritability data flow
 #+RESULTS: fig:h2-data-flow
 [[file:../diagrams/h2-data-flow.png]]
+
+Once the pipeline has estimated the heritabilities, it has produces 6 estimates in total:
+
+| Abbreviation | Description                               |
+|--------------+-------------------------------------------|
+| ~cif_t1_pop~ | CIF of trait 1 in target cohort           |
+| ~cif_t1_fh1~ | CIF of trait 1 in family history 1 cohort |
+| ~h2_t1~      | Heritability of trait 1                   |
+| ~cif_t2_pop~ | CIF of trait 2 in target cohort           |
+| ~cif_t2_fh2~ | CIF of trait 2 in family history 2 cohort |
+| ~h2_t2~      | Heritability of trait 2                   |
+
+The final estimate that the pipeline is missing, is the "cross trait" cumulative incidence (~cif_cross~), which
+uses:
+
+1. The individuals trait status/age from trait 1
+2. The relatives trait status/age from trait 2
+
+
+
+
+
+
+
+
+
 
 
 
