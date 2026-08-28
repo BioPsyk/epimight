@@ -240,7 +240,14 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
-    run_cif = function(trait_key, cohort_key, analysis, stratify_columns, use_weighted_cif) {
+    run_cif = function(analysis, stratify_columns, use_weighted_cif) {
+      trait_key  <- analysis$index_trait
+      cohort_key <- "pop"
+
+      if ("relatives_trait" %in% names(analysis) && "relatives_kind" %in% names(analysis)) {
+        cohort_key <- paste0(analysis$relatives_trait, "_", analysis$relatives_kind)
+      }
+
       tte <- self$get_tte(analysis, stratify_columns, use_weighted_cif)
       cif <- private$analyses$cif$run(
         tte              = tte,
@@ -256,7 +263,7 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that runs h2 on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
-    run_h2 = function(trait_key, relatedness, stratify_columns, cif_pop, cif_fh) {
+    run_h2 = function(analysis, stratify_columns, cif_pop, cif_fh) {
       stratify_symbols <- rlang::syms(stratify_columns)
 
       cif <- cif_pop |>
@@ -271,10 +278,10 @@ Pipeline <- R6::R6Class( #nolint
         self$max_time_by_stratification(stratify_columns)
 
       h2 <- private$analyses$h2$run(
-        cif                      = cif,
-        relatedness = relatedness
+        cif         = cif,
+        relatedness = analysis$relatedness
       ) |>
-        mutate(trait = trait_key) |>
+        mutate(trait = analysis$index_trait) |>
         select(trait, time, !!!stratify_symbols, h2, se, l95, u95)
 
       if (is.null(h2)) stop(paste0("No valid results found when producing h2_", trait_key))
@@ -319,22 +326,14 @@ Pipeline <- R6::R6Class( #nolint
         )
       }
 
-      t1 <- args$heritability1$index_trait
-      t2 <- args$heritability2$index_trait
-      t3 <- args$genetic_correlation$index_trait
+      cif_t1_pop <- self$run_cif(list(index_trait = args$heritability1$index_trait), args$stratify_columns, args$use_weighted_cif)
+      cif_t1_fh1 <- self$run_cif(args$heritability1, args$stratify_columns, args$use_weighted_cif)
+      cif_cross  <- self$run_cif(args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_pop <- self$run_cif(list(index_trait = args$heritability2$index_trait), args$stratify_columns, args$use_weighted_cif)
+      cif_t2_fh2 <- self$run_cif(args$heritability2, args$stratify_columns, args$use_weighted_cif)
 
-      fh1 <- paste0(args$heritability1$relatives_trait, "_", args$heritability1$relatives_kind)
-      fh2 <- paste0(args$heritability2$relatives_trait, "_", args$heritability2$relatives_kind)
-      fh3 <- paste0(args$genetic_correlation$relatives_trait, "_", args$genetic_correlation$relatives_kind)
-
-      cif_t1_pop <- self$run_cif(t1, "pop", list(index_trait = args$heritability1$index_trait), args$stratify_columns, args$use_weighted_cif)
-      cif_t1_fh1 <- self$run_cif(t1, fh1, args$heritability1, args$stratify_columns, args$use_weighted_cif)
-      cif_cross  <- self$run_cif(t3, fh3, args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_pop <- self$run_cif(t2, "pop", list(index_trait = args$heritability2$index_trait), args$stratify_columns, args$use_weighted_cif)
-      cif_t2_fh2 <- self$run_cif(t2, fh2, args$heritability2, args$stratify_columns, args$use_weighted_cif)
-
-      h2_t1 <- self$run_h2(t1, args$heritability1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
-      h2_t2 <- self$run_h2(t2, args$heritability2$relatedness, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
+      h2_t1 <- self$run_h2(args$heritability1, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
+      h2_t2 <- self$run_h2(args$heritability2, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
 
       join_columns <- c(list("time"), args$stratify_columns)
       join_symbols <- rlang::syms(join_columns)
