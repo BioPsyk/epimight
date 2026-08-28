@@ -302,18 +302,35 @@ Pipeline <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
-      t1 <- args$heritability1$trait
-      t2 <- args$heritability2$trait
-      t3 <- args$genetic_correlation$trait
+      if (!("relatives_trait" %in% names(args$heritability1))) {
+        args$heritability1$relatives_trait <- args$heritability1$index_trait
+      }
 
-      fh1 <- args$heritability1$relatives_kind
-      fh2 <- args$heritability2$relatives_kind
-      fh3 <- args$genetic_correlation$relatives_kind
+      if (!("relatives_trait" %in% names(args$heritability2))) {
+        args$heritability2$relatives_trait <- args$heritability2$index_trait
+      }
 
-      cif_t1_pop <- self$run_cif(t1, "pop", args$heritability1, args$stratify_columns, args$use_weighted_cif)
+      if (!("genetic_correlation" %in% names(args))) {
+        args$genetic_correlation <- list(
+          index_trait     = args$heritability1$index_trait,
+          relatives_trait = args$heritability2$relatives_trait,
+          relatives_kind  = args$heritability2$relatives_kind,
+          relatedness     = args$heritability2$relatedness
+        )
+      }
+
+      t1 <- args$heritability1$index_trait
+      t2 <- args$heritability2$index_trait
+      t3 <- args$genetic_correlation$index_trait
+
+      fh1 <- paste0(args$heritability1$relatives_trait, "_", args$heritability1$relatives_kind)
+      fh2 <- paste0(args$heritability2$relatives_trait, "_", args$heritability2$relatives_kind)
+      fh3 <- paste0(args$genetic_correlation$relatives_trait, "_", args$genetic_correlation$relatives_kind)
+
+      cif_t1_pop <- self$run_cif(t1, "pop", list(index_trait = args$heritability1$index_trait), args$stratify_columns, args$use_weighted_cif)
       cif_t1_fh1 <- self$run_cif(t1, fh1, args$heritability1, args$stratify_columns, args$use_weighted_cif)
       cif_cross  <- self$run_cif(t3, fh3, args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_pop <- self$run_cif(t2, "pop", args$heritability2, args$stratify_columns, args$use_weighted_cif)
+      cif_t2_pop <- self$run_cif(t2, "pop", list(index_trait = args$heritability2$index_trait), args$stratify_columns, args$use_weighted_cif)
       cif_t2_fh2 <- self$run_cif(t2, fh2, args$heritability2, args$stratify_columns, args$use_weighted_cif)
 
       h2_t1 <- self$run_h2(t1, args$heritability1$relatedness, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
