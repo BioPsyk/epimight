@@ -270,12 +270,9 @@ endlegend
 
 file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #dd2e44
 file "**H2**\n""h2_t1""" as h2_t1 #dd2e44
-
+file "**CIF**\n""cif_cross""" as cif_cross #c254ef
 file "**CIF**\n""cif_t2_pop""" as cif_t2_pop #54adef
 file "**H2**\n""h2_t2""" as h2_t2 #54adef
-
-file "**CIF**\n""cif_cross""" as cif_cross #c254ef
-
 file "**RG**\n""rg_t1_t2""" as rg #c254ef
 
 rectangle "Relatedness" as t3_rel
