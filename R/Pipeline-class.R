@@ -260,7 +260,11 @@ Pipeline <- R6::R6Class( #nolint
           everything()
         )
 
-      if (is.null(cif)) stop(paste0("No TTE events found when producing cif_", index_trait_, "_", relatives_trait_, "_", realtives_kind_))
+      if (is.null(cif)) {
+        stop(paste0(
+          "No TTE events found when producing cif_", index_trait_, "_", relatives_trait_, "_", realtives_kind_
+        ))
+      }
 
       return(cif)
     },
@@ -329,10 +333,18 @@ Pipeline <- R6::R6Class( #nolint
         )
       }
 
-      cif_t1_pop <- self$run_cif(list(index_trait = args$heritability1$index_trait), args$stratify_columns, args$use_weighted_cif)
+      cif_t1_pop <- self$run_cif(
+        list(index_trait = args$heritability1$index_trait),
+        args$stratify_columns,
+        args$use_weighted_cif
+      )
       cif_t1_fh1 <- self$run_cif(args$heritability1, args$stratify_columns, args$use_weighted_cif)
       cif_cross  <- self$run_cif(args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_pop <- self$run_cif(list(index_trait = args$heritability2$index_trait), args$stratify_columns, args$use_weighted_cif)
+      cif_t2_pop <- self$run_cif(
+        list(index_trait = args$heritability2$index_trait),
+        args$stratify_columns,
+        args$use_weighted_cif
+      )
       cif_t2_fh2 <- self$run_cif(args$heritability2, args$stratify_columns, args$use_weighted_cif)
 
       h2_t1 <- self$run_h2(args$heritability1, args$stratify_columns, cif_t1_pop, cif_t1_fh1)

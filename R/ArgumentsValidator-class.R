@@ -379,7 +379,8 @@ ArgumentsValidator <- R6::R6Class( #nolint
 
       caller <- rlang::caller_env()
 
-      rlang::try_fetch({
+      rlang::try_fetch(
+        {
           if (self$is_named_list(self$rules)) {
             for (key in names(self$rules)) {
               args <- self$handle_rule(args, key)
