@@ -97,7 +97,7 @@ describe("run_from_file", {
         )
       ),
       study_end_at = as.Date("2016-12-31"),
-      extra_columns = list("sex", "incl_diagnosed_at")
+      extra_columns = list("gender", "incl_diagnosed_at")
     )
 
     tte_retriever$write_args(args, args_path)
@@ -106,7 +106,7 @@ describe("run_from_file", {
   })
 })
 
-describe("two traits", {
+describe("two disorders", {
   it("produces a valid query with only the requirements", {
     query <- tte_retriever$generate_query(
       samples = list(
@@ -131,7 +131,7 @@ describe("two traits", {
   })
 })
 
-describe("two traits with relatives", {
+describe("two disorders with relatives", {
   it("produces a valid query with only the requirements", {
     query <- tte_retriever$generate_query(
       samples = list(
@@ -308,7 +308,7 @@ describe("output columns", {
         )
       ),
       study_end_at = as.Date("2016-12-31"),
-      extra_columns = list("sex", "incl_diagnosed_at")
+      extra_columns = list("gender", "incl_diagnosed_at")
     )
 
     tte_retriever$execute_query(output_path, query)
@@ -316,7 +316,7 @@ describe("output columns", {
       as.data.table()
 
     # person_id
-    # sex
+    # gender
     # incl_failure_status
     # incl_failure_at
     # incl_failure_time
