@@ -296,9 +296,9 @@ To produce all of these estimates the pipeline needs a set of individuals, which
 
 - The individuals trait status (0 = censored, 1 = affected, 2 = competing risk)
 - The individuals age at status (in years)
-- The kind of relatives
-- How many relatives the individual have of the specific relatives kind
-- How many of those relatives have the trait
+- How many relatives the individual have
+- How many of them have the trait
+- What "kind" of relative they are (parents, half siblings, cousins, etc.)
 
 The pipeline accepts this data as a ~data.table~ with the following columns:
 
