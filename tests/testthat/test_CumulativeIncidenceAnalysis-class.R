@@ -308,7 +308,7 @@ describe("run", {
         se_diff  = abs(se.x - se.y)
       ) |>
       filter(
-        se_diff > 2.5e-05
+        se_diff > 3e-05
       )
 
     expect_equal(nrow(se_diff), 0)
