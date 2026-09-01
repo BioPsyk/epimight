@@ -126,6 +126,18 @@ generate_random_tte <- function(n_count, period_start, period_end) {
   return(survival_data)
 }
 
+generate_analysis_tte <- function(n_count, trait, trait_mean, trait_sd, relkind) {
+  generate_random_tte(n_count) |>
+    generate_trait(trait, trait_mean, trait_sd) |>
+    generate_relatives_n_trait("relatives_n_trait") |>
+    relocate(trait_age, .after = person_id) |>
+    relocate(trait_status, .after = trait_age) |>
+    relocate(relatives_n, .after = trait_status) |>
+    relocate(relatives_n_trait, .after = relatives_n) |>
+    mutate(person_id = as.character(person_id), relatives_kind = relkind) |>
+    as.data.table()
+}
+
 generate_pipeline_tte <- function(n_count) {
   t1_fs_tte <- generate_random_tte(n_count)
   t1_fs_tte <- generate_trait(t1_fs_tte, "SCZ", 20, 10)
