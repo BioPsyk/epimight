@@ -315,7 +315,8 @@ describe("run", {
   #})
 
   it("test utils", {
-    tte <- tte_random_probands(100)
+    tte <- tte_random_probands(100) |>
+      tte_add_random_trait("SCZ", c(0.9, 0.1), 20, 11)
 
     print(tte)
   })

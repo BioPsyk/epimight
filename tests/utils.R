@@ -4,7 +4,7 @@ library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 # Generators
 #=================================================================================
 
-tte_add_random_relatives_n_trait_prob <- function(trait_status, relatives_n) {
+calculate_relatives_n_trait_prob <- function(trait_status, relatives_n) {
   if (trait_status == 1) {
     unaffected_prob <- 0.45
   } else {
@@ -30,12 +30,12 @@ tte_add_random_relatives_n_trait <- function(tte, column_name) {
         0:relatives_n,
         1,
         replace = TRUE,
-        prob = tte_add_random_relatives_n_trait_prob(trait_status, relatives_n)
+        prob = calculate_relatives_n_trait_prob(trait_status, relatives_n)
       )
     )
 }
 
-tte_add_random_trait <- function(tte, column_name, mean, sd, end_of_study) {
+tte_add_random_trait <- function(tte, trait_name, trait_prob, trait_age_mean, trait_age_sd, end_of_study) {
   if (missing(end_of_study)) {
     end_of_study <- Sys.Date()
   }
@@ -52,23 +52,23 @@ tte_add_random_trait <- function(tte, column_name, mean, sd, end_of_study) {
         end_of_study_year - birth_year,
         death_year - birth_year
       ),
-      trait = column_name,
+      trait = trait_name,
       trait_status = ifelse(
         death_year > end_of_study_year,
         sample(
           seq(0, 1),
           1,
           replace = TRUE,
-          prob = c(0.9, 0.1)
+          prob = trait_prob
         ),
         sample(
           seq(1, 2),
           1,
           replace = TRUE,
-          prob = c(0.1, 0.9)
+          prob = trait_prob
         )
       ),
-      onset_age = round(rnorm(1, mean = mean, sd = sd)),
+      onset_age = round(rnorm(1, mean = trait_age_mean, sd = trait_age_sd)),
       trait_age = ifelse(
         trait_status == 1,
         case_when(
