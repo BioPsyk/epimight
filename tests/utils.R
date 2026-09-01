@@ -56,16 +56,16 @@ tte_random_trait <- function(tte, trait_name, trait_prob, trait_age_mean, trait_
       trait_status = ifelse(
         death_year > end_of_study_year,
         sample(
-          seq(1, 0),
+          c(1, 0),
           1,
           replace = TRUE,
-          prob = trait_prob
+          prob = c(trait_prob, 1.0 - trait_prob)
         ),
         sample(
-          seq(1, 2),
+          c(1, 2),
           1,
           replace = TRUE,
-          prob = trait_prob
+          prob = c(trait_prob, 1.0 - trait_prob)
         )
       ),
       onset_age = round(rnorm(1, mean = trait_age_mean, sd = trait_age_sd)),

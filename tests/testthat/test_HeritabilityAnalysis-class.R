@@ -48,7 +48,7 @@ describe("calculate_h2", {
 
   it("produces high heritability when all relatives have trait if index have trait", {
     tte_pop <- tte_random_probands(100) |>
-      tte_random_trait("SCZ", c(0.9, 0.1), 20, 11) |>
+      tte_random_trait("SCZ", 0.5, 20, 11) |>
       mutate(
         relatives_n_trait = ifelse(trait_status == 1, relatives_n, 0)
       )
