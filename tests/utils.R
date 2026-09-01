@@ -103,7 +103,7 @@ tte_random_probands <- function(n_count, period_start, period_end) {
   )
 
   survival_data <- data.frame(
-    person_id      = 1:n_count,
+    person_id      = as.character(1:n_count),
     sex            = sample(c("m", "f"), n_count, replace = TRUE),
     birth_date     = sample(birth_dates, n_count, replace = TRUE),
     death_age      = round(

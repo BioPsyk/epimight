@@ -8,7 +8,8 @@ source("../utils.R")
 # Preparation
 #=================================================================================
 
-h2_analysis <- HeritabilityAnalysis$new()
+h2_analysis  <- HeritabilityAnalysis$new()
+cif_analysis <- CumulativeIncidenceAnalysis$new()
 
 #=================================================================================
 # Tests
@@ -44,4 +45,60 @@ describe("calculate_h2", {
 
     expect_dataframe_equal(results1, results2)
   })
+
+  it("produces high heritability when all relatives have trait if index have trait", {
+    tte_pop <- tte_random_probands(100) |>
+      tte_random_trait("SCZ", c(0.9, 0.1), 20, 11) |>
+      mutate(
+        relatives_n_trait = ifelse(trait_status == 1, relatives_n, 0)
+      )
+
+    tte_fh  <- tte_pop |>
+      filter(relatives_n_trait > 0) |>
+      select(person_id, trait_status, trait_age) |> as.data.table()
+
+    tte_pop <- tte_pop |> select(person_id, trait_status, trait_age) |> as.data.table()
+
+    cif_pop <- cif_analysis$run(tte = tte_pop) |>
+        select(time, cif, cases) |>
+        rename(pop_cif = cif, pop_cases = cases)
+
+    cif_fh <- cif_analysis$run(tte = tte_fh) |>
+        select(time, cif, cases) |>
+        rename(fh_cif = cif, fh_cases = cases)
+
+    h2 <- h2_analysis$run(
+      cif = inner_join(cif_pop, cif_fh, by = join_by(time)) |>
+        arrange(desc(time)) |>
+        filter(row_number() == 1) |>
+        as.data.table(),
+      relatedness = 0.5
+    )
+
+    message("h2:")
+    print(h2 |> select(time, h2, se, l95, u95))
+  })
+
+  #it("produces a high heritability when", {
+  #  tte <- tte_random_probands(100) |>
+  #    tte_random_trait("SCZ", c(0.9, 0.1), 20, 11) |>
+  #    tte_random_relatives_n_trait(function(index_trait_status, relatives_n) {
+  #      if (index_trait_status == 1) {
+  #        unaffected_prob <- 0.001
+  #      } else {
+  #        unaffected_prob <- 1.0
+  #      }
+
+  #      rest_prob         <- 1.0 - unaffected_prob
+  #      prob_per_relative <- rest_prob / relatives_n
+
+  #      prob <- append(
+  #        c(unaffected_prob),
+  #        rep(prob_per_relative, relatives_n)
+  #      )
+  #    })
+
+  #  print(tte)
+  #})
+
 })
