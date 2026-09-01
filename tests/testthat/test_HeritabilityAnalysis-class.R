@@ -46,8 +46,8 @@ describe("calculate_h2", {
     expect_dataframe_equal(results1, results2)
   })
 
-  it("produces high heritability when all relatives have trait if index have trait", {
-    tte_pop <- tte_random_probands(100) |>
+  it("produces h2 > 2 when all relatives have trait if index have the trait", {
+    tte_pop <- tte_random_probands(10000) |>
       tte_random_trait("SCZ", 0.5, 20, 11) |>
       mutate(
         relatives_n_trait = ifelse(trait_status == 1, relatives_n, 0)
@@ -75,30 +75,9 @@ describe("calculate_h2", {
       relatedness = 0.5
     )
 
-    message("h2:")
+    message("h2")
     print(h2 |> select(time, h2, se, l95, u95))
+
+    expect_gt(h2$h2, 2)
   })
-
-  #it("produces a high heritability when", {
-  #  tte <- tte_random_probands(100) |>
-  #    tte_random_trait("SCZ", c(0.9, 0.1), 20, 11) |>
-  #    tte_random_relatives_n_trait(function(index_trait_status, relatives_n) {
-  #      if (index_trait_status == 1) {
-  #        unaffected_prob <- 0.001
-  #      } else {
-  #        unaffected_prob <- 1.0
-  #      }
-
-  #      rest_prob         <- 1.0 - unaffected_prob
-  #      prob_per_relative <- rest_prob / relatives_n
-
-  #      prob <- append(
-  #        c(unaffected_prob),
-  #        rep(prob_per_relative, relatives_n)
-  #      )
-  #    })
-
-  #  print(tte)
-  #})
-
 })
