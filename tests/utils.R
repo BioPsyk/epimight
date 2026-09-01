@@ -56,7 +56,7 @@ tte_random_trait <- function(tte, trait_name, trait_prob, trait_age_mean, trait_
       trait_status = ifelse(
         death_year > end_of_study_year,
         sample(
-          seq(0, 1),
+          seq(1, 0),
           1,
           replace = TRUE,
           prob = trait_prob
