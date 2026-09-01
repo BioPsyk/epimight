@@ -139,15 +139,7 @@ generate_analysis_tte <- function(n_count, trait, trait_mean, trait_sd, relkind)
 }
 
 generate_pipeline_tte <- function(n_count) {
-  t1_fs_tte <- generate_random_tte(n_count)
-  t1_fs_tte <- generate_trait(t1_fs_tte, "SCZ", 20, 10)
-  t1_fs_tte <- generate_relatives_n_trait(t1_fs_tte, "relatives_n_trait") |>
-    relocate(trait_age, .after = person_id) |>
-    relocate(trait_status, .after = trait_age) |>
-    relocate(relatives_n, .after = trait_status) |>
-    relocate(relatives_n_trait, .after = relatives_n) |>
-    mutate(person_id = as.character(person_id), relatives_kind = "half_siblings") |>
-    as.data.table()
+  t1_fs_tte <- generate_analysis_tte(n_count, "SCZ", 20, 10, "half_siblings")
 
   t2_fs_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
   t2_fs_tte <- generate_trait(t2_fs_tte, "CAD", 19, 11)
