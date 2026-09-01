@@ -317,11 +317,11 @@ describe("run", {
   it("test utils", {
     tte <- tte_random_probands(100) |>
       tte_random_trait("SCZ", c(0.9, 0.1), 20, 11) |>
-      tte_random_relatives_n_trait(function(trait_status, relatives_n) {
-        if (trait_status == 1) {
-          unaffected_prob <- 0.45
+      tte_random_relatives_n_trait(function(index_trait_status, relatives_n) {
+        if (index_trait_status == 1) {
+          unaffected_prob <- 0.1
         } else {
-          unaffected_prob <- 0.75
+          unaffected_prob <- 1.0
         }
 
         rest_prob         <- 1.0 - unaffected_prob
