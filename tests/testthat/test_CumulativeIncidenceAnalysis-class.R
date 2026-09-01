@@ -314,7 +314,7 @@ describe("run", {
   #  expect_equal(nrow(se_diff), 0)
   #})
 
-  it("produces h2 > 2 when all relatives have trait if index have the trait", {
+  it("produces a cif value that strongly correlates with the probablity of having the trait", {
     probs   <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
     results <- c(0, 0, 0, 0, 0, 0, 0, 0, 0)
 
@@ -322,7 +322,7 @@ describe("run", {
       p <- probs[[i]]
 
       tte <- tte_random_probands(1000) |>
-        tte_random_trait("SCZ", p, 10, 1) |>
+        tte_random_trait("SCZ", p, 1, 1) |>
         select(person_id, trait_status, trait_age) |>
         as.data.table()
 
@@ -337,5 +337,8 @@ describe("run", {
     test_result <- cor.test(probs, results)
 
     print(test_result)
+
+    expect_gt(test_result$statistic, 0.99)
+    expect_lt(test_result$p.value, 0.05)
   })
 })
