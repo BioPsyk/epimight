@@ -4,7 +4,7 @@ library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 # Generators
 #=================================================================================
 
-generate_relatives_n_trait_prob <- function(trait_status, relatives_n) {
+tte_add_random_relatives_n_trait_prob <- function(trait_status, relatives_n) {
   if (trait_status == 1) {
     unaffected_prob <- 0.45
   } else {
@@ -22,7 +22,7 @@ generate_relatives_n_trait_prob <- function(trait_status, relatives_n) {
   return(prob)
 }
 
-generate_relatives_n_trait <- function(tte, column_name) {
+tte_add_random_relatives_n_trait <- function(tte, column_name) {
   tte |>
     rowwise() |>
     mutate(
@@ -30,12 +30,12 @@ generate_relatives_n_trait <- function(tte, column_name) {
         0:relatives_n,
         1,
         replace = TRUE,
-        prob = generate_relatives_n_trait_prob(trait_status, relatives_n)
+        prob = tte_add_random_relatives_n_trait_prob(trait_status, relatives_n)
       )
     )
 }
 
-generate_trait <- function(tte, column_name, mean, sd, end_of_study) {
+tte_add_random_trait <- function(tte, column_name, mean, sd, end_of_study) {
   if (missing(end_of_study)) {
     end_of_study <- Sys.Date()
   }
@@ -87,7 +87,7 @@ generate_trait <- function(tte, column_name, mean, sd, end_of_study) {
   return(survival_data)
 }
 
-generate_random_tte <- function(n_count, period_start, period_end) {
+tte_random_probands <- function(n_count, period_start, period_end) {
   if (missing(period_start)) {
     period_start <- as.Date("1950-01-01")
   }
@@ -127,9 +127,9 @@ generate_random_tte <- function(n_count, period_start, period_end) {
 }
 
 generate_analysis_tte <- function(n_count, trait, trait_mean, trait_sd, relkind) {
-  generate_random_tte(n_count) |>
-    generate_trait(trait, trait_mean, trait_sd) |>
-    generate_relatives_n_trait("relatives_n_trait") |>
+  tte_random_probands(n_count) |>
+    tte_add_random_trait(trait, trait_mean, trait_sd) |>
+    tte_add_random_relatives_n_trait("relatives_n_trait") |>
     relocate(trait_age, .after = person_id) |>
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
@@ -142,8 +142,8 @@ generate_pipeline_tte <- function(n_count) {
   t1_fs_tte <- generate_analysis_tte(n_count, "SCZ", 20, 10, "half_siblings")
 
   t2_fs_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
-  t2_fs_tte <- generate_trait(t2_fs_tte, "CAD", 19, 11)
-  t2_fs_tte <- generate_relatives_n_trait(t2_fs_tte, "relatives_n_trait") |>
+  t2_fs_tte <- tte_add_random_trait(t2_fs_tte, "CAD", 19, 11)
+  t2_fs_tte <- tte_add_random_relatives_n_trait(t2_fs_tte, "relatives_n_trait") |>
     relocate(trait_age, .after = person_id) |>
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
@@ -152,8 +152,8 @@ generate_pipeline_tte <- function(n_count) {
     as.data.table()
 
   t1_p_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
-  t1_p_tte <- generate_trait(t1_p_tte, "SCZ", 20, 10)
-  t1_p_tte <- generate_relatives_n_trait(t1_p_tte, "relatives_n_trait") |>
+  t1_p_tte <- tte_add_random_trait(t1_p_tte, "SCZ", 20, 10)
+  t1_p_tte <- tte_add_random_relatives_n_trait(t1_p_tte, "relatives_n_trait") |>
     relocate(trait_age, .after = person_id) |>
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
@@ -162,8 +162,8 @@ generate_pipeline_tte <- function(n_count) {
     as.data.table()
 
   t2_p_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
-  t2_p_tte <- generate_trait(t2_p_tte, "CAD", 19, 11)
-  t2_p_tte <- generate_relatives_n_trait(t2_p_tte, "relatives_n_trait") |>
+  t2_p_tte <- tte_add_random_trait(t2_p_tte, "CAD", 19, 11)
+  t2_p_tte <- tte_add_random_relatives_n_trait(t2_p_tte, "relatives_n_trait") |>
     relocate(trait_age, .after = person_id) |>
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
