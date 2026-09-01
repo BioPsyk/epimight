@@ -4,7 +4,7 @@ library(ggplot2, quietly = TRUE, warn.conflicts = FALSE)
 # Generators
 #=================================================================================
 
-calculate_relatives_n_trait_prob <- function(trait_status, relatives_n) {
+trait_1_probability <- function(trait_status, relatives_n) {
   if (trait_status == 1) {
     unaffected_prob <- 0.45
   } else {
@@ -22,20 +22,20 @@ calculate_relatives_n_trait_prob <- function(trait_status, relatives_n) {
   return(prob)
 }
 
-tte_add_random_relatives_n_trait <- function(tte, column_name) {
+tte_random_relatives_n_trait <- function(tte, probs_func) {
   tte |>
     rowwise() |>
     mutate(
-      !!column_name := sample(
+      relatives_n_trait := sample(
         0:relatives_n,
         1,
         replace = TRUE,
-        prob = calculate_relatives_n_trait_prob(trait_status, relatives_n)
+        prob = probs_func(trait_status, relatives_n)
       )
     )
 }
 
-tte_add_random_trait <- function(tte, trait_name, trait_prob, trait_age_mean, trait_age_sd, end_of_study) {
+tte_random_trait <- function(tte, trait_name, trait_prob, trait_age_mean, trait_age_sd, end_of_study) {
   if (missing(end_of_study)) {
     end_of_study <- Sys.Date()
   }
