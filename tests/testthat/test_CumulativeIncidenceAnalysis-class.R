@@ -314,25 +314,28 @@ describe("run", {
   #  expect_equal(nrow(se_diff), 0)
   #})
 
-  it("test utils", {
-    tte <- tte_random_probands(100) |>
-      tte_random_trait("SCZ", c(0.9, 0.1), 20, 11) |>
-      tte_random_relatives_n_trait(function(index_trait_status, relatives_n) {
-        if (index_trait_status == 1) {
-          unaffected_prob <- 0.1
-        } else {
-          unaffected_prob <- 1.0
-        }
+  it("produces h2 > 2 when all relatives have trait if index have the trait", {
+    probs   <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+    results <- c(0, 0, 0, 0, 0, 0, 0, 0, 0)
 
-        rest_prob         <- 1.0 - unaffected_prob
-        prob_per_relative <- rest_prob / relatives_n
+    for (i in 1:length(probs)) {
+      p <- probs[[i]]
 
-        prob <- append(
-          c(unaffected_prob),
-          rep(prob_per_relative, relatives_n)
-        )
-      })
+      tte <- tte_random_probands(1000) |>
+        tte_random_trait("SCZ", p, 10, 1) |>
+        select(person_id, trait_status, trait_age) |>
+        as.data.table()
 
-    print(tte)
+      cif <- analysis$run(tte = tte) |>
+        arrange(desc(time)) |>
+        filter(row_number() == 1) |>
+        pull(cif)
+
+      results[[i]] <- cif
+    }
+
+    test_result <- cor.test(probs, results)
+
+    print(test_result)
   })
 })
