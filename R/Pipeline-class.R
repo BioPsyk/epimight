@@ -82,6 +82,15 @@ Pipeline <- R6::R6Class( #nolint
               required = TRUE
             )
           )
+        ),
+        stratify_columns = list(
+          type    = "list",
+          items   = list(type = "string"),
+          default = list()
+        ),
+        use_weighted_cif = list(
+          type    = "logical",
+          default = TRUE
         )
       )
 
@@ -94,22 +103,6 @@ Pipeline <- R6::R6Class( #nolint
         cif  = CumulativeIncidenceAnalysis$new(),
         rg   = GeneticCorrelationAnalysis$new()
       )
-      self$validation_rules$run <- list(
-        heritability1       = self$validation_rules$analysis,
-        heritability2       = self$validation_rules$analysis,
-        genetic_correlation = self$validation_rules$analysis,
-        stratify_columns = list(
-          type    = "list",
-          items   = list(type = "string"),
-          default = list()
-        ),
-        use_weighted_cif = list(
-          type    = "logical",
-          default = TRUE
-        )
-      )
-      self$validation_rules$run$genetic_correlation$required                 <- FALSE
-      self$validation_rules$run$genetic_correlation$relatives_trait$required <- TRUE
     },
     clear_cache = function() {
       private$cache <- list()
@@ -356,70 +349,19 @@ Pipeline <- R6::R6Class( #nolint
         select(!!!stratify_columns, time, h2) |>
         rename_with(~ paste0(prefix, "_", .), .cols = c(h2))
     },
-    run_expert = function(...) {
-      cif_analysis <- list(
-        required   = TRUE,
-        type       = "named_list",
-        properties = list(
-          index_trait = list(
-            required = TRUE,
-            type     = "string"
-          ),
-          relatives_trait = list(
-            required = FALSE,
-            type     = "string"
-          ),
-          relatives_kind = list(
-            required = FALSE,
-            type     = "string"
-          ),
-          stratify_columns = list(
-            type    = "list",
-            items   = list(type = "string"),
-            default = list()
-          ),
-          use_weighted_cif = list(
-            type    = "logical",
-            default = TRUE
-          )
-        )
-      )
-
-      h2_analysis <- list(
-        required   = TRUE,
-        type       = "named_list",
-        properties = list(
-          cif_pop = list(
-            required = TRUE,
-            type     = "string"
-          ),
-          cif_fh = list(
-            required = TRUE,
-            type     = "string"
-          ),
-          stratify_columns = list(
-            type    = "list",
-            items   = list(type = "string"),
-            default = list()
-          )
-        )
-      )
-
-      validator <- ArgumentsValidator$new(
-        cif_t1_pop = cif_analysis,
-        cif_t2_pop = cif_analysis,
-        cif_t1_fh1 = cif_analysis,
-        cif_t2_fh2 = cif_analysis,
-        cif_cross  = cif_analysis
-      )
-
-      args <- validator$run(...)
-    },
     #' @description
     #' Runs a single analysis using the given two traits, relationship kind, straitfy colums
     #' and amount of draws.
     run = function(...) {
-      validator <- do.call(ArgumentsValidator$new, self$validation_rules$run)
+      validation_rules <- list(
+        heritability1       = self$validation_rules$analysis,
+        heritability2       = self$validation_rules$analysis,
+        genetic_correlation = self$validation_rules$analysis
+      )
+      validation_rules$genetic_correlation$required                 <- FALSE
+      validation_rules$genetic_correlation$relatives_trait$required <- TRUE
+
+      validator <- do.call(ArgumentsValidator$new, validation_rules)
 
       args <- validator$run(...)
 

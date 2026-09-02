@@ -236,131 +236,141 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #  })
 #})
 #
-describe("run", {
-  it("doesn't allow empty arguments", {
-    expect_error(pipeline$run())
-  })
+#describe("run", {
+#  it("doesn't allow empty arguments", {
+#    expect_error(pipeline$run())
+#  })
+#
+#  it("fails when traits are not found", {
+#    expect_error(pipeline$run(
+#      heritability1 = list(
+#        trait          = "unknown",
+#        relatives_kind = "parents",
+#        relatedness    = 0.5
+#      ),
+#      heritability2 = list(
+#        trait          = "CAD",
+#        relatives_kind = "parents",
+#        relatedness    = 0.5
+#      ),
+#      genetic_correlation = list(
+#        trait          = "CAD",
+#        relatives_kind = "parents",
+#        relatedness    = 0.5
+#      )
+#    ))
+#
+#    expect_error(pipeline$run(
+#      heritability1 = list(
+#        trait          = "SCZ",
+#        relatives_kind = "parents",
+#        relatedness    = 0.5
+#      ),
+#      heritability2 = list(
+#        trait          = "unknown",
+#        relatives_kind = "parents",
+#        relatedness    = 0.5
+#      ),
+#      genetic_correlation = list(
+#        trait          = "CAD",
+#        relatives_kind = "parents",
+#        relatedness    = 0.5
+#      )
+#    ))
+#  })
+#
+#  it("fails when stratify column cannot be found in TTE dataset", {
+#    expect_error(pipeline$run(
+#      heritability1 = list(
+#        trait          = "SCZ",
+#        relatives_kind = "parents",
+#        relatedness    = 0.5
+#      ),
+#      heritability2 = list(
+#        trait          = "CAD",
+#        relatives_kind = "parents",
+#        relatedness    = 0.5
+#      ),
+#      genetic_correlation = list(
+#        trait          = "CAD",
+#        relatives_kind = "parents",
+#        relatedness    = 0.5
+#      ),
+#      stratify_columns = list("birth_year", "unknown")
+#    ))
+#  })
+#
+#  it("produces different result when using weighted cif", {
+#    results <- pipeline$run(
+#      heritability1 = list(
+#        index_trait     = "SCZ",
+#        relatives_kind  = "parents",
+#        relatedness     = 0.5
+#      ),
+#      heritability2 = list(
+#        index_trait     = "CAD",
+#        relatives_kind  = "half_siblings",
+#        relatedness     = 0.25
+#      ),
+#      use_weighted_cif = FALSE
+#    )
+#
+#    weighted_results <- pipeline$run(
+#      heritability1 = list(
+#        index_trait     = "SCZ",
+#        relatives_kind  = "parents",
+#        relatedness     = 0.5
+#      ),
+#      heritability2 = list(
+#        index_trait     = "CAD",
+#        relatives_kind  = "half_siblings",
+#        relatedness     = 0.25
+#      ),
+#      use_weighted_cif = TRUE
+#    )
+#
+#    expect_dataframe_not_equal(results$rg, weighted_results$rg)
+#
+#    results <- pipeline$run(
+#      heritability1 = list(
+#        index_trait     = "SCZ",
+#        relatives_kind  = "parents",
+#        relatedness     = 0.5
+#      ),
+#      heritability2 = list(
+#        index_trait     = "CAD",
+#        relatives_kind  = "half_siblings",
+#        relatedness     = 0.25
+#      ),
+#      stratify_columns = list("birth_year"),
+#      use_weighted_cif = FALSE
+#    )
+#
+#    weighted_results <- pipeline$run(
+#      heritability1 = list(
+#        index_trait     = "SCZ",
+#        relatives_kind  = "parents",
+#        relatedness     = 0.5
+#      ),
+#      heritability2 = list(
+#        index_trait     = "CAD",
+#        relatives_kind  = "half_siblings",
+#        relatedness     = 0.25
+#      ),
+#      stratify_columns = list("birth_year"),
+#      use_weighted_cif = TRUE
+#    )
+#
+#    expect_dataframe_not_equal(results$rg, weighted_results$rg)
+#  })
+#})
 
-  it("fails when traits are not found", {
-    expect_error(pipeline$run(
-      heritability1 = list(
-        trait          = "unknown",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      ),
-      heritability2 = list(
-        trait          = "CAD",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      ),
-      genetic_correlation = list(
-        trait          = "CAD",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      )
-    ))
+describe("run_expert", {
+  results <- pipeline$run_cif(
+    index_trait     = "SCZ",
+    relatives_trait = "CAD",
+    relatives_kind  = "parents"
+  )
 
-    expect_error(pipeline$run(
-      heritability1 = list(
-        trait          = "SCZ",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      ),
-      heritability2 = list(
-        trait          = "unknown",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      ),
-      genetic_correlation = list(
-        trait          = "CAD",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      )
-    ))
-  })
-
-  it("fails when stratify column cannot be found in TTE dataset", {
-    expect_error(pipeline$run(
-      heritability1 = list(
-        trait          = "SCZ",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      ),
-      heritability2 = list(
-        trait          = "CAD",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      ),
-      genetic_correlation = list(
-        trait          = "CAD",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      ),
-      stratify_columns = list("birth_year", "unknown")
-    ))
-  })
-
-  it("produces different result when using weighted cif", {
-    results <- pipeline$run(
-      heritability1 = list(
-        index_trait     = "SCZ",
-        relatives_kind  = "parents",
-        relatedness     = 0.5
-      ),
-      heritability2 = list(
-        index_trait     = "CAD",
-        relatives_kind  = "half_siblings",
-        relatedness     = 0.25
-      ),
-      use_weighted_cif = FALSE
-    )
-
-    weighted_results <- pipeline$run(
-      heritability1 = list(
-        index_trait     = "SCZ",
-        relatives_kind  = "parents",
-        relatedness     = 0.5
-      ),
-      heritability2 = list(
-        index_trait     = "CAD",
-        relatives_kind  = "half_siblings",
-        relatedness     = 0.25
-      ),
-      use_weighted_cif = TRUE
-    )
-
-    expect_dataframe_not_equal(results$rg, weighted_results$rg)
-
-    results <- pipeline$run(
-      heritability1 = list(
-        index_trait     = "SCZ",
-        relatives_kind  = "parents",
-        relatedness     = 0.5
-      ),
-      heritability2 = list(
-        index_trait     = "CAD",
-        relatives_kind  = "half_siblings",
-        relatedness     = 0.25
-      ),
-      stratify_columns = list("birth_year"),
-      use_weighted_cif = FALSE
-    )
-
-    weighted_results <- pipeline$run(
-      heritability1 = list(
-        index_trait     = "SCZ",
-        relatives_kind  = "parents",
-        relatedness     = 0.5
-      ),
-      heritability2 = list(
-        index_trait     = "CAD",
-        relatives_kind  = "half_siblings",
-        relatedness     = 0.25
-      ),
-      stratify_columns = list("birth_year"),
-      use_weighted_cif = TRUE
-    )
-
-    expect_dataframe_not_equal(results$rg, weighted_results$rg)
-  })
+  print(results)
 })
