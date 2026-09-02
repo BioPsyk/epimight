@@ -11,36 +11,18 @@
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
-    pool     = NULL,
-    cache    = NULL,
-    analyses = NULL
+    pool             = NULL,
+    stratify_columns = NULL,
+    use_weighted_cif = NULL,
+    analyses         = NULL,
+    results          = list(
+      cif = list(),
+      h2  = list(),
+      rg  = list()
+    )
   ),
   public = list(
-    validation_rules = list(
-      analysis = list(
-        required   = TRUE,
-        type       = "named_list",
-        properties = list(
-          index_trait = list(
-            required = TRUE,
-            type     = "string"
-          ),
-          relatives_trait = list(
-            required = FALSE,
-            type     = "string"
-          ),
-          relatives_kind = list(
-            required = TRUE,
-            type     = "string"
-          ),
-          relatedness = list(
-            required = TRUE,
-            type     = "numeric",
-            minimum  = 0
-          )
-        )
-      )
-    ),
+    validation_rules = list(),
     #' @description
     #' Creates an pipeline instance that stores the given time-to-event data.
     initialize = function(...) {
@@ -94,9 +76,61 @@ Pipeline <- R6::R6Class( #nolint
         )
       )
 
-      args             <- validator$run(...)
-      private$pool     <- args$pool
-      private$cache    <- list()
+      args                     <- validator$run(...)
+      private$pool             <- args$pool
+      private$stratify_columns <- args$stratify_columns
+      private$use_weighted_cif <- args$use_weighted_cif
+
+      self$validation_rules$cif <- list(
+        required   = TRUE,
+        type       = "named_list",
+        properties = list(
+          index_trait = list(
+            required = TRUE,
+            type     = "string"
+          ),
+          relatives_trait = list(
+            required = FALSE,
+            type     = "string"
+          ),
+          relatives_kind = list(
+            required = FALSE,
+            type     = "string"
+          )
+        )
+      )
+
+      self$validation_rules$h2 <- list(
+        required   = TRUE,
+        type       = "named_list",
+        properties = list(
+          cif_pop = self$validation_rules$cif,
+          cif_fh  = self$validation_rules$cif,
+          relatedness = list(
+            required = TRUE,
+            type     = "numeric",
+            minimum  = 0
+          )
+        )
+      )
+
+      self$validation_rules$rg <- list(
+        required   = TRUE,
+        type       = "named_list",
+        properties = list(
+          cif_t1_pop = self$validation_rules$cif,
+          cif_t2_pop = self$validation_rules$cif,
+          cif_cross  = self$validation_rules$cif,
+          h2_t1      = self$validation_rules$h2,
+          h2_t2      = self$validation_rules$h2,
+          relatedness = list(
+            required = TRUE,
+            type     = "numeric",
+            minimum  = 0
+          )
+        )
+      )
+
       private$analyses <- list(
         core = Analysis$new(),
         h2   = HeritabilityAnalysis$new(),
@@ -104,10 +138,10 @@ Pipeline <- R6::R6Class( #nolint
         rg   = GeneticCorrelationAnalysis$new()
       )
     },
-    clear_cache = function() {
-      private$cache <- list()
+    clear_results = function() {
+      private$results <- list()
     },
-    add_to_cache = function(results, ...) {
+    add_to_results = function(results, ...) {
       if (!is.data.table(results)) stop("Given results was not a data.table")
 
       walk_deep <- function(target, path, value) {
@@ -131,9 +165,9 @@ Pipeline <- R6::R6Class( #nolint
       path[sapply(path, is.null)] <- "NULL"
       path <- lapply(path, as.character)
 
-      private$cache <- walk_deep(private$cache, path, results)
+      private$results <- walk_deep(private$results, path, results)
     },
-    get_from_cache = function(...) {
+    get_from_results = function(...) {
       walk_deep <- function(target, path) {
         if (!is.list(path)) return(NULL)
 
@@ -158,7 +192,7 @@ Pipeline <- R6::R6Class( #nolint
       path[sapply(path, is.null)] <- "NULL"
       path <- lapply(path, as.character)
 
-      walk_deep(private$cache, path)
+      walk_deep(private$results, path)
     },
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and
@@ -263,40 +297,42 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
-    run_cif = function(stratify_columns, use_weighted_cif, index_trait, rel_trait = NULL, rel_kind = NULL) {
+    run_cif = function(...) {
+      args <- list(...)
+
       if (length(stratify_columns) == 0) {
         stratify_label <- "NULL"
       } else {
         stratify_label <- paste(stratify_columns, sep = ",")
       }
 
-      cache_path <- list("cif", stratify_label, use_weighted_cif, index_trait, rel_trait, rel_kind)
-      cached_cif <- do.call(self$get_from_cache, cache_path)
+      results_path <- list("cif", stratify_label, use_weighted_cif, index_trait, rel_trait, rel_kind)
+      resultsd_cif <- do.call(self$get_from_results, results_path)
 
-      if (!is.null(cached_cif)) return(cached_cif)
+      if (!is.null(resultsd_cif)) return(resultsd_cif)
 
-      tte <- self$get_tte(stratify_columns, use_weighted_cif, index_trait, rel_trait, rel_kind)
+      tte <- do.call(self$get_tte, args)
       cif <- private$analyses$cif$run(
         tte              = tte,
         stratify_columns = stratify_columns
       ) |>
         mutate(
-          index_trait     = index_trait,
-          relatives_trait = ifelse(is.null(rel_trait), NA, rel_trait),
-          relatives_kind  = ifelse(is.null(rel_kind), NA, rel_kind)
+          index_trait     = args$index_trait,
+          relatives_trait = ifelse("relatives_trait" %in% args, args$relatives_trait, NA),
+          relatives_kind  = ifelse("relatives_kind" %in% args, args$relatives_kind, NA)
         ) |>
         select(
           index_trait,
           relatives_trait,
           relatives_kind,
-          all_of(unlist(stratify_columns)),
+          all_of(unlist(private$stratify_columns)),
           time,
           everything()
         )
 
-      cache_args <- append(list(cif), cache_path)
+      results_args <- append(list(cif), results_path)
 
-      do.call(self$add_to_cache, cache_args)
+      do.call(self$add_to_results, results_args)
 
       if (is.null(cif)) {
         stop(paste0(

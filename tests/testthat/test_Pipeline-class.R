@@ -14,8 +14,6 @@ pool_tte <- read_csv(
   col_types=cols(person_id = col_character()),
 ) |> as.data.table()
 
-pipeline <- Pipeline$new(pool = pool_tte)
-
 #=================================================================================
 # Tests
 #=================================================================================
@@ -153,25 +151,25 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #  })
 #})
 
-#describe("cache", {
+#describe("results", {
 #  it("fails when the given results is not a data.table", {
-#    pipeline$clear_cache()
-#    expect_error(pipeline$add_to_cache(12, "cif", "SCZ"))
-#    expect_error(pipeline$add_to_cache("Hello", "cif", "SCZ"))
-#    expect_error(pipeline$add_to_cache(NA, "cif", "SCZ"))
-#    expect_error(pipeline$add_to_cache(NULL, "cif", "SCZ"))
+#    pipeline$clear_results()
+#    expect_error(pipeline$add_to_results(12, "cif", "SCZ"))
+#    expect_error(pipeline$add_to_results("Hello", "cif", "SCZ"))
+#    expect_error(pipeline$add_to_results(NA, "cif", "SCZ"))
+#    expect_error(pipeline$add_to_results(NULL, "cif", "SCZ"))
 #  })
 #
-#  it("successfully finds cached results by correct path", {
+#  it("successfully finds resultsd results by correct path", {
 #    cif <- data.table(
 #      cif   = c(0.5, 0.4),
 #      se    = c(0.2, 0.3),
 #      cases = c(1, 2)
 #    )
 #
-#    pipeline$clear_cache()
-#    pipeline$add_to_cache(cif, "cif", "SCZ")
-#    expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ"), cif)
+#    pipeline$clear_results()
+#    pipeline$add_to_results(cif, "cif", "SCZ")
+#    expect_dataframe_equal(pipeline$get_from_results("cif", "SCZ"), cif)
 #  })
 #
 #  it("handles NULL steps as strings", {
@@ -181,10 +179,10 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #      cases = c(1, 2)
 #    )
 #
-#    pipeline$clear_cache()
-#    pipeline$add_to_cache(cif, "cif", "SCZ", NULL, NULL)
-#    expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ", NULL, NULL), cif)
-#    expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ", "NULL", "NULL"), cif)
+#    pipeline$clear_results()
+#    pipeline$add_to_results(cif, "cif", "SCZ", NULL, NULL)
+#    expect_dataframe_equal(pipeline$get_from_results("cif", "SCZ", NULL, NULL), cif)
+#    expect_dataframe_equal(pipeline$get_from_results("cif", "SCZ", "NULL", "NULL"), cif)
 #  })
 #
 #  it("handles unknown paths gracefully", {
@@ -194,11 +192,11 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #      cases = c(1, 2)
 #    )
 #
-#    pipeline$clear_cache()
-#    pipeline$add_to_cache(cif, "cif", "SCZ")
-#    expect_equal(pipeline$get_from_cache("cif", "SCZ", "unknown"), NULL)
-#    expect_equal(pipeline$get_from_cache("rg"), NULL)
-#    expect_equal(pipeline$get_from_cache(NULL), NULL)
+#    pipeline$clear_results()
+#    pipeline$add_to_results(cif, "cif", "SCZ")
+#    expect_equal(pipeline$get_from_results("cif", "SCZ", "unknown"), NULL)
+#    expect_equal(pipeline$get_from_results("rg"), NULL)
+#    expect_equal(pipeline$get_from_results(NULL), NULL)
 #  })
 #
 #  it("returns NULL when a partial path is given", {
@@ -208,12 +206,12 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #      cases = c(1, 2)
 #    )
 #
-#    pipeline$clear_cache()
-#    pipeline$add_to_cache(cif, "cif", "SCZ")
-#    expect_equal(pipeline$get_from_cache("cif"), NULL)
+#    pipeline$clear_results()
+#    pipeline$add_to_results(cif, "cif", "SCZ")
+#    expect_equal(pipeline$get_from_results("cif"), NULL)
 #  })
 #
-#  it("updates cache when given path exists already", {
+#  it("updates results when given path exists already", {
 #    cif1 <- data.table(
 #      cif   = c(0.5, 0.4),
 #      se    = c(0.2, 0.3),
@@ -226,13 +224,13 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #      cases = c(3)
 #    )
 #
-#    pipeline$clear_cache()
-#    pipeline$add_to_cache(cif1, "cif", "SCZ")
-#    pipeline$add_to_cache(cif2, "cif", "SCZ")
-#    pipeline$add_to_cache(cif1, "cif", "SCZ")
-#    pipeline$add_to_cache(cif2, "cif", "SCZ")
+#    pipeline$clear_results()
+#    pipeline$add_to_results(cif1, "cif", "SCZ")
+#    pipeline$add_to_results(cif2, "cif", "SCZ")
+#    pipeline$add_to_results(cif1, "cif", "SCZ")
+#    pipeline$add_to_results(cif2, "cif", "SCZ")
 #
-#    expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ"), cif2)
+#    expect_dataframe_equal(pipeline$get_from_results("cif", "SCZ"), cif2)
 #  })
 #})
 #
@@ -366,6 +364,8 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #})
 
 describe("run_expert", {
+  pipeline <- Pipeline$new(pool = pool_tte)
+
   results <- pipeline$run_cif(
     index_trait     = "SCZ",
     relatives_trait = "CAD",
