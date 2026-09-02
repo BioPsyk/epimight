@@ -111,15 +111,14 @@ Pipeline <- R6::R6Class( #nolint
       self$validation_rules$run$genetic_correlation$required                 <- FALSE
       self$validation_rules$run$genetic_correlation$relatives_trait$required <- TRUE
     },
+    clear_cache = function() {
+      private$cache <- list()
+    },
     add_to_cache = function(results, ...) {
       if (!is.data.table(results)) stop("Given results was not a data.table")
 
       walk_deep <- function(target, path, value) {
         step <- path[[1]]
-
-        if (is.null(step)) {
-          return(walk_deep(target, path[-1], value))
-        }
 
         if (length(path) == 1) {
           target[[step]] <- value
@@ -136,7 +135,11 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       path <- list(...)
-      path[sapply(path, is.null)] <- NULL
+      path[sapply(path, is.null)] <- "NULL"
+
+      message("add_to_cache")
+      print(results)
+      print(path)
 
       private$cache <- walk_deep(private$cache, path, results)
     },
@@ -145,8 +148,6 @@ Pipeline <- R6::R6Class( #nolint
         if (!is.list(path)) return(NULL)
 
         step <- path[[1]]
-
-        if (is.null(step)) return(NULL)
 
         if (!step %in% names(target)) {
           return(NULL)
@@ -163,7 +164,10 @@ Pipeline <- R6::R6Class( #nolint
         walk_deep(target[[step]], path[-1])
       }
 
-      walk_deep(private$cache, list(...))
+      path <- list(...)
+      path[sapply(path, is.null)] <- "NULL"
+
+      walk_deep(private$cache, path)
     },
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and
@@ -292,7 +296,7 @@ Pipeline <- R6::R6Class( #nolint
           everything()
         )
 
-      self$add_to_cache(cif, index_trait, rel_trait, rel_kind)
+      self$add_to_cache(cif, "cif", index_trait, rel_trait, rel_kind)
 
       if (is.null(cif)) {
         stop(paste0(
@@ -367,11 +371,26 @@ Pipeline <- R6::R6Class( #nolint
         )
       }
 
-      cif_t1_pop <- self$run_cif(
-        args$stratify_columns,
-        args$use_weighted_cif,
-        args$heritability1$index_trait
+      h2_t1_args <- args$heritability1
+      h2_t2_args <- args$heritability2
+      rg_args    <- args$genetic_correlation
+
+      cif_args <- list(
+        list(h2_t1_args$index_trait),
+        list(h2_t1_args$index_trait, h2_t1_args$relatives_trait, h2_t1_args$relatives_kind),
+        list(h2_t2_args$index_trait),
+        list(h2_t2_args$index_trait, h2_t2_args$relatives_trait, h2_t2_args$relatives_kind),
+        list(rg_args$index_trait, rg_args$relatives_trait, rg_args$relatives_kind)
       )
+
+      for (carg in cif_args) {
+        carg <- append(
+          list(args$stratify_columns, args$use_weighted_cif),
+          carg
+        )
+
+        do.call(self$run_cif, carg)
+      }
 
       stop("asd")
       cif_t1_fh1 <- self$run_cif(args$heritability1, args$stratify_columns, args$use_weighted_cif)
