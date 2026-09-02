@@ -137,10 +137,6 @@ Pipeline <- R6::R6Class( #nolint
       path <- list(...)
       path[sapply(path, is.null)] <- "NULL"
 
-      message("add_to_cache")
-      print(results)
-      print(path)
-
       private$cache <- walk_deep(private$cache, path, results)
     },
     get_from_cache = function(...) {
