@@ -136,6 +136,7 @@ Pipeline <- R6::R6Class( #nolint
 
       path <- list(...)
       path[sapply(path, is.null)] <- "NULL"
+      path <- lapply(path, as.character)
 
       private$cache <- walk_deep(private$cache, path, results)
     },
@@ -162,6 +163,7 @@ Pipeline <- R6::R6Class( #nolint
 
       path <- list(...)
       path[sapply(path, is.null)] <- "NULL"
+      path <- lapply(path, as.character)
 
       walk_deep(private$cache, path)
     },
@@ -269,7 +271,14 @@ Pipeline <- R6::R6Class( #nolint
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
     run_cif = function(stratify_columns, use_weighted_cif, index_trait, rel_trait = NULL, rel_kind = NULL) {
-      cached_cif <- self$get_from_cache("cif", index_trait, rel_trait, rel_kind)
+      if (length(stratify_columns) == 0) {
+        stratify_label <- "NULL"
+      } else {
+        stratify_label <- paste(stratify_columns, sep = "_")
+      }
+
+      cache_path <- list("cif", stratify_label, use_weighted_cif, index_trait, rel_trait, rel_kind)
+      cached_cif <- do.call(self$get_from_cache, cache_path)
 
       if (!is.null(cached_cif)) return(cached_cif)
 
@@ -292,7 +301,9 @@ Pipeline <- R6::R6Class( #nolint
           everything()
         )
 
-      self$add_to_cache(cif, "cif", index_trait, rel_trait, rel_kind)
+      cache_args <- append(list(cif), cache_path)
+
+      do.call(self$add_to_cache, cache_args)
 
       if (is.null(cif)) {
         stop(paste0(
