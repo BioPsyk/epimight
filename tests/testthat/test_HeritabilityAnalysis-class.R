@@ -46,7 +46,7 @@ describe("calculate_h2", {
     expect_dataframe_equal(results1, results2)
   })
 
-  it("produces h2 > 2 when all relatives have trait if index have the trait", {
+  it("produces h2 > 2 when all relatives have trait if the proband have the trait", {
     tte_pop <- tte_random_probands(10000) |>
       tte_random_trait("SCZ", 0.5, 20, 11) |>
       mutate(
@@ -74,9 +74,6 @@ describe("calculate_h2", {
         as.data.table(),
       relatedness = 0.5
     )
-
-    message("h2")
-    print(h2 |> select(time, h2, se, l95, u95))
 
     expect_gt(h2$h2, 2)
   })
