@@ -274,7 +274,7 @@ Pipeline <- R6::R6Class( #nolint
       if (length(stratify_columns) == 0) {
         stratify_label <- "NULL"
       } else {
-        stratify_label <- paste(stratify_columns, sep = "_")
+        stratify_label <- paste(stratify_columns, sep = ",")
       }
 
       cache_path <- list("cif", stratify_label, use_weighted_cif, index_trait, rel_trait, rel_kind)
@@ -340,6 +340,9 @@ Pipeline <- R6::R6Class( #nolint
 
       return(h2)
     },
+    run_rg = function() {
+
+    },
     add_cif_prefix = function(cif, prefix, stratify_columns) {
       cif |>
         select(!!!stratify_columns, time, cif, cases) |>
@@ -352,6 +355,65 @@ Pipeline <- R6::R6Class( #nolint
       h2 |>
         select(!!!stratify_columns, time, h2) |>
         rename_with(~ paste0(prefix, "_", .), .cols = c(h2))
+    },
+    run_expert = function(...) {
+      cif_analysis <- list(
+        required   = TRUE,
+        type       = "named_list",
+        properties = list(
+          index_trait = list(
+            required = TRUE,
+            type     = "string"
+          ),
+          relatives_trait = list(
+            required = FALSE,
+            type     = "string"
+          ),
+          relatives_kind = list(
+            required = FALSE,
+            type     = "string"
+          ),
+          stratify_columns = list(
+            type    = "list",
+            items   = list(type = "string"),
+            default = list()
+          ),
+          use_weighted_cif = list(
+            type    = "logical",
+            default = TRUE
+          )
+        )
+      )
+
+      h2_analysis <- list(
+        required   = TRUE,
+        type       = "named_list",
+        properties = list(
+          cif_pop = list(
+            required = TRUE,
+            type     = "string"
+          ),
+          cif_fh = list(
+            required = TRUE,
+            type     = "string"
+          ),
+          stratify_columns = list(
+            type    = "list",
+            items   = list(type = "string"),
+            default = list()
+          )
+        )
+      )
+
+      validator <- ArgumentsValidator$new(
+        cif_t1_pop = cif_analysis,
+        cif_t2_pop = cif_analysis,
+        cif_t1_fh1 = cif_analysis,
+        cif_t2_fh2 = cif_analysis,
+        cif_cross  = cif_analysis
+      )
+
+      args <- validator$run(...)
     },
     #' @description
     #' Runs a single analysis using the given two traits, relationship kind, straitfy colums
@@ -378,28 +440,18 @@ Pipeline <- R6::R6Class( #nolint
         )
       }
 
-      h2_t1_args <- args$heritability1
-      h2_t2_args <- args$heritability2
-      rg_args    <- args$genetic_correlation
-
-      cif_args <- list(
-        list(h2_t1_args$index_trait),
-        list(h2_t1_args$index_trait, h2_t1_args$relatives_trait, h2_t1_args$relatives_kind),
-        list(h2_t2_args$index_trait),
-        list(h2_t2_args$index_trait, h2_t2_args$relatives_trait, h2_t2_args$relatives_kind),
-        list(rg_args$index_trait, rg_args$relatives_trait, rg_args$relatives_kind)
+      detailed_args <- list(
+        cif_t1_pop = list(
+          stratify_columns = args$stratify_columns,
+          use_weighted_cif = args$use_weighted_cif
+        )
       )
 
-      for (carg in cif_args) {
-        carg <- append(
-          list(args$stratify_columns, args$use_weighted_cif),
-          carg
-        )
-
-        do.call(self$run_cif, carg)
-      }
-
-      stop("asd")
+      cif_t1_pop <- self$run_cif(
+        list(index_trait = args$heritability1$index_trait),
+        args$stratify_columns,
+        args$use_weighted_cif
+      )
       cif_t1_fh1 <- self$run_cif(args$heritability1, args$stratify_columns, args$use_weighted_cif)
       cif_cross  <- self$run_cif(args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
       cif_t2_pop <- self$run_cif(

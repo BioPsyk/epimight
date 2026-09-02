@@ -235,7 +235,7 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #    expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ"), cif2)
 #  })
 #})
-
+#
 describe("run", {
   it("doesn't allow empty arguments", {
     expect_error(pipeline$run())
