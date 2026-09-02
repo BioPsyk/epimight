@@ -261,16 +261,16 @@ Pipeline <- R6::R6Class( #nolint
     #' @description
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
-    run_cif = function(analysis, stratify_columns, use_weighted_cif) {
-      tte <- self$get_tte(analysis, stratify_columns, use_weighted_cif)
+    run_cif = function(stratify_columns, use_weighted_cif, index_trait, rel_trait = NULL, rel_kind = NULL) {
+      tte <- self$get_tte(stratify_columns, use_weighted_cif, index_trait, rel_trait, rel_kind)
       cif <- private$analyses$cif$run(
         tte              = tte,
         stratify_columns = stratify_columns
       ) |>
         mutate(
-          index_trait     = analysis$index_trait,
-          relatives_trait = ifelse("relatives_trait" %in% names(analysis), analysis$relatives_trait, NA),
-          relatives_kind  = ifelse("relatives_kind" %in% names(analysis), analysis$relatives_kind, NA)
+          index_trait     = index_trait,
+          relatives_trait = ifelse(is.null(rel_trait), NA, rel_trait),
+          relatives_kind  = ifelse(is.null(rel_kind), NA, rel_kind)
         ) |>
         select(
           index_trait,
@@ -286,7 +286,7 @@ Pipeline <- R6::R6Class( #nolint
 
       if (is.null(cif)) {
         stop(paste0(
-          "No TTE events found when producing cif_", index_trait_, "_", relatives_trait_, "_", realtives_kind_
+          "No TTE events found when producing cif_", index_trait, "_", rel_trait, "_", rel_kind
         ))
       }
 
@@ -358,10 +358,11 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       cif_t1_pop <- self$run_cif(
-        list(index_trait = args$heritability1$index_trait),
         args$stratify_columns,
-        args$use_weighted_cif
+        args$use_weighted_cif,
+        args$heritability1$index_trait
       )
+
       stop("asd")
       cif_t1_fh1 <- self$run_cif(args$heritability1, args$stratify_columns, args$use_weighted_cif)
       cif_cross  <- self$run_cif(args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
