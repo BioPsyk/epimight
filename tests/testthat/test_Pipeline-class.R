@@ -84,126 +84,119 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #    )
 #  })
 #})
-#
-#describe("get_tte", {
-#  it("fails on unknown stratify_columns", {
-#    expect_error(pipeline$get_tte(
-#      list(
-#        index_trait     = "CAD",
-#        relatives_trait = "SCZ",
-#        relatives_kind  = "half_siblings"
-#      ),
-#      list("unknown")
-#    ))
-#  })
-#
-#  it("fails on unknown traits", {
-#    expect_error(pipeline$get_tte(
-#      list(
-#        index_trait     = "CAD",
-#        relatives_trait = "unknown",
-#        relatives_kind  = "half_siblings"
-#      ),
-#      list("birth_year")
-#    ))
-#
-#    expect_error(pipeline$get_tte(
-#      list(
-#        index_trait     = "unknown",
-#        relatives_trait = "SCZ",
-#        relatives_kind  = "half_siblings"
-#      ),
-#      list("birth_year")
-#    ))
-#  })
-#
-#  it("fails on unknown family history relationship kind", {
-#    expect_error(pipeline$get_tte(
-#      list(
-#        index_trait     = "CAD",
-#        relatives_trait = "SCZ",
-#        relatives_kind  = "unknown"
-#      ),
-#      list("birth_year")
-#    ))
-#  })
-#
-#  it("doesn't add relatives columns when population is requested", {
-#    tte <- pipeline$get_tte(
-#      list(
-#        index_trait = "CAD"
-#      ),
-#      list("birth_year")
-#    )
-#
-#    expect_true(!("relatives_kind" %in% colnames(tte)))
-#    expect_true(!("relatives_n" %in% colnames(tte)))
-#    expect_true(!("relatives_n_trait" %in% colnames(tte)))
-#    expect_true(!("weight" %in% colnames(tte)))
-#  })
-#
-#  it("adds relatives columns when relatives are requested", {
-#    tte <- pipeline$get_tte(
-#      list(
-#        index_trait     = "SCZ",
-#        relatives_trait = "SCZ",
-#        relatives_kind  = "parents"
-#      ),
-#      list("birth_year"),
-#      TRUE
-#    )
-#
-#    expect_true("relatives_kind" %in% colnames(tte))
-#    expect_true("relatives_n" %in% colnames(tte))
-#    expect_true("relatives_n_trait" %in% colnames(tte))
-#    expect_true("weight" %in% colnames(tte))
-#  })
-#})
 
-describe("cache", {
-  it("fails when the given results is not a data.table", {
-    expect_error(pipeline$add_to_cache(12, "cif", "SCZ"))
-    expect_error(pipeline$add_to_cache("Hello", "cif", "SCZ"))
-    expect_error(pipeline$add_to_cache(NA, "cif", "SCZ"))
-    expect_error(pipeline$add_to_cache(NULL, "cif", "SCZ"))
+describe("get_tte", {
+  it("fails on unknown stratify_columns", {
+    expect_error(pipeline$get_tte(
+      list("unknown"),
+      FALSE,
+      "CAD",
+      "SCZ",
+      "half_siblings"
+    ))
   })
 
-  it("successfully finds cached results by correct path", {
-    cif <- data.table(
-      cif   = c(0.5, 0.4),
-      se    = c(0.2, 0.3),
-      cases = c(1, 2)
-    )
+  it("fails on unknown traits", {
+    expect_error(pipeline$get_tte(
+      list(),
+      FALSE,
+      "CAD",
+      "unknown",
+      "half_siblings"
+    ))
 
-    pipeline$add_to_cache(cif, "cif", "SCZ")
-    expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ"), cif)
+    expect_error(pipeline$get_tte(
+      list("birth_year"),
+      TRUE,
+      "unknown",
+      "SCZ",
+      "half_siblings"
+    ))
   })
 
-  it("handles unknown paths gracefully", {
-    cif <- data.table(
-      cif   = c(0.5, 0.4),
-      se    = c(0.2, 0.3),
-      cases = c(1, 2)
-    )
-
-    pipeline$add_to_cache(cif, "cif", "SCZ")
-    expect_equal(pipeline$get_from_cache("cif", "SCZ", "unknown"), NULL)
-    expect_equal(pipeline$get_from_cache("rg"), NULL)
-    expect_equal(pipeline$get_from_cache(NULL), NULL)
+  it("fails on unknown family history relationship kind", {
+    expect_error(pipeline$get_tte(
+      list("birth_year"),
+      TRUE,
+      "CAD",
+      "SCZ",
+      "unknown"
+    ))
   })
 
-  it("returns NULL when a partial path is given", {
-    cif <- data.table(
-      cif   = c(0.5, 0.4),
-      se    = c(0.2, 0.3),
-      cases = c(1, 2)
+  it("doesn't add relatives columns when population is requested", {
+    tte <- pipeline$get_tte(
+      list("birth_year"),
+      TRUE,
+      "CAD"
     )
 
-    pipeline$add_to_cache(cif, "cif", "SCZ")
-    expect_equal(pipeline$get_from_cache("cif"), NULL)
+    expect_true(!("relatives_kind" %in% colnames(tte)))
+    expect_true(!("relatives_n" %in% colnames(tte)))
+    expect_true(!("relatives_n_trait" %in% colnames(tte)))
+    expect_true(!("weight" %in% colnames(tte)))
+  })
+
+  it("adds relatives columns when relatives are requested", {
+    tte <- pipeline$get_tte(
+      list("birth_year"),
+      TRUE,
+      "CAD",
+      "SCZ",
+      "parents"
+    )
+
+    expect_true("relatives_kind" %in% colnames(tte))
+    expect_true("relatives_n" %in% colnames(tte))
+    expect_true("relatives_n_trait" %in% colnames(tte))
+    expect_true("weight" %in% colnames(tte))
   })
 })
 
+#describe("cache", {
+#  it("fails when the given results is not a data.table", {
+#    expect_error(pipeline$add_to_cache(12, "cif", "SCZ"))
+#    expect_error(pipeline$add_to_cache("Hello", "cif", "SCZ"))
+#    expect_error(pipeline$add_to_cache(NA, "cif", "SCZ"))
+#    expect_error(pipeline$add_to_cache(NULL, "cif", "SCZ"))
+#  })
+#
+#  it("successfully finds cached results by correct path", {
+#    cif <- data.table(
+#      cif   = c(0.5, 0.4),
+#      se    = c(0.2, 0.3),
+#      cases = c(1, 2)
+#    )
+#
+#    pipeline$add_to_cache(cif, "cif", "SCZ")
+#    expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ"), cif)
+#  })
+#
+#  it("handles unknown paths gracefully", {
+#    cif <- data.table(
+#      cif   = c(0.5, 0.4),
+#      se    = c(0.2, 0.3),
+#      cases = c(1, 2)
+#    )
+#
+#    pipeline$add_to_cache(cif, "cif", "SCZ")
+#    expect_equal(pipeline$get_from_cache("cif", "SCZ", "unknown"), NULL)
+#    expect_equal(pipeline$get_from_cache("rg"), NULL)
+#    expect_equal(pipeline$get_from_cache(NULL), NULL)
+#  })
+#
+#  it("returns NULL when a partial path is given", {
+#    cif <- data.table(
+#      cif   = c(0.5, 0.4),
+#      se    = c(0.2, 0.3),
+#      cases = c(1, 2)
+#    )
+#
+#    pipeline$add_to_cache(cif, "cif", "SCZ")
+#    expect_equal(pipeline$get_from_cache("cif"), NULL)
+#  })
+#})
+#
 #describe("run", {
 #  it("doesn't allow empty arguments", {
 #    expect_error(pipeline$run())

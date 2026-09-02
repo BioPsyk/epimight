@@ -162,36 +162,7 @@ Pipeline <- R6::R6Class( #nolint
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and
     #' straitfy columns. Makes sure that the retrieved data fulfills the requirements of carrying out
     #' a single pipeline run.
-    get_tte = function(...) {
-      validator <- ArgumentsValidator$new(
-        list(
-          required   = TRUE,
-          type       = "named_list",
-          properties = list(
-            index_trait = list(
-              required = TRUE,
-              type     = "string"
-            ),
-            relatives_trait = list(
-              required = FALSE,
-              type     = "string"
-            ),
-            relatives_kind = list(
-              required = FALSE,
-              type     = "string"
-            )
-          )
-        ),
-        self$validation_rules$run$stratify_columns,
-        self$validation_rules$run$use_weighted_cif
-      )
-
-      args <- validator$run(...)
-
-      analysis         <- args[[1]]
-      stratify_columns <- args[[2]]
-      use_weighted_cif <- args[[3]]
-
+    get_tte = function(stratify_columns, use_weighted_cif, index_trait, rel_trait = NULL, rel_kind = NULL) {
       columns <- c("person_id", "trait_status", "trait_age")
 
       if (!is.null(stratify_columns) && is.list(stratify_columns)) {
@@ -205,18 +176,18 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       tte <- private$pool[
-        trait == analysis$index_trait
+        trait == index_trait
       ][
         , .SD[1], by = "person_id"
       ][
         , ..columns
       ]
 
-      if (nrow(tte) == 0) stop(paste0("No proband TTE data found for trait ", analysis$index_trait))
+      if (nrow(tte) == 0) stop(paste0("No proband TTE data found for trait ", index_trait))
 
-      if ("relatives_trait" %in% names(analysis) && "relatives_kind" %in% names(analysis)) {
+      if (!is.null(rel_trait) && !is.null(rel_kind)) {
         relatives_tte <- private$pool[
-          trait == analysis$relatives_trait & relatives_kind == analysis$relatives_kind
+          trait == rel_trait & relatives_kind == rel_kind
         ][
           , .SD[1], by = "person_id"
         ][
@@ -225,8 +196,8 @@ Pipeline <- R6::R6Class( #nolint
 
         if (nrow(relatives_tte) == 0) {
           stop(paste0(
-            "No family history TTE data found for trait \"", analysis$relatives_trait,
-            "\" and relationship kind \"", analysis$relatives_kind, "\""
+            "No family history TTE data found for trait \"", rel_trait,
+            "\" and relationship kind \"", rel_kind, "\""
           ))
         }
 
@@ -246,7 +217,7 @@ Pipeline <- R6::R6Class( #nolint
         if (nrow(tte) == 0) {
           stop(paste0(
             "No probands with at least 1 relative (of kind \"",
-            analysis$relatives_kind, "\") diagnosed with \"", analysis$relatives_trait, "\""
+            rel_kind, "\") with trait \"", rel_trait, "\""
           ))
         }
       }
@@ -310,8 +281,8 @@ Pipeline <- R6::R6Class( #nolint
           everything()
         )
 
-      self$add_to_cache(list("cif", analysis$index_trait), cif)
-      self$get_from_cache("cif", analysis$index_trait)
+      #self$add_to_cache(cif, list("cif", analysis$index_trait))
+      #self$get_from_cache("cif", analysis$index_trait)
 
       if (is.null(cif)) {
         stop(paste0(
@@ -391,6 +362,7 @@ Pipeline <- R6::R6Class( #nolint
         args$stratify_columns,
         args$use_weighted_cif
       )
+      stop("asd")
       cif_t1_fh1 <- self$run_cif(args$heritability1, args$stratify_columns, args$use_weighted_cif)
       cif_cross  <- self$run_cif(args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
       cif_t2_pop <- self$run_cif(
