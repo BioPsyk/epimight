@@ -315,11 +315,11 @@ describe("run", {
   })
 
   it("produces cif that strongly correlates with the probablity of having the trait", {
-    probs   <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
-    results <- rep(0, length(probs))
+    probabilities <- c(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9)
+    results       <- rep(0, length(probabilities))
 
-    for (i in 1:length(probs)) {
-      p <- probs[[i]]
+    for (i in 1:length(probabilities)) {
+      p <- probabilities[[i]]
 
       tte <- tte_random_probands(1000) |>
         tte_random_trait("SCZ", p, 10, 1) |>
@@ -334,7 +334,7 @@ describe("run", {
       results[[i]] <- cif
     }
 
-    test_result <- cor.test(probs, results)
+    test_result <- cor.test(probabilities, results)
 
     expect_gt(test_result$statistic, 0.99)
     expect_lt(test_result$p.value, 0.05)
