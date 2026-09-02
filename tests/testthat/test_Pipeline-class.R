@@ -172,6 +172,20 @@ describe("cache", {
     expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ"), cif)
   })
 
+  it("ignores NULL steps when adding to cache", {
+    cif <- data.table(
+      cif   = c(0.5, 0.4),
+      se    = c(0.2, 0.3),
+      cases = c(1, 2)
+    )
+
+    pipeline$add_to_cache(cif, "cif", "SCZ", NULL, NULL)
+    expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ"), cif)
+
+    pipeline$add_to_cache(cif, "cif", NULL, "SCZ2", NULL)
+    expect_dataframe_equal(pipeline$get_from_cache("cif", "SCZ2"), cif)
+  })
+
   it("handles unknown paths gracefully", {
     cif <- data.table(
       cif   = c(0.5, 0.4),

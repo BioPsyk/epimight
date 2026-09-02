@@ -117,6 +117,10 @@ Pipeline <- R6::R6Class( #nolint
       walk_deep <- function(target, path, value) {
         step <- path[[1]]
 
+        if (is.null(step)) {
+          return(walk_deep(target, path[-1], value))
+        }
+
         if (length(path) == 1) {
           target[[step]] <- value
           return(target)
@@ -131,7 +135,10 @@ Pipeline <- R6::R6Class( #nolint
         return(target)
       }
 
-      private$cache <- walk_deep(private$cache, list(...), results)
+      path <- list(...)
+      path[sapply(path, is.null)] <- NULL
+
+      private$cache <- walk_deep(private$cache, path, results)
     },
     get_from_cache = function(...) {
       walk_deep <- function(target, path) {
