@@ -262,6 +262,10 @@ Pipeline <- R6::R6Class( #nolint
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
     run_cif = function(stratify_columns, use_weighted_cif, index_trait, rel_trait = NULL, rel_kind = NULL) {
+      cached_cif <- self$get_from_cache("cif", index_trait, rel_trait, rel_kind)
+
+      if (!is.null(cached_cif)) return(cached_cif)
+
       tte <- self$get_tte(stratify_columns, use_weighted_cif, index_trait, rel_trait, rel_kind)
       cif <- private$analyses$cif$run(
         tte              = tte,
@@ -281,8 +285,7 @@ Pipeline <- R6::R6Class( #nolint
           everything()
         )
 
-      #self$add_to_cache(cif, list("cif", analysis$index_trait))
-      #self$get_from_cache("cif", analysis$index_trait)
+      self$add_to_cache(cif, index_trait, rel_trait, rel_kind)
 
       if (is.null(cif)) {
         stop(paste0(
