@@ -81,6 +81,12 @@ Pipeline <- R6::R6Class( #nolint
       private$stratify_columns <- args$stratify_columns
       private$use_weighted_cif <- args$use_weighted_cif
 
+      for (col in args$stratify_columns) {
+        if (!(col %in% colnames(private$pool))) {
+          stop("Column \"", col, "\" was not found in the TTE pool: ", paste(colnames(private$pool), collapse = ", "))
+        }
+      }
+
       self$validation_rules$cif <- list(
         required   = TRUE,
         type       = "named_list",
@@ -198,19 +204,7 @@ Pipeline <- R6::R6Class( #nolint
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and
     #' straitfy columns. Makes sure that the retrieved data fulfills the requirements of carrying out
     #' a single pipeline run.
-    get_tte = function(stratify_columns, use_weighted_cif, index_trait, rel_trait = NULL, rel_kind = NULL) {
-      columns <- c("person_id", "trait_status", "trait_age")
-
-      if (!is.null(stratify_columns) && is.list(stratify_columns)) {
-        columns <- c(columns, unlist(stratify_columns))
-      }
-
-      for (col in columns) {
-        if (!(col %in% colnames(private$pool))) {
-          stop("Column \"", col, "\" was not found in the TTE pool: ", paste(colnames(private$pool), collapse = ", "))
-        }
-      }
-
+    get_tte = function(...) {
       tte <- private$pool[
         trait == index_trait
       ][
