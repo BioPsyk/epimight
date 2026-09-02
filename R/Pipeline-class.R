@@ -6,12 +6,14 @@
 #' @import dtplyr
 #' @import tidyr
 #' @import stringr
+#' @import rjson
 #' @export
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
-    pool      = NULL,
-    analyses  = NULL
+    pool     = NULL,
+    cache    = NULL,
+    analyses = NULL
   ),
   public = list(
     validation_rules = list(
@@ -85,6 +87,7 @@ Pipeline <- R6::R6Class( #nolint
 
       args             <- validator$run(...)
       private$pool     <- args$pool
+      private$cache    <- list()
       private$analyses <- list(
         core = Analysis$new(),
         h2   = HeritabilityAnalysis$new(),
@@ -107,6 +110,45 @@ Pipeline <- R6::R6Class( #nolint
       )
       self$validation_rules$run$genetic_correlation$required                 <- FALSE
       self$validation_rules$run$genetic_correlation$relatives_trait$required <- TRUE
+    },
+    add_to_cache = function(results, ...) {
+      walk_deep <- function(target, path, value) {
+        step <- path[[1]]
+
+        if (length(path) == 1) {
+          target[[step]] <- value
+          return(target)
+        }
+
+        if (!step %in% names(target)) {
+          target[[step]] <- list()
+        }
+
+        target[[step]] <- walk_deep(target[[step]], path[-1], value)
+
+        return(target)
+      }
+
+      private$cache <- walk_deep(private$cache, list(...), results)
+    },
+    get_from_cache = function(...) {
+      walk_deep <- function(target, path) {
+        step <- path[[1]]
+
+        if (length(path) == 1) {
+          return(target[[step]])
+        }
+
+        if (!step %in% names(target)) {
+          target[[step]] <- list()
+        }
+
+        target[[step]] <- walk_deep(target[[step]], path[-1])
+
+        return(target)
+      }
+
+      walk_deep(private$cache, list(...))
     },
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and
@@ -259,6 +301,9 @@ Pipeline <- R6::R6Class( #nolint
           time,
           everything()
         )
+
+      self$add_to_cache(list("cif", analysis$index_trait), cif)
+      self$get_from_cache("cif", analysis$index_trait)
 
       if (is.null(cif)) {
         stop(paste0(
