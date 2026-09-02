@@ -112,6 +112,8 @@ Pipeline <- R6::R6Class( #nolint
       self$validation_rules$run$genetic_correlation$relatives_trait$required <- TRUE
     },
     add_to_cache = function(results, ...) {
+      if (!is.data.table(results)) stop("Given results was not a data.table")
+
       walk_deep <- function(target, path, value) {
         step <- path[[1]]
 
@@ -133,19 +135,25 @@ Pipeline <- R6::R6Class( #nolint
     },
     get_from_cache = function(...) {
       walk_deep <- function(target, path) {
+        if (!is.list(path)) return(NULL)
+
         step <- path[[1]]
 
-        if (length(path) == 1) {
-          return(target[[step]])
-        }
+        if (is.null(step)) return(NULL)
 
         if (!step %in% names(target)) {
-          target[[step]] <- list()
+          return(NULL)
         }
 
-        target[[step]] <- walk_deep(target[[step]], path[-1])
+        if (length(path) == 1) {
+          results <- target[[step]]
 
-        return(target)
+          if (!is.data.table(results)) return(NULL)
+
+          return(results)
+        }
+
+        walk_deep(target[[step]], path[-1])
       }
 
       walk_deep(private$cache, list(...))
