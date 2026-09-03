@@ -100,12 +100,12 @@ for the majority of use cases.
 
 This guide is separated into 4 chapters:
 
-- Time-to-event data format
+- Time-to-event input format
 - Simple interface
-- Results
+- Output format
 - Advanced interface
 
-* Time-to-event data format
+* Time-to-event input format
 
 For each individual in the target cohort, the pipeline needs the following information for each trait
 and kind of relatives:
@@ -318,7 +318,7 @@ Both interfaces has the same output format, a single named list with the followi
 | cif      | All cumulative incidences as a single ~data.table~          |
 | metadata | Contains the version of pipeline and the arguments supplied |
 
-* Results
+* Output format
 
 ** Genetic correlation
 
