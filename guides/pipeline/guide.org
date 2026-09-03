@@ -109,8 +109,8 @@ This guide is separated into 3 main chapters:
 For each individual in the target cohort, the pipeline needs the following information for each trait
 and kind of relatives:
 
-- The individuals trait status (0 = censored, 1 = affected, 2 = competing risk)
-- The individuals age at status (in years)
+- The individual's trait status (0 = censored, 1 = affected, 2 = competing risk)
+- The individual's age at status (in years)
 - How many relatives the individual have
 - How many of them have the trait
 - What "kind" of relative they are (parents, half siblings, cousins, etc.)
