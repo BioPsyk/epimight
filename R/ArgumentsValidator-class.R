@@ -342,20 +342,10 @@ ArgumentsValidator <- R6::R6Class( #nolint
 
       value <- args[[key]]
 
-      print(value)
-
-      message("handle_rule key: ", key, ", value: \"", value, "\", rule: ", rjson::toJSON(rule, indent = 2), ", args: ", rjson::toJSON(args, indent = 2))
-
       if (is.null(value) || all(is.na(value))) {
         if (isTRUE(rule$required)) stop("Required argument '", key, "' was NULL")
         if (!is.null(rule$default)) {
-          message("value was null, but had default, before adding value:")
-          print(args)
-
           args[[key]] <- rule$default
-
-          message("value was null, but had default, after adding value:")
-          print(args)
 
           return(args)
         }
