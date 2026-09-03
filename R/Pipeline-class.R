@@ -390,8 +390,12 @@ Pipeline <- R6::R6Class( #nolint
       self$add_results("h2", h2, args)
 
       list(
-        args    = args,
-        results = h2
+        args         = args,
+        results      = h2,
+        intermediate = list(
+          cif_pop = cif_pop,
+          cif_fh  = cif_fh
+        )
       )
     },
     run_rg = function(...) {
@@ -461,8 +465,15 @@ Pipeline <- R6::R6Class( #nolint
       self$add_results("rg", rg, args)
 
       list(
-        args    = args,
-        results = rg
+        args         = args,
+        results      = rg,
+        intermediate = list(
+          cif_t1_pop = cif_t1_pop,
+          cif_t2_pop = cif_t2_pop,
+          h2_t1      = h2_t1,
+          h2_t2      = h2_t2,
+          cif_cross  = cif_cross
+        )
       )
     },
     #' @description
