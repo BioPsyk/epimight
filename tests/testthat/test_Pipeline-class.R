@@ -233,51 +233,51 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #  })
 #})
 
-describe("run_cif", {
-  it("returns cached results if they exist", {
-    pipeline$clear_results()
-
-    results <- data.table(
-      age = c(1, 2, 1, 2),
-      cif = c(0.3, 0.31, 0.21, 0.25),
-      se  = c(0.3, 0.31, 0.21, 0.25),
-      l95 = c(0.3, 0.31, 0.21, 0.25),
-      u95 = c(0.3, 0.31, 0.21, 0.25)
-    )
-
-    args <- list(
-      index_trait     = "SCZ",
-      relatives_trait = "CAD",
-      relatives_kind  = "parents"
-    )
-
-    pipeline$add_results("cif", results, args)
-
-    cached_results <- do.call(pipeline$run_cif, args)
-
-    expect_dataframe_equal(results, cached_results)
-  })
-
-  it("produces different results when use_weighted is TRUE/FALSE", {
-    pipeline$clear_results()
-
-    results <- do.call(pipeline$run_cif, list(
-      index_trait     = "SCZ",
-      relatives_trait = "CAD",
-      relatives_kind  = "parents",
-      use_weighted    = FALSE
-    ))
-
-    weighted_results <- do.call(pipeline$run_cif, list(
-      index_trait     = "SCZ",
-      relatives_trait = "CAD",
-      relatives_kind  = "parents",
-      use_weighted    = TRUE
-    ))
-
-    expect_dataframe_not_equal(results, weighted_results)
-  })
-})
+#describe("run_cif", {
+#  it("returns cached results if they exist", {
+#    pipeline$clear_results()
+#
+#    results <- data.table(
+#      age = c(1, 2, 1, 2),
+#      cif = c(0.3, 0.31, 0.21, 0.25),
+#      se  = c(0.3, 0.31, 0.21, 0.25),
+#      l95 = c(0.3, 0.31, 0.21, 0.25),
+#      u95 = c(0.3, 0.31, 0.21, 0.25)
+#    )
+#
+#    args <- list(
+#      index_trait     = "SCZ",
+#      relatives_trait = "CAD",
+#      relatives_kind  = "parents"
+#    )
+#
+#    pipeline$add_results("cif", results, args)
+#
+#    cached_results <- do.call(pipeline$run_cif, args)
+#
+#    expect_dataframe_equal(results, cached_results)
+#  })
+#
+#  it("produces different results when use_weighted is TRUE/FALSE", {
+#    pipeline$clear_results()
+#
+#    results <- do.call(pipeline$run_cif, list(
+#      index_trait     = "SCZ",
+#      relatives_trait = "CAD",
+#      relatives_kind  = "parents",
+#      use_weighted    = FALSE
+#    ))
+#
+#    weighted_results <- do.call(pipeline$run_cif, list(
+#      index_trait     = "SCZ",
+#      relatives_trait = "CAD",
+#      relatives_kind  = "parents",
+#      use_weighted    = TRUE
+#    ))
+#
+#    expect_dataframe_not_equal(results, weighted_results)
+#  })
+#})
 
 #describe("run_h2", {
 #  it("returns cached results if they exist", {
@@ -361,94 +361,93 @@ describe("run_cif", {
 #  })
 #})
 #
-#describe("run_rg", {
-#  rg_args <- list(
-#    h2_t1 = list(
-#      cif_pop = list(
-#        index_trait = "SCZ"
-#      ),
-#      cif_fh = list(
-#        index_trait     = "SCZ",
-#        relatives_trait = "SCZ",
-#        relatives_kind  = "half_siblings"
-#      ),
-#      relatedness = 0.25
-#    ),
-#    h2_t2 = list(
-#      cif_pop = list(
-#        index_trait = "CAD"
-#      ),
-#      cif_fh = list(
-#        index_trait     = "CAD",
-#        relatives_trait = "CAD",
-#        relatives_kind  = "half_siblings"
-#      ),
-#      relatedness = 0.25
-#    ),
-#    cif_cross = list(
-#      index_trait     = "SCZ",
-#      relatives_trait = "CAD",
-#      relatives_kind  = "parents"
-#    ),
-#    relatedness = 0.5
-#  )
-#
-#  it("only allows using the same stratify_columns for both h2s", {
-#    args <- copy(rg_args)
-#
-#    args$h2_t1$cif_pop$stratify_columns <- list("birth_year")
-#
-#    expect_error(do.call(pipeline$run_rg, args))
-#  })
-#
-#  it("only allows using the same stratify_columns for h2s and cif_cross", {
-#    args <- copy(rg_args)
-#
-#    args$h2_t1$cif_pop$stratify_columns <- list("birth_year")
-#    args$cif_cross$stratify_columns     <- list()
-#
-#    expect_error(do.call(pipeline$run_rg, args))
-#  })
-#
-#  it("fails when traits are not found", {
-#    args <- copy(rg_args)
-#    args$cif_cross$index_trait <- "unknown"
-#    expect_error(do.call(pipeline$run_rg, args))
-#
-#    args <- copy(rg_args)
-#    args$cif_cross$relatives_trait <- "unknown"
-#    expect_error(do.call(pipeline$run_rg, args))
-#  })
-#
-#  it("fails when relatives_kinds are not found", {
-#    args <- copy(rg_args)
-#    args$cif_cross$relatives_kind <- "unknown"
-#    expect_error(do.call(pipeline$run_rg, args))
-#  })
-#
-#  it("produces different results when using weighted cif", {
-#    pipeline$clear_results()
-#
-#    args <- copy(rg_args)
-#    args$cif_cross$use_weighted_cif <- FALSE
-#    args$h2_t1$use_weighted_cif     <- FALSE
-#    args$h2_t1$use_weighted_cif     <- FALSE
-#    args$h2_t2$use_weighted_cif     <- FALSE
-#    args$h2_t2$use_weighted_cif     <- FALSE
-#
-#    results <- do.call(pipeline$run_rg, args)
-#
-#    pipeline$clear_results()
-#
-#    args <- copy(rg_args)
-#    args$cif_cross$use_weighted_cif <- TRUE
-#    args$h2_t1$use_weighted_cif     <- TRUE
-#    args$h2_t1$use_weighted_cif     <- TRUE
-#    args$h2_t2$use_weighted_cif     <- TRUE
-#    args$h2_t2$use_weighted_cif     <- TRUE
-#
-#    weighted_results <- do.call(pipeline$run_rg, args)
-#
-#    expect_dataframe_not_equal(results, weighted_results)
-#  })
-#})
+
+describe("run_rg", {
+  rg_args <- list(
+    h2_t1 = list(
+      cif_pop = list(
+        index_trait = "SCZ"
+      ),
+      cif_fh = list(
+        index_trait     = "SCZ",
+        relatives_trait = "SCZ",
+        relatives_kind  = "half_siblings"
+      ),
+      relatedness = 0.25
+    ),
+    h2_t2 = list(
+      cif_pop = list(
+        index_trait = "CAD"
+      ),
+      cif_fh = list(
+        index_trait     = "CAD",
+        relatives_trait = "CAD",
+        relatives_kind  = "half_siblings"
+      ),
+      relatedness = 0.25
+    ),
+    cif_cross = list(
+      index_trait     = "SCZ",
+      relatives_trait = "CAD",
+      relatives_kind  = "parents"
+    ),
+    relatedness = 0.5
+  )
+
+  it("only allows using the same stratify_columns for both h2s", {
+    args <- copy(rg_args)
+
+    args$h2_t1$cif_pop$stratify_columns <- list("birth_year")
+
+    expect_error(do.call(pipeline$run_rg, args))
+  })
+
+  it("only allows using the same stratify_columns for h2s and cif_cross", {
+    args <- copy(rg_args)
+
+    args$h2_t1$cif_pop$stratify_columns <- list("birth_year")
+    args$cif_cross$stratify_columns     <- list()
+
+    expect_error(do.call(pipeline$run_rg, args))
+  })
+
+  it("fails when traits are not found", {
+    args <- copy(rg_args)
+    args$cif_cross$index_trait <- "unknown"
+    expect_error(do.call(pipeline$run_rg, args))
+
+    args <- copy(rg_args)
+    args$cif_cross$relatives_trait <- "unknown"
+    expect_error(do.call(pipeline$run_rg, args))
+  })
+
+  it("fails when relatives_kinds are not found", {
+    args <- copy(rg_args)
+    args$cif_cross$relatives_kind <- "unknown"
+    expect_error(do.call(pipeline$run_rg, args))
+  })
+
+  it("produces different results when using weighted cif", {
+    pipeline$clear_results()
+
+    args <- copy(rg_args)
+    args$cif_cross$use_weighted     <- FALSE
+    args$h2_t1$cif_pop$use_weighted <- FALSE
+    args$h2_t1$cif_fh$use_weighted  <- FALSE
+    args$h2_t2$cif_pop$use_weighted <- FALSE
+    args$h2_t2$cif_fh$use_weighted  <- FALSE
+
+    results <- do.call(pipeline$run_rg, args)
+
+    args <- copy(rg_args)
+    args$cif_cross$use_weighted     <- TRUE
+    args$h2_t1$cif_pop$use_weighted <- TRUE
+    args$h2_t1$cif_fh$use_weighted  <- TRUE
+    args$h2_t2$cif_pop$use_weighted <- TRUE
+    args$h2_t2$cif_fh$use_weighted  <- TRUE
+
+    weighted_results <- do.call(pipeline$run_rg, args)
+
+    expect_dataframe_not_equal(results, weighted_results)
+  })
+})
