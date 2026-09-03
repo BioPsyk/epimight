@@ -202,6 +202,8 @@ Then we create an instance of the pipeline with the test dataset:
 pipeline <- Pipeline$new(pool = tte)
 #+END_SRC
 
+#+RESULTS:
+
 Once we have an instance of the pipeline, we need to tell the pipeline:
 
 - Which trait should be "trait 1"
@@ -224,6 +226,8 @@ results <- pipeline$run(
   )
 )
 #+END_SRC
+
+#+RESULTS:
 
 The ~trait~ and ~relatives_kind~ values for the two heritabilities are just used as
 filters on the time-to-event columns ~trait~ and ~relatives_kind~. In the test dataset our traits
@@ -311,12 +315,12 @@ t3_rel -UP-> rg
 
 Both interfaces has the same output format, a single named list with the following members:
 
-| Name     | Description                                                 |
-|----------+-------------------------------------------------------------|
-| rg       | All genetic correlations as a single ~data.table~           |
-| h2       | All heritabilities as a single ~data.table~                 |
-| cif      | All cumulative incidences as a single ~data.table~          |
-| metadata | Contains the version of pipeline and the arguments supplied |
+| Name     | Description                                              |
+|----------+----------------------------------------------------------|
+| rg       | All genetic correlations as a single ~data.table~        |
+| h2       | All heritabilities as a single ~data.table~              |
+| cif      | All cumulative incidences as a single ~data.table~       |
+| metadata | Pipeline verison and arguments supplied to the interface |
 
 * Output format
 
@@ -327,18 +331,7 @@ results$rg |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| birth_year |                rg |                se |                l95 |                u95 |
-|------------+-------------------+-------------------+--------------------+--------------------|
-|       2013 | 0.409996279186738 | 0.162341385621829 | -0.262339539355842 |  0.374038692281729 |
-|       2014 | -4.42614128968753 | 0.153127479661764 | -0.810150881715246 |  -0.20989116144113 |
-|       2006 |  2.90152900531141 | 0.352780423173207 | -0.310509427437125 |   1.07238983140185 |
-|       2011 | -3.51988543593551 | 0.406093836429339 |  -1.08577533686132 |  0.506112501941691 |
-|       2016 | -2.28098071323738 | 0.165076992440446 | -0.531991453173115 |  0.115110357193435 |
-|       2017 | 0.698042514378488 | 0.166039648731239 |   -0.1277058302671 |  0.523169592759359 |
-|       2018 | -1.97287753766852 | 0.139489995138325 | -0.470223402896504 | 0.0765773780457289 |
-|       2020 |   1.5545307367187 |  0.13838997038137 |  0.193273567889789 |  0.735762251784761 |
-|       2021 |   4.2575417476688 | 0.123846578785789 |  0.203972409990044 |  0.689450998830337 |
-|       1988 | 0.679932928634086 | 0.372425084049931 | -0.633441922205357 |  0.826464407270374 |
+: Could not parse R result
 
 ** Heritability
 
