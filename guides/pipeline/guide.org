@@ -117,15 +117,15 @@ and kind of relatives:
 
 The pipeline accepts this data as a ~data.table~ with the following columns:
 
-| Column name         | Description                                    |
-|---------------------+------------------------------------------------|
-| ~person_id~         | Unique identifier of the individual            |
-| ~trait~             | Identifier of the trait                        |
-| ~trait_status~      | 0 = censored, 1 = affected, 2 = competing risk |
-| ~trait_age~         | Age of individual at the time of status        |
-| ~relatives_kind~    | Identifier of the kind of relatives            |
-| ~relatives_n~       | Amount of relatives                            |
-| ~relatives_n_trait~ | Amount of relatives with trait                 |
+| Column name         | Description                                      |
+|---------------------+--------------------------------------------------|
+| ~person_id~         | Unique identifier of the individual              |
+| ~trait~             | Identifier of the trait                          |
+| ~trait_status~      | 0 = censored, 1 = have trait, 2 = competing risk |
+| ~trait_age~         | Age of individual at the time of status          |
+| ~relatives_kind~    | Identifier of the kind of relatives              |
+| ~relatives_n~       | Amount of relatives                              |
+| ~relatives_n_trait~ | Amount of relatives with trait                   |
 
 Here's an example of what that data would look like for a single trait (first diagnosis of Schizophrenia)
 and where the relatives are half siblings:
