@@ -98,10 +98,11 @@ The advanced interface gives the user full control of the underlying analyses (c
 While the simple interface gives the user less control, but uses sane defaults that should work
 for the majority of use cases.
 
-This guide is separated into 3 main chapters:
+This guide is separated into 4 chapters:
 
 - Time-to-event data format
 - Simple interface
+- Results
 - Advanced interface
 
 * Time-to-event data format
@@ -203,8 +204,8 @@ pipeline <- Pipeline$new(pool = tte)
 
 Once we have an instance of the pipeline, we need to tell the pipeline:
 
-- Which trait should be trait 1
-- Which trait should be trait 2
+- Which trait should be "trait 1"
+- Which trait should be "trait 2"
 - What kind of relatives and relatedness to use for the two heritabilities
 
 We supply this information as named arguments to the ~run~ function:
@@ -231,13 +232,10 @@ traits and name them any way you like.
 
 The simple interface acts as a thin layer of abstraction, which takes the given 6 arguments and
 expands them into 14 advanced interface arguments that it uses to run the advanced interface.
-It does this by making the following decision:
+It does this by making the following decision in the genetic correlation calculation:
 
-- For the cross trait ~cif~
-  - Use ~heritability1~ trait as index trait
-  - Use ~heritability2~ trait as relatives trait
-- For the genetic correlation calculation
-  - Use ~heritability2~ relatedness
+- Use ~heritability1~ trait as index trait
+- Use ~heritability2~ relatives trait and relatedness
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -311,9 +309,7 @@ t3_rel -UP-> rg
 #+RESULTS: fig:rg-components
 [[file:../diagrams/rg-components.png]]
 
-
-Both
-interfaces provide the same output, a named list with the following members:
+Both interfaces has the same output format, a single named list with the following members:
 
 | Name     | Description                                                 |
 |----------+-------------------------------------------------------------|
@@ -321,6 +317,8 @@ interfaces provide the same output, a named list with the following members:
 | h2       | All heritabilities as a single ~data.table~                 |
 | cif      | All cumulative incidences as a single ~data.table~          |
 | metadata | Contains the version of pipeline and the arguments supplied |
+
+* Results
 
 ** Genetic correlation
 
