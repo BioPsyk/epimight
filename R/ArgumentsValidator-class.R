@@ -112,17 +112,16 @@ ArgumentsValidator <- R6::R6Class( #nolint
 
       for (prop_key in names(rule$properties)) {
         prop_rule <- rule$properties[[prop_key]]
-        full_key <- sprintf("%s[[%s]]", key, prop_key)
+        full_key  <- sprintf("%s[[%s]]", key, prop_key)
 
-        if (isTRUE(prop_rule$required) && !(prop_key %in% names(value))) {
-          stop("Named property '", full_key, "' did not exist")
-        } else if (!isTRUE(prop_rule$required) && !(prop_key %in% names(value))) {
-          next
+        if (!(prop_key %in% names(value))) {
+          if (isTRUE(prop_rule$required)) stop("Named property '", full_key, "' did not exist")
+          if (!("default" %in% names(prop_rule))) next
+
+          value[[prop_key]] <- prop_rule$default
         }
 
-        prop_value <- value[[prop_key]]
-
-        value[[prop_key]] <- self$check_type(full_key, prop_rule, prop_value)
+        value[[prop_key]] <- self$check_type(full_key, prop_rule, value[[prop_key]])
       }
 
       return(value)

@@ -6,8 +6,8 @@ library(data.table, quietly = TRUE, warn.conflicts = FALSE)
 # Tests
 #=================================================================================
 
-describe("defaults", {
-  it("adds defaults if no value was found", {
+describe("named lists arguments", {
+  it("adds default value when deeply nested values are NULL/NA", {
     cif_rules <- list(
       required   = TRUE,
       type       = "named_list",
@@ -52,8 +52,6 @@ describe("defaults", {
 
     validator      <- do.call(ArgumentsValidator$new, h2_rules$properties)
     validated_args <- do.call(validator$run, args)
-
-    message(rjson::toJSON(validated_args, indent = 2))
 
     expect_true("use_weighted" %in% validated_args$cif_pop)
     expect_true("stratify_columns" %in% validated_args$cif_pop)
