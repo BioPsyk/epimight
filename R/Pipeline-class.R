@@ -291,21 +291,30 @@ Pipeline <- R6::R6Class( #nolint
           everything()
         )
 
-      self$add_results("cif", cif, args)
-
       if (is.null(cif)) {
         stop(paste0(
           "No TTE events found when producing cif_", index_trait, "_", rel_trait, "_", rel_kind
         ))
       }
 
+      self$add_results("cif", cif, args)
+
       return(cif)
     },
     #' @description
     #' Helper that runs h2 on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
-    run_h2 = function(analysis, stratify_columns, cif_pop, cif_fh) {
-      stratify_symbols <- rlang::syms(stratify_columns)
+    run_h2 = function(...) {
+      validator  <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
+      args       <- validator$run(...)
+      cached_h2  <- self$get_results("h2", args)
+
+      if (!is.null(cached_h2)) return(cached_h2)
+
+      cif_pop <- do.call(self$run_cif, args$cif_pop)
+      cif_fh  <- do.call(self$run_cif, args$cif_fh)
+
+      stratify_symbols <- rlang::syms(args$stratify_columns)
 
       cif <- cif_pop |>
         inner_join(cif_fh, by = join_by(age, !!!stratify_columns)) |>
@@ -325,6 +334,8 @@ Pipeline <- R6::R6Class( #nolint
         select(index_trait, age, !!!stratify_symbols, h2, se, l95, u95)
 
       if (is.null(h2)) stop(paste0("No valid results found when producing h2_", trait_key))
+
+      self$add_results("h2", h2, args)
 
       return(h2)
     },
