@@ -350,9 +350,10 @@ describe("run_rg", {
           stratify_columns = list("birth_year")
         ),
         cif_fh = list(
-          index_trait     = "CAD",
-          relatives_trait = "CAD",
-          relatives_kind  = "parents"
+          index_trait      = "CAD",
+          relatives_trait  = "CAD",
+          relatives_kind   = "parents",
+          stratify_columns = list("birth_year")
         ),
         relatedness = 0.5
       ),
@@ -362,16 +363,18 @@ describe("run_rg", {
           stratify_columns = list("birth_year")
         ),
         cif_fh = list(
-          index_trait     = "CAD",
-          relatives_trait = "CAD",
-          relatives_kind  = "parents"
+          index_trait      = "CAD",
+          relatives_trait  = "CAD",
+          relatives_kind   = "parents",
+          stratify_columns = list("birth_year")
         ),
         relatedness = 0.5
       ),
       cif_cross = list(
-        index_trait     = "CAD",
-        relatives_trait = "CAD",
-        relatives_kind  = "parents"
+        index_trait      = "CAD",
+        relatives_trait  = "CAD",
+        relatives_kind   = "parents",
+        stratify_columns = list("birth_year")
       ),
       relatedness = 0.5
     )
