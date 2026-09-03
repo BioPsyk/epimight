@@ -263,6 +263,19 @@ Pipeline <- R6::R6Class( #nolint
         filter(row_number() == 1) |>
         as.data.table()
     },
+    add_cif_prefix = function(cif, prefix, stratify_columns) {
+      cif |>
+        select(!!!stratify_columns, age, cif, cases) |>
+        rename_with(~ paste0(prefix, "_", .), .cols = c(cif, cases))
+    },
+    #' @description
+    #' Helper that removes prefixes from column names that the function `run_h2` adds
+    #' to its results.
+    add_h2_prefix = function(h2, prefix, stratify_columns) {
+      h2 |>
+        select(!!!stratify_columns, age, h2) |>
+        rename_with(~ paste0(prefix, "_", .), .cols = c(h2))
+    },
     #' @description
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
@@ -428,19 +441,6 @@ Pipeline <- R6::R6Class( #nolint
 
       return(rg)
     },
-    add_cif_prefix = function(cif, prefix, stratify_columns) {
-      cif |>
-        select(!!!stratify_columns, age, cif, cases) |>
-        rename_with(~ paste0(prefix, "_", .), .cols = c(cif, cases))
-    },
-    #' @description
-    #' Helper that removes prefixes from column names that the function `run_h2` adds
-    #' to its results.
-    add_h2_prefix = function(h2, prefix, stratify_columns) {
-      h2 |>
-        select(!!!stratify_columns, age, h2) |>
-        rename_with(~ paste0(prefix, "_", .), .cols = c(h2))
-    },
     #' @description
     #' Runs a single analysis using the given two traits, relationship kind, straitfy colums
     #' and amount of draws.
@@ -474,66 +474,43 @@ Pipeline <- R6::R6Class( #nolint
         )
       }
 
-      detailed_args <- list(
-        cif_t1_pop = list(
-          stratify_columns = args$stratify_columns,
-          use_weighted_cif = args$use_weighted_cif
-        )
+      rg_args <- list(
+        h2_t1 = list(
+          cif_pop = list(
+            index_trait = "SCZ"
+          ),
+          cif_fh = list(
+            index_trait     = "SCZ",
+            relatives_trait = "SCZ",
+            relatives_kind  = "half_siblings"
+          ),
+          relatedness = 0.25
+        ),
+        h2_t2 = list(
+          cif_pop = list(
+            index_trait = "CAD"
+          ),
+          cif_fh = list(
+            index_trait     = "CAD",
+            relatives_trait = "CAD",
+            relatives_kind  = "half_siblings"
+          ),
+          relatedness = 0.25
+        ),
+        cif_cross = list(
+          index_trait     = "SCZ",
+          relatives_trait = "CAD",
+          relatives_kind  = "parents"
+        ),
+        relatedness = 0.5
       )
 
-      cif_t1_pop <- self$run_cif(
-        list(index_trait = args$heritability1$index_trait),
-        args$stratify_columns,
-        args$use_weighted_cif
-      )
-      cif_t1_fh1 <- self$run_cif(args$heritability1, args$stratify_columns, args$use_weighted_cif)
-      cif_cross  <- self$run_cif(args$genetic_correlation, args$stratify_columns, args$use_weighted_cif)
-      cif_t2_pop <- self$run_cif(
-        list(index_trait = args$heritability2$index_trait),
-        args$stratify_columns,
-        args$use_weighted_cif
-      )
-      cif_t2_fh2 <- self$run_cif(args$heritability2, args$stratify_columns, args$use_weighted_cif)
-
-      h2_t1 <- self$run_h2(args$heritability1, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
-      h2_t2 <- self$run_h2(args$heritability2, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
-
-      join_columns <- c(list("age"), args$stratify_columns)
-      join_symbols <- rlang::syms(join_columns)
-
-      combined <- self$add_cif_prefix(cif_t1_pop, "t1_pop", args$stratify_columns) |>
-        inner_join(
-          self$add_cif_prefix(cif_cross, "cross", args$stratify_columns),
-          by = join_by(!!!join_columns)
-        ) |>
-        inner_join(
-          self$add_cif_prefix(cif_t2_pop, "t2_pop", args$stratify_columns),
-          by = join_by(!!!join_columns)
-        ) |>
-        inner_join(
-          self$add_h2_prefix(h2_t1, "t1", args$stratify_columns),
-          by = join_by(!!!join_columns)
-        ) |>
-        inner_join(
-          self$add_h2_prefix(h2_t2, "t2", args$stratify_columns),
-          by = join_by(!!!join_columns)
-        ) |>
-        self$max_age_by_stratification(args$stratify_columns)
-
-      if (nrow(combined) == 0) stop("After joining all cif and h2 results no data was left")
-
-      rg <- private$analyses$rg$run(
-        estimates   = combined,
-        relatedness = args$genetic_correlation$relatedness
-      ) |>
-        select(!!!args$stratify_columns, rg, se, l95, u95)
-
-      if (nrow(rg) == 0) stop("No genetic correlation results produced")
+      rg <- do.call(self$run_rg, rg_args)
 
       list(
         metadata = list(
           version   = as.character(packageVersion(methods::getPackageName())),
-          arguments = args
+          arguments = rg_args
         ),
         cif = rbindlist(list(
           cif_t1_pop,
