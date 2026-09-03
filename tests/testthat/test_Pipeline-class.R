@@ -342,46 +342,100 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #})
 
 describe("run_rg", {
-  it("only allows using the same stratify_columns for both CIFs", {
-    args <- list(
-      h2_t1 = list(
-        cif_pop = list(
-          index_trait      = "CAD",
-          stratify_columns = list("birth_year")
-        ),
-        cif_fh = list(
-          index_trait      = "CAD",
-          relatives_trait  = "CAD",
-          relatives_kind   = "parents",
-          stratify_columns = list("birth_year")
-        ),
-        relatedness = 0.5
+  rg_args <- list(
+    h2_t1 = list(
+      cif_pop = list(
+        index_trait      = "CAD",
+        stratify_columns = list("birth_year")
       ),
-      h2_t2 = list(
-        cif_pop = list(
-          index_trait      = "CAD",
-          stratify_columns = list("birth_year")
-        ),
-        cif_fh = list(
-          index_trait      = "CAD",
-          relatives_trait  = "CAD",
-          relatives_kind   = "parents",
-          stratify_columns = list("birth_year")
-        ),
-        relatedness = 0.5
-      ),
-      cif_cross = list(
+      cif_fh = list(
         index_trait      = "CAD",
         relatives_trait  = "CAD",
         relatives_kind   = "parents",
         stratify_columns = list("birth_year")
       ),
       relatedness = 0.5
-    )
+    ),
+    h2_t2 = list(
+      cif_pop = list(
+        index_trait      = "CAD",
+        stratify_columns = list("birth_year")
+      ),
+      cif_fh = list(
+        index_trait      = "CAD",
+        relatives_trait  = "CAD",
+        relatives_kind   = "parents",
+        stratify_columns = list("birth_year")
+      ),
+      relatedness = 0.5
+    ),
+    cif_cross = list(
+      index_trait      = "CAD",
+      relatives_trait  = "CAD",
+      relatives_kind   = "parents",
+      stratify_columns = list("birth_year")
+    ),
+    relatedness = 0.5
+  )
+
+  it("only allows using the same stratify_columns for both h2s", {
+    args <- copy(rg_args)
+
+    args$h2_t1$cif_pop$stratify_columns <- list()
+    args$h2_t2$cif_pop$stratify_columns <- list()
+
+    expect_error(do.call(pipeline$run_rg, args))
+  })
+
+  it("only allows using the same stratify_columns for h2s and cif_cross", {
+    args <- copy(rg_args)
+
+    args$cif_cross$stratify_columns <- list()
+    args$cif_cross$stratify_columns <- list()
+
+    expect_error(do.call(pipeline$run_rg, args))
+  })
+
+  it("fails when traits are not found", {
+    args <- copy(rg_args)
+    args$cif_cross$index_trait <- "unknown"
+    expect_error(do.call(pipeline$run_rg, args))
+
+    args <- copy(rg_args)
+    args$cif_cross$relatives_trait <- "unknown"
+    expect_error(do.call(pipeline$run_rg, args))
+  })
+
+  it("fails when relatives_kinds are not found", {
+    args <- copy(rg_args)
+    args$cif_cross$relatives_kind <- "unknown"
+    expect_error(do.call(pipeline$run_rg, args))
+  })
+
+  it("produces different results when using weighted cif", {
+    pipeline$clear_results()
+
+    args <- copy(rg_args)
+    args$cif_cross$use_weighted_cif <- FALSE
+    args$h2_t1$relatives_kind       <- FALSE
+    args$h2_t1$relatives_kind       <- FALSE
+    args$h2_t2$relatives_kind       <- FALSE
+    args$h2_t2$relatives_kind       <- FALSE
 
     results <- do.call(pipeline$run_rg, args)
 
-    print(results)
+    pipeline$clear_results()
+
+    args <- copy(rg_args)
+    args$cif_cross$use_weighted_cif <- TRUE
+    args$h2_t1$relatives_kind       <- TRUE
+    args$h2_t1$relatives_kind       <- TRUE
+    args$h2_t2$relatives_kind       <- TRUE
+    args$h2_t2$relatives_kind       <- TRUE
+
+    weighted_results <- do.call(pipeline$run_rg, args)
+
+    expect_dataframe_not_equal(results, weighted_results)
   })
 })
 
