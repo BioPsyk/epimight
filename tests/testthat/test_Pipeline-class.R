@@ -345,35 +345,30 @@ describe("run_rg", {
   rg_args <- list(
     h2_t1 = list(
       cif_pop = list(
-        index_trait      = "CAD",
-        stratify_columns = list("birth_year")
+        index_trait = "SCZ"
       ),
       cif_fh = list(
-        index_trait      = "CAD",
-        relatives_trait  = "CAD",
-        relatives_kind   = "parents",
-        stratify_columns = list("birth_year")
+        index_trait     = "SCZ",
+        relatives_trait = "SCZ",
+        relatives_kind  = "half_siblings"
       ),
-      relatedness = 0.5
+      relatedness = 0.25
     ),
     h2_t2 = list(
       cif_pop = list(
-        index_trait      = "CAD",
-        stratify_columns = list("birth_year")
+        index_trait = "CAD"
       ),
       cif_fh = list(
-        index_trait      = "CAD",
-        relatives_trait  = "CAD",
-        relatives_kind   = "parents",
-        stratify_columns = list("birth_year")
+        index_trait     = "CAD",
+        relatives_trait = "CAD",
+        relatives_kind  = "half_siblings"
       ),
-      relatedness = 0.5
+      relatedness = 0.25
     ),
     cif_cross = list(
-      index_trait      = "CAD",
-      relatives_trait  = "CAD",
-      relatives_kind   = "parents",
-      stratify_columns = list("birth_year")
+      index_trait     = "SCZ",
+      relatives_trait = "CAD",
+      relatives_kind  = "parents"
     ),
     relatedness = 0.5
   )
@@ -422,6 +417,8 @@ describe("run_rg", {
     args$h2_t2$use_weighted_cif     <- FALSE
     args$h2_t2$use_weighted_cif     <- FALSE
 
+    message("args: ", rjson::toJSON(args, indent = 2))
+
     results <- do.call(pipeline$run_rg, args)
 
     pipeline$clear_results()
@@ -435,8 +432,7 @@ describe("run_rg", {
 
     weighted_results <- do.call(pipeline$run_rg, args)
 
-    print(results)
-    print(weighted_results)
+    message("args: ", rjson::toJSON(args, indent = 2))
 
     expect_dataframe_not_equal(results, weighted_results)
   })
