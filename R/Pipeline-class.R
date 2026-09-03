@@ -7,6 +7,7 @@
 #' @import tidyr
 #' @import stringr
 #' @import rjson
+#' @import waldo
 #' @export
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
@@ -305,11 +306,22 @@ Pipeline <- R6::R6Class( #nolint
     #' Helper that runs h2 on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
     run_h2 = function(...) {
+      message(rjson::toJSON(self$validation_rules$h2$properties, indent = 2))
+
       validator  <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
       args       <- validator$run(...)
+
+      message(rjson::toJSON(args, indent = 2))
+
+      stop("asd")
+
       cached_h2  <- self$get_results("h2", args)
 
       if (!is.null(cached_h2)) return(cached_h2)
+
+      print(args$cif_pop$stratify_columns)
+
+      print(all.equal(args$cif_pop$stratify_columns, args$cif_fh$stratify_columns))
 
       cif_pop <- do.call(self$run_cif, args$cif_pop)
       cif_fh  <- do.call(self$run_cif, args$cif_fh)
