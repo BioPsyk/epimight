@@ -284,7 +284,12 @@ Pipeline <- R6::R6Class( #nolint
       args       <- validator$run(...)
       cached_cif <- self$get_results("cif", args)
 
-      if (!is.null(cached_cif)) return(cached_cif)
+      if (!is.null(cached_cif)) {
+        return(list(
+          args    = args,
+          results = cached_cif
+        ))
+      }
 
       tte <- do.call(self$get_tte, args)
       cif <- private$analyses$cif$run(
@@ -313,7 +318,10 @@ Pipeline <- R6::R6Class( #nolint
 
       self$add_results("cif", cif, args)
 
-      return(cif)
+      return(list(
+        args    = args,
+        results = cif
+      ))
     },
     #' @description
     #' Helper that runs h2 on the given time-to-event data and handles prefixing columns according to
@@ -347,7 +355,12 @@ Pipeline <- R6::R6Class( #nolint
       args      <- validator$run(...)
       cached_h2 <- self$get_results("h2", args)
 
-      if (!is.null(cached_h2)) return(cached_h2)
+      if (!is.null(cached_h2)) {
+        return(list(
+          args    = args,
+          results = cached_h2
+        ))
+      }
 
       cif_pop <- do.call(self$run_cif, args$cif_pop)
       cif_fh  <- do.call(self$run_cif, args$cif_fh)
@@ -355,8 +368,8 @@ Pipeline <- R6::R6Class( #nolint
       stratify_columns <- args$cif_pop$stratify_columns
       stratify_symbols <- rlang::syms(stratify_columns)
 
-      cif <- cif_pop |>
-        inner_join(cif_fh, by = join_by(age, !!!stratify_columns)) |>
+      cif <- cif_pop$results |>
+        inner_join(cif_fh$results, by = join_by(age, !!!stratify_columns)) |>
         rename(
           pop_cif   = cif.x,
           pop_cases = cases.x,
@@ -376,7 +389,10 @@ Pipeline <- R6::R6Class( #nolint
 
       self$add_results("h2", h2, args)
 
-      return(h2)
+      return(list(
+        args    = args,
+        results = h2
+      ))
     },
     run_rg = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$rg$properties)
@@ -396,7 +412,12 @@ Pipeline <- R6::R6Class( #nolint
       args      <- validator$run(...)
       cached_rg <- self$get_results("rg", args)
 
-      if (!is.null(cached_rg)) return(cached_rg)
+      if (!is.null(cached_rg)) {
+        return(list(
+          args    = args,
+          results = cached_rg
+        ))
+      }
 
       cif_t1_pop <- do.call(self$run_cif, args$h2_t1$cif_pop)
       cif_t2_pop <- do.call(self$run_cif, args$h2_t2$cif_pop)
@@ -408,21 +429,21 @@ Pipeline <- R6::R6Class( #nolint
       join_columns     <- c(list("age"), stratify_columns)
       join_symbols     <- rlang::syms(join_columns)
 
-      combined <- self$add_cif_prefix(cif_t1_pop, "t1_pop", stratify_columns) |>
+      combined <- self$add_cif_prefix(cif_t1_pop$results, "t1_pop", stratify_columns) |>
         inner_join(
-          self$add_cif_prefix(cif_cross, "cross", stratify_columns),
+          self$add_cif_prefix(cif_cross$results, "cross", stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_cif_prefix(cif_t2_pop, "t2_pop", stratify_columns),
+          self$add_cif_prefix(cif_t2_pop$results, "t2_pop", stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_h2_prefix(h2_t1, "t1", stratify_columns),
+          self$add_h2_prefix(h2_t1$results, "t1", stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_h2_prefix(h2_t2, "t2", stratify_columns),
+          self$add_h2_prefix(h2_t2$results, "t2", stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         self$max_age_by_stratification(stratify_columns)
@@ -439,7 +460,10 @@ Pipeline <- R6::R6Class( #nolint
 
       self$add_results("rg", rg, args)
 
-      return(rg)
+      return(list(
+        args    = args,
+        results = rg
+      ))
     },
     #' @description
     #' Runs a single analysis using the given two traits, relationship kind, straitfy colums
