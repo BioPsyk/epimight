@@ -221,16 +221,28 @@ describe("add_results", {
 })
 
 describe("run_cif", {
-  it("adds produced result to cache", {
+  it("returns cached results if the analysis have already been run", {
     pipeline$clear_results()
 
-    results <- pipeline$run_cif(
+    results <- data.table(
+      age = c(1, 2, 1, 2),
+      cif = c(0.3, 0.31, 0.21, 0.25),
+      se  = c(0.3, 0.31, 0.21, 0.25),
+      l95 = c(0.3, 0.31, 0.21, 0.25),
+      u95 = c(0.3, 0.31, 0.21, 0.25)
+    )
+
+    args <- list(
       index_trait     = "SCZ",
       relatives_trait = "CAD",
       relatives_kind  = "parents"
     )
 
-    print(results)
+    pipeline$add_results("cif", results, args)
+
+    cached_results <- do.call(pipeline$run_cif, args)
+
+    expect_dataframe_equal(results, cached_results)
   })
 })
 
