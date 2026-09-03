@@ -147,7 +147,7 @@ Pipeline <- R6::R6Class( #nolint
     clear_results = function() {
       private$results <- list()
     },
-    add_to_results = function(results, ...) {
+    add_results = function(results, ...) {
       if (!is.data.table(results)) stop("Given results was not a data.table")
 
       walk_deep <- function(target, path, value) {
@@ -173,7 +173,7 @@ Pipeline <- R6::R6Class( #nolint
 
       private$results <- walk_deep(private$results, path, results)
     },
-    get_from_results = function(...) {
+    get_results = function(...) {
       walk_deep <- function(target, path) {
         if (!is.list(path)) return(NULL)
 
@@ -301,7 +301,8 @@ Pipeline <- R6::R6Class( #nolint
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
     run_cif = function(...) {
-      args <- list(...)
+      validator <- do.call(ArgumentsValidator$new, self$validation_rules$cif$properties)
+      args      <- validator$run(...)
 
       if (length(stratify_columns) == 0) {
         stratify_label <- "NULL"
@@ -310,7 +311,7 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       results_path <- list("cif", stratify_label, use_weighted_cif, index_trait, rel_trait, rel_kind)
-      resultsd_cif <- do.call(self$get_from_results, results_path)
+      resultsd_cif <- do.call(self$get_results, results_path)
 
       if (!is.null(resultsd_cif)) return(resultsd_cif)
 
@@ -335,7 +336,7 @@ Pipeline <- R6::R6Class( #nolint
 
       results_args <- append(list(cif), results_path)
 
-      do.call(self$add_to_results, results_args)
+      do.call(self$add_results, results_args)
 
       if (is.null(cif)) {
         stop(paste0(
