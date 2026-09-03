@@ -253,29 +253,29 @@ describe("run_cif", {
 
     pipeline$add_results("cif", results, args)
 
-    cached_results <- do.call(pipeline$run_cif, args)
+    cached <- do.call(pipeline$run_cif, args)
 
-    expect_dataframe_equal(results, cached_results)
+    expect_dataframe_equal(results, cached$results)
   })
 
   it("produces different results when use_weighted is TRUE/FALSE", {
     pipeline$clear_results()
 
-    results <- do.call(pipeline$run_cif, list(
+    cif <- do.call(pipeline$run_cif, list(
       index_trait     = "SCZ",
       relatives_trait = "CAD",
       relatives_kind  = "parents",
       use_weighted    = FALSE
     ))
 
-    weighted_results <- do.call(pipeline$run_cif, list(
+    weighted_cif <- do.call(pipeline$run_cif, list(
       index_trait     = "SCZ",
       relatives_trait = "CAD",
       relatives_kind  = "parents",
       use_weighted    = TRUE
     ))
 
-    expect_dataframe_not_equal(results, weighted_results)
+    expect_dataframe_not_equal(cif$results, weighted_cif$results)
   })
 })
 
@@ -306,9 +306,9 @@ describe("run_h2", {
 
     pipeline$add_results("h2", results, args)
 
-    cached_results <- do.call(pipeline$run_h2, args)
+    cached_cif <- do.call(pipeline$run_h2, args)
 
-    expect_dataframe_equal(results, cached_results)
+    expect_dataframe_equal(results, cached_cif$results)
   })
 
   it("only allows using the same index trait for both CIFs", {
@@ -437,7 +437,7 @@ describe("run_rg", {
     args$h2_t2$cif_pop$use_weighted <- FALSE
     args$h2_t2$cif_fh$use_weighted  <- FALSE
 
-    results <- do.call(pipeline$run_rg, args)
+    rg <- do.call(pipeline$run_rg, args)
 
     args <- copy(rg_args)
     args$cif_cross$use_weighted     <- TRUE
@@ -446,8 +446,8 @@ describe("run_rg", {
     args$h2_t2$cif_pop$use_weighted <- TRUE
     args$h2_t2$cif_fh$use_weighted  <- TRUE
 
-    weighted_results <- do.call(pipeline$run_rg, args)
+    weighted_rg <- do.call(pipeline$run_rg, args)
 
-    expect_dataframe_not_equal(results, weighted_results)
+    expect_dataframe_not_equal(rg$results, weighted_rg$results)
   })
 })
