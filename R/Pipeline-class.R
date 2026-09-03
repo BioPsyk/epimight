@@ -392,42 +392,41 @@ Pipeline <- R6::R6Class( #nolint
       cif_cross  <- do.call(self$run_cif, args$cif_cross)
 
       stratify_columns <- args$cif_cross$stratify_columns
+      join_columns     <- c(list("age"), stratify_columns)
+      join_symbols     <- rlang::syms(join_columns)
 
-      stop("asd")
-
-      join_columns <- c(list("age"), args$stratify_columns)
-      join_symbols <- rlang::syms(join_columns)
-
-      combined <- self$add_cif_prefix(cif_t1_pop, "t1_pop", args$stratify_columns) |>
+      combined <- self$add_cif_prefix(cif_t1_pop, "t1_pop", stratify_columns) |>
         inner_join(
-          self$add_cif_prefix(cif_cross, "cross", args$stratify_columns),
+          self$add_cif_prefix(cif_cross, "cross", stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_cif_prefix(cif_t2_pop, "t2_pop", args$stratify_columns),
+          self$add_cif_prefix(cif_t2_pop, "t2_pop", stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_h2_prefix(h2_t1, "t1", args$stratify_columns),
+          self$add_h2_prefix(h2_t1, "t1", stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
         inner_join(
-          self$add_h2_prefix(h2_t2, "t2", args$stratify_columns),
+          self$add_h2_prefix(h2_t2, "t2", stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
-        self$max_age_by_stratification(args$stratify_columns)
+        self$max_age_by_stratification(stratify_columns)
 
       if (nrow(combined) == 0) stop("After joining all cif and h2 results no data was left")
 
       rg <- private$analyses$rg$run(
         estimates   = combined,
-        relatedness = args$genetic_correlation$relatedness
+        relatedness = args$relatedness
       ) |>
-        select(!!!args$stratify_columns, rg, se, l95, u95)
+        select(!!!stratify_columns, rg, se, l95, u95)
 
       if (nrow(rg) == 0) stop("No genetic correlation results produced")
 
-      return(NULL)
+      self$add_results("rg", rg, args)
+
+      return(rg)
     },
     add_cif_prefix = function(cif, prefix, stratify_columns) {
       cif |>

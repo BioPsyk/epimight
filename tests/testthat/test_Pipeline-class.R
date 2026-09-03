@@ -417,10 +417,10 @@ describe("run_rg", {
 
     args <- copy(rg_args)
     args$cif_cross$use_weighted_cif <- FALSE
-    args$h2_t1$relatives_kind       <- FALSE
-    args$h2_t1$relatives_kind       <- FALSE
-    args$h2_t2$relatives_kind       <- FALSE
-    args$h2_t2$relatives_kind       <- FALSE
+    args$h2_t1$use_weighted_cif     <- FALSE
+    args$h2_t1$use_weighted_cif     <- FALSE
+    args$h2_t2$use_weighted_cif     <- FALSE
+    args$h2_t2$use_weighted_cif     <- FALSE
 
     results <- do.call(pipeline$run_rg, args)
 
@@ -428,12 +428,15 @@ describe("run_rg", {
 
     args <- copy(rg_args)
     args$cif_cross$use_weighted_cif <- TRUE
-    args$h2_t1$relatives_kind       <- TRUE
-    args$h2_t1$relatives_kind       <- TRUE
-    args$h2_t2$relatives_kind       <- TRUE
-    args$h2_t2$relatives_kind       <- TRUE
+    args$h2_t1$use_weighted_cif     <- TRUE
+    args$h2_t1$use_weighted_cif     <- TRUE
+    args$h2_t2$use_weighted_cif     <- TRUE
+    args$h2_t2$use_weighted_cif     <- TRUE
 
     weighted_results <- do.call(pipeline$run_rg, args)
+
+    print(results)
+    print(weighted_results)
 
     expect_dataframe_not_equal(results, weighted_results)
   })
