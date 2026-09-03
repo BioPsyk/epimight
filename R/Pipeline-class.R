@@ -146,9 +146,8 @@ Pipeline <- R6::R6Class( #nolint
       rules     <- self$validation_rules[[type]]
       validator <- do.call(ArgumentsValidator$new, rules$properties)
       args      <- do.call(validator$run, args)
-
-      args <- args[order(names(args))]
-      key  <- rjson::toJSON(args)
+      args      <- args[order(names(args))]
+      key       <- rjson::toJSON(args)
 
       private$results[[type]][[key]] <- results
     },
