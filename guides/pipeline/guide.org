@@ -227,7 +227,7 @@ results <- pipeline$run(
 
 The ~trait~ and ~relatives_kind~ values for the two heritabilities are just used as
 filters on the time-to-event columns ~trait~ and ~relatives_kind~. In the test dataset our traits
-are first diagnosis, where we use a 3 letter abbreviation of the disorder. You can define your
+are first diagnosis, where we use a 3 letter abbreviation of the diagnosed disorder. You can define your
 traits and name them any way you like.
 
 The simple interface acts as a thin layer of abstraction, which takes the given 6 arguments and
