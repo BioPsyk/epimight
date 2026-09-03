@@ -208,7 +208,7 @@ Once we have an instance of the pipeline, we need to tell the pipeline:
 
 - Which trait should be "trait 1"
 - Which trait should be "trait 2"
-- What kind of relatives and relatedness to use for the two heritabilities
+- What kind of relatives and relatedness to use for the two traits
 
 We supply this information as named arguments to the ~run~ function:
 
