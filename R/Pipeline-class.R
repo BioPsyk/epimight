@@ -15,7 +15,7 @@ Pipeline <- R6::R6Class( #nolint
     stratify_columns = NULL,
     use_weighted_cif = NULL,
     analyses         = NULL,
-    results          = list(
+    results = list(
       cif = list(),
       h2  = list(),
       rg  = list()
@@ -147,58 +147,17 @@ Pipeline <- R6::R6Class( #nolint
     clear_results = function() {
       private$results <- list()
     },
-    add_results = function(results, ...) {
-      if (!is.data.table(results)) stop("Given results was not a data.table")
+    add_results = function(type, results, args) {
+      if (!is.character(type)) stop("Given `type` was not a character")
+      if (!is.data.table(results)) stop("Given `results` was not a data.table")
+      if (!is.list(args)) stop("Given `args` was not a named list")
 
-      walk_deep <- function(target, path, value) {
-        step <- path[[1]]
-
-        if (length(path) == 1) {
-          target[[step]] <- value
-          return(target)
-        }
-
-        if (!step %in% names(target)) {
-          target[[step]] <- list()
-        }
-
-        target[[step]] <- walk_deep(target[[step]], path[-1], value)
-
-        return(target)
+      for (arg in args) {
+        message(arg)
       }
-
-      path <- list(...)
-      path[sapply(path, is.null)] <- "NULL"
-      path <- lapply(path, as.character)
-
-      private$results <- walk_deep(private$results, path, results)
     },
-    get_results = function(...) {
-      walk_deep <- function(target, path) {
-        if (!is.list(path)) return(NULL)
+    get_results = function(type, args) {
 
-        step <- path[[1]]
-
-        if (!step %in% names(target)) {
-          return(NULL)
-        }
-
-        if (length(path) == 1) {
-          results <- target[[step]]
-
-          if (!is.data.table(results)) return(NULL)
-
-          return(results)
-        }
-
-        walk_deep(target[[step]], path[-1])
-      }
-
-      path <- list(...)
-      path[sapply(path, is.null)] <- "NULL"
-      path <- lapply(path, as.character)
-
-      walk_deep(private$results, path)
     },
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and
@@ -271,7 +230,7 @@ Pipeline <- R6::R6Class( #nolint
     #' stratification combination will have multiple rows, like this:
     #'
     #'   |------+------------+--------+------------+------|
-    #'   | time | birth_year | sex    |  estimates | case |
+    #'   | age  | birth_year | sex    |  estimates | case |
     #'   |------+------------+--------+------------+------|
     #'   |   43 |       1981 | f      | 0.10639881 |  141 |
     #'   |   42 |       1981 | f      | 0.09763101 |  131 |
@@ -281,19 +240,19 @@ Pipeline <- R6::R6Class( #nolint
     #'   |   39 |       1981 | m      | 0.09747292 |  141 |
     #'   |------+------------+--------+------------+------|
     #'
-    #' Running `max_time_by_stratification(cif_example, list("birth_year", "sex"))`
+    #' Running `max_age_by_stratification(cif_example, list("birth_year", "sex"))`
     #' on this dataset would produce:
     #'
     #' |------+------------+--------+------------+------|
-    #' | time | birth_year | sex    |  estimates | case |
+    #' | age  | birth_year | sex    |  estimates | case |
     #' |------+------------+--------+------------+------|
     #' |   43 |       1981 | f      | 0.10639881 |  141 |
     #' |   43 |       1981 | m      | 0.09816850 |  134 |
     #' |------+------------+--------+------------+------|
-    max_time_by_stratification = function(estimates, stratify_columns) {
+    max_age_by_stratification = function(estimates, stratify_columns) {
       estimates |>
         group_by(!!!rlang::syms(stratify_columns)) |>
-        arrange(desc(time)) |>
+        arrange(desc(age)) |>
         filter(row_number() == 1) |>
         as.data.table()
     },
@@ -319,7 +278,7 @@ Pipeline <- R6::R6Class( #nolint
           relatives_trait,
           relatives_kind,
           all_of(unlist(private$stratify_columns)),
-          time,
+          age,
           everything()
         )
 
@@ -338,21 +297,21 @@ Pipeline <- R6::R6Class( #nolint
       stratify_symbols <- rlang::syms(stratify_columns)
 
       cif <- cif_pop |>
-        inner_join(cif_fh, by = join_by(time, !!!stratify_columns)) |>
+        inner_join(cif_fh, by = join_by(age, !!!stratify_columns)) |>
         rename(
           pop_cif   = cif.x,
           pop_cases = cases.x,
           fh_cif    = cif.y,
           fh_cases  = cases.y
         ) |>
-        select(time, !!!stratify_symbols, pop_cif, pop_cases, fh_cif, fh_cases)
+        select(age, !!!stratify_symbols, pop_cif, pop_cases, fh_cif, fh_cases)
 
       h2 <- private$analyses$h2$run(
         cif         = cif,
         relatedness = analysis$relatedness
       ) |>
         mutate(index_trait = analysis$index_trait) |>
-        select(index_trait, time, !!!stratify_symbols, h2, se, l95, u95)
+        select(index_trait, age, !!!stratify_symbols, h2, se, l95, u95)
 
       if (is.null(h2)) stop(paste0("No valid results found when producing h2_", trait_key))
 
@@ -363,7 +322,7 @@ Pipeline <- R6::R6Class( #nolint
     },
     add_cif_prefix = function(cif, prefix, stratify_columns) {
       cif |>
-        select(!!!stratify_columns, time, cif, cases) |>
+        select(!!!stratify_columns, age, cif, cases) |>
         rename_with(~ paste0(prefix, "_", .), .cols = c(cif, cases))
     },
     #' @description
@@ -371,7 +330,7 @@ Pipeline <- R6::R6Class( #nolint
     #' to its results.
     add_h2_prefix = function(h2, prefix, stratify_columns) {
       h2 |>
-        select(!!!stratify_columns, time, h2) |>
+        select(!!!stratify_columns, age, h2) |>
         rename_with(~ paste0(prefix, "_", .), .cols = c(h2))
     },
     #' @description
@@ -431,7 +390,7 @@ Pipeline <- R6::R6Class( #nolint
       h2_t1 <- self$run_h2(args$heritability1, args$stratify_columns, cif_t1_pop, cif_t1_fh1)
       h2_t2 <- self$run_h2(args$heritability2, args$stratify_columns, cif_t2_pop, cif_t2_fh2)
 
-      join_columns <- c(list("time"), args$stratify_columns)
+      join_columns <- c(list("age"), args$stratify_columns)
       join_symbols <- rlang::syms(join_columns)
 
       combined <- self$add_cif_prefix(cif_t1_pop, "t1_pop", args$stratify_columns) |>
@@ -451,7 +410,7 @@ Pipeline <- R6::R6Class( #nolint
           self$add_h2_prefix(h2_t2, "t2", args$stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
-        self$max_time_by_stratification(args$stratify_columns)
+        self$max_age_by_stratification(args$stratify_columns)
 
       if (nrow(combined) == 0) stop("After joining all cif and h2 results no data was left")
 
@@ -588,7 +547,7 @@ Pipeline <- R6::R6Class( #nolint
         estimates        = args$cif,
         estimate_column  = "cif",
         se_column        = "se",
-        stratify_columns = list("index_trait", "relatives_trait", "relatives_kind", "time")
+        stratify_columns = list("index_trait", "relatives_trait", "relatives_kind", "age")
       ) |>
         select(index_trait, relatives_trait, relatives_kind, everything())
 

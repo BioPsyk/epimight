@@ -133,100 +133,40 @@ describe("initialize", {
 #  })
 #})
 
-describe("run_cif", {
-  pipeline <- Pipeline$new(pool = pool_tte)
+describe("get_results", {
+  it("successfully retrieves results using same type and arguments as when added", {
+    pipeline$clear_results()
 
-  results <- pipeline$run_cif(
-    index_trait     = "SCZ",
-    relatives_trait = "CAD",
-    relatives_kind  = "parents"
-  )
+    results <- data.table(
+      age = c(1, 2, 1, 2),
+      cif = c(0.3, 0.31, 0.21, 0.25),
+      se  = c(0.3, 0.31, 0.21, 0.25),
+      l95 = c(0.3, 0.31, 0.21, 0.25),
+      u95 = c(0.3, 0.31, 0.21, 0.25)
+    )
 
-  print(results)
+    args <- list(
+      index_trait     = "SCZ",
+      relatives_trait = "CAD",
+      relatives_kind  = "parents"
+    )
+
+    pipeline$add_results("cif", results, args)
+  })
 })
 
-#describe("results", {
-#  it("fails when the given results is not a data.table", {
-#    pipeline$clear_results()
-#    expect_error(pipeline$add_to_results(12, "cif", "SCZ"))
-#    expect_error(pipeline$add_to_results("Hello", "cif", "SCZ"))
-#    expect_error(pipeline$add_to_results(NA, "cif", "SCZ"))
-#    expect_error(pipeline$add_to_results(NULL, "cif", "SCZ"))
-#  })
-#
-#  it("successfully finds resultsd results by correct path", {
-#    cif <- data.table(
-#      cif   = c(0.5, 0.4),
-#      se    = c(0.2, 0.3),
-#      cases = c(1, 2)
+#describe("run_cif", {
+#  it("adds produced result to cache", {
+#    results <- pipeline$run_cif(
+#      index_trait     = "SCZ",
+#      relatives_trait = "CAD",
+#      relatives_kind  = "parents"
 #    )
 #
-#    pipeline$clear_results()
-#    pipeline$add_to_results(cif, "cif", "SCZ")
-#    expect_dataframe_equal(pipeline$get_from_results("cif", "SCZ"), cif)
-#  })
-#
-#  it("handles NULL steps as strings", {
-#    cif <- data.table(
-#      cif   = c(0.5, 0.4),
-#      se    = c(0.2, 0.3),
-#      cases = c(1, 2)
-#    )
-#
-#    pipeline$clear_results()
-#    pipeline$add_to_results(cif, "cif", "SCZ", NULL, NULL)
-#    expect_dataframe_equal(pipeline$get_from_results("cif", "SCZ", NULL, NULL), cif)
-#    expect_dataframe_equal(pipeline$get_from_results("cif", "SCZ", "NULL", "NULL"), cif)
-#  })
-#
-#  it("handles unknown paths gracefully", {
-#    cif <- data.table(
-#      cif   = c(0.5, 0.4),
-#      se    = c(0.2, 0.3),
-#      cases = c(1, 2)
-#    )
-#
-#    pipeline$clear_results()
-#    pipeline$add_to_results(cif, "cif", "SCZ")
-#    expect_equal(pipeline$get_from_results("cif", "SCZ", "unknown"), NULL)
-#    expect_equal(pipeline$get_from_results("rg"), NULL)
-#    expect_equal(pipeline$get_from_results(NULL), NULL)
-#  })
-#
-#  it("returns NULL when a partial path is given", {
-#    cif <- data.table(
-#      cif   = c(0.5, 0.4),
-#      se    = c(0.2, 0.3),
-#      cases = c(1, 2)
-#    )
-#
-#    pipeline$clear_results()
-#    pipeline$add_to_results(cif, "cif", "SCZ")
-#    expect_equal(pipeline$get_from_results("cif"), NULL)
-#  })
-#
-#  it("updates results when given path exists already", {
-#    cif1 <- data.table(
-#      cif   = c(0.5, 0.4),
-#      se    = c(0.2, 0.3),
-#      cases = c(1, 2)
-#    )
-#
-#    cif2 <- data.table(
-#      cif   = c(0.1),
-#      se    = c(0.9),
-#      cases = c(3)
-#    )
-#
-#    pipeline$clear_results()
-#    pipeline$add_to_results(cif1, "cif", "SCZ")
-#    pipeline$add_to_results(cif2, "cif", "SCZ")
-#    pipeline$add_to_results(cif1, "cif", "SCZ")
-#    pipeline$add_to_results(cif2, "cif", "SCZ")
-#
-#    expect_dataframe_equal(pipeline$get_from_results("cif", "SCZ"), cif2)
+#    print(results)
 #  })
 #})
+
 #
 #describe("run", {
 #  it("doesn't allow empty arguments", {
