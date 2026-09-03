@@ -308,16 +308,24 @@ Pipeline <- R6::R6Class( #nolint
     run_h2 = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
       validator$add_post_validation(function(args, rules) {
+        if ("relatives_trait" %in% args$cif_pop) {
+          stop("Using `relatives_trait` in `cif_pop` is not allowed")
+        }
+
+        if ("relatives_kind" %in% args$cif_pop) {
+          stop("Using `relatives_kind` in `cif_pop` is not allowed")
+        }
+
         if (args$cif_pop$index_trait != args$cif_fh$index_trait) {
-          stop("Using different index_traits in cif_pop and cif_fh is not allowed")
+          stop("Using different `index_traits` in `cif_pop` and `cif_fh` is not allowed")
         }
 
         if (args$cif_fh$index_trait != args$cif_fh$relatives_trait) {
-          stop("Using different index_traits and relatives_trait in cif_fh is not allowed")
+          stop("Using different `index_traits` and `relatives_trait` in `cif_fh` is not allowed")
         }
 
         if (!identical(args$cif_pop$stratify_columns, args$cif_fh$stratify_columns)) {
-          stop("Using different stratify_columns in cif_pop and cif_fh is not allowed")
+          stop("Using different `stratify_columns` in `cif_pop` and `cif_fh` is not allowed")
         }
 
         return(args)
