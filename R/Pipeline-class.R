@@ -365,8 +365,14 @@ Pipeline <- R6::R6Class( #nolint
 
       return(h2)
     },
-    run_rg = function() {
+    run_rg = function(...) {
+      validator <- do.call(ArgumentsValidator$new, self$validation_rules$rg$properties)
+      args      <- validator$run(...)
+      cached_rg <- self$get_results("rg", args)
 
+      if (!is.null(cached_rg)) return(cached_rg)
+
+      return(NULL)
     },
     add_cif_prefix = function(cif, prefix, stratify_columns) {
       cif |>
