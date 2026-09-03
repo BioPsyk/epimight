@@ -307,6 +307,18 @@ Pipeline <- R6::R6Class( #nolint
     #' given trait and cohort naming.
     run_h2 = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
+      validator$add_post_validation(function(args, rules) {
+        if (args$cif_pop$index_trait != args$cif_fh$index_trait) {
+          stop("Using different index_traits in cif_pop and cif_fh is not allowed")
+        }
+
+        if (args$cif_fh$index_trait != args$cif_fh$relatives_trait) {
+          stop("Using different index_traits and relatives_trait in cif_fh is not allowed")
+        }
+
+        return(args)
+      })
+
       args      <- validator$run(...)
       cached_h2 <- self$get_results("h2", args)
 

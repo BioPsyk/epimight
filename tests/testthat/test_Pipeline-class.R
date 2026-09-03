@@ -290,6 +290,38 @@ describe("run_h2", {
 
     expect_dataframe_equal(results, cached_results)
   })
+
+  it("only allows using the same index trait for both CIFs", {
+    args <- list(
+      cif_pop = list(
+        index_trait = "SCZ"
+      ),
+      cif_fh = list(
+        index_trait     = "CAD",
+        relatives_trait = "SCZ",
+        relatives_kind  = "parents"
+      ),
+      relatedness = 0.5
+    )
+
+    expect_error(do.call(pipeline$run_h2, args))
+  })
+
+  it("only allows using the same index trait and relatives trait for family history", {
+    args <- list(
+      cif_pop = list(
+        index_trait = "SCZ"
+      ),
+      cif_fh = list(
+        index_trait     = "CAD",
+        relatives_trait = "SCZ",
+        relatives_kind  = "parents"
+      ),
+      relatedness = 0.5
+    )
+
+    expect_error(do.call(pipeline$run_h2, args))
+  })
 })
 
 #
