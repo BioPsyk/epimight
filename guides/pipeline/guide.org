@@ -87,7 +87,105 @@ data and how you run the pipeline on said data.
 - Any data shown in this guide comes from [[../data/pipeline-tte.csv][this randomly generated time-to-event dataset]]
 - All code shown in this guide have been written to [[./guide.R][this R file]]
 
-* How it works
+The pipeline has two interfaces that can be used to estimate genetic correlation between 2 binary traits
+in a population/target cohort:
+
+- Simple
+- Advanced
+
+Both interfaces uses the same time-to-event data format, but offers different levels of control.
+The advanced interface gives the user full control of the underlying analyses (cif, h2, rg).
+While the simple interface gives the user less control, but uses sane defaults that should work
+for the majority of use cases.
+
+This guide is separated into 4 main chapters:
+
+- Time-to-event data format
+- Simple interface
+- Advanced interface
+- Results
+
+* Time-to-event data format
+
+To run the pipeline, you need to supply a set of individuals, which for each trait contains:
+
+- The individuals trait status (0 = censored, 1 = affected, 2 = competing risk)
+- The individuals age at status (in years)
+- How many relatives the individual have
+- How many of them have the trait
+- What "kind" of relative they are (parents, half siblings, cousins, etc.)
+
+The pipeline accepts this data as a ~data.table~ with the following columns:
+
+| Column name         | Description                                    |
+|---------------------+------------------------------------------------|
+| ~person_id~         | Unique identifier of the individual            |
+| ~trait~             | Identifier of the trait                        |
+| ~trait_status~      | 0 = censored, 1 = affected, 2 = competing risk |
+| ~trait_age~         | Age of individual at the time of status        |
+| ~relatives_kind~    | Identifier of the kind of relatives            |
+| ~relatives_n~       | Amount of relatives                            |
+| ~relatives_n_trait~ | Amount of relatives with trait                 |
+
+Here's an example of what that data would look like for a single trait (first diagnosis of Schizophrenia)
+and where the relatives are half siblings:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+tte |>
+  select(person_id, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
+  filter(trait == "SCZ", relatives_kind == "half_siblings") |>
+  tail(10)
+#+END_SRC
+
+#+RESULTS:
+| person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
+|-----------+-------+--------------+-----------+----------------+-------------+-------------------|
+|     99990 | SCZ   |            0 |        59 | half_siblings  |           2 |                 2 |
+|     99991 | SCZ   |            0 |        19 | half_siblings  |           0 |                 0 |
+|     99992 | SCZ   |            0 |        27 | half_siblings  |           2 |                 1 |
+|     99993 | SCZ   |            0 |        52 | half_siblings  |           1 |                 0 |
+|     99994 | SCZ   |            0 |        13 | half_siblings  |           3 |                 0 |
+|     99995 | SCZ   |            0 |        31 | half_siblings  |           1 |                 1 |
+|     99996 | SCZ   |            0 |        15 | half_siblings  |           0 |                 0 |
+|     99997 | SCZ   |            0 |        34 | half_siblings  |           2 |                 1 |
+|     99998 | SCZ   |            2 |        67 | half_siblings  |           4 |                 0 |
+|     99999 | SCZ   |            0 |        53 | half_siblings  |           2 |                 1 |
+
+The pipeline uses a single ~data.table~ for all traits and relative kinds, so if you for example have *2* different traits,
+*2* different relative kinds and *100 000* individuals, the data table will have *400 000* rows.
+Here's an example of what that would look like:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+tte |>
+  select(person_id, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
+  tail(10)
+#+END_SRC
+
+#+RESULTS:
+| person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
+|-----------+-------+--------------+-----------+----------------+-------------+-------------------|
+|     99997 | SCZ   |            0 |        34 | half_siblings  |           2 |                 1 |
+|     99997 | SCZ   |            0 |        34 | parents        |           2 |                 0 |
+|     99998 | CAD   |            2 |        67 | half_siblings  |           4 |                 0 |
+|     99998 | CAD   |            2 |        67 | parents        |           4 |                 1 |
+|     99998 | SCZ   |            2 |        67 | half_siblings  |           4 |                 0 |
+|     99998 | SCZ   |            2 |        67 | parents        |           4 |                 0 |
+|     99999 | CAD   |            0 |        53 | half_siblings  |           2 |                 0 |
+|     99999 | CAD   |            0 |        53 | parents        |           2 |                 2 |
+|     99999 | SCZ   |            0 |        53 | half_siblings  |           2 |                 1 |
+|     99999 | SCZ   |            0 |        53 | parents        |           2 |                 0 |
+
+This ~data.table~ is called the time-to-event "pool". It's called a "pool" because all data is kept
+there and only the relevant rows are pulled out when a genetic correlation is produced.
+
+Besides the actual TTE data, the pipeline needs to know:
+
+- Which trait, kinds of relatives and relatedness to use for heritability 1
+- Which trait, kinds of relatives and relatedness to use for heritability 2
+
+The next chapters shows you how this works in practice.
+
+* Advanced interface
 
 The pipeline estimates genetic correlation (~rg~) between 2 binary traits in a population/target cohort:
 
@@ -95,6 +193,7 @@ The pipeline estimates genetic correlation (~rg~) between 2 binary traits in a p
 |--------------+-------------|
 | ~t1~         | Trait 1     |
 | ~t2~         | Trait 2     |
+
 
 In order to do that it must first estimate the heritability (~h2~) of the two traits:
 
@@ -292,83 +391,6 @@ t3_rel -UP-> rg
 #+RESULTS: fig:rg-data-flow
 [[file:../diagrams/rg-data-flow.png]]
 
-To produce all of these estimates the pipeline needs a set of individuals, which for each trait contains:
-
-- The individuals trait status (0 = censored, 1 = affected, 2 = competing risk)
-- The individuals age at status (in years)
-- How many relatives the individual have
-- How many of them have the trait
-- What "kind" of relative they are (parents, half siblings, cousins, etc.)
-
-The pipeline accepts this data as a ~data.table~ with the following columns:
-
-| Column name         | Description                                    |
-|---------------------+------------------------------------------------|
-| ~person_id~         | Unique identifier of the individual            |
-| ~trait~             | Identifier of the trait                        |
-| ~trait_status~      | 0 = censored, 1 = affected, 2 = competing risk |
-| ~trait_age~         | Age of individual at the time of status        |
-| ~relatives_kind~    | Identifier of the kind of relatives            |
-| ~relatives_n~       | Amount of relatives                            |
-| ~relatives_n_trait~ | Amount of relatives with trait                 |
-
-Here's an example of what that data would look like for a single trait (first diagnosis of Schizophrenia)
-and where the relatives are half siblings:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |>
-  select(person_id, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
-  filter(trait == "SCZ", relatives_kind == "half_siblings") |>
-  tail(10)
-#+END_SRC
-
-#+RESULTS:
-| person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
-|-----------+-------+--------------+-----------+----------------+-------------+-------------------|
-|     99990 | SCZ   |            0 |        59 | half_siblings  |           2 |                 2 |
-|     99991 | SCZ   |            0 |        19 | half_siblings  |           0 |                 0 |
-|     99992 | SCZ   |            0 |        27 | half_siblings  |           2 |                 1 |
-|     99993 | SCZ   |            0 |        52 | half_siblings  |           1 |                 0 |
-|     99994 | SCZ   |            0 |        13 | half_siblings  |           3 |                 0 |
-|     99995 | SCZ   |            0 |        31 | half_siblings  |           1 |                 1 |
-|     99996 | SCZ   |            0 |        15 | half_siblings  |           0 |                 0 |
-|     99997 | SCZ   |            0 |        34 | half_siblings  |           2 |                 1 |
-|     99998 | SCZ   |            2 |        67 | half_siblings  |           4 |                 0 |
-|     99999 | SCZ   |            0 |        53 | half_siblings  |           2 |                 1 |
-
-The pipeline uses a single ~data.table~ for all traits and relative kinds, so if you for example have *2* different traits,
-*2* different relative kinds and *100 000* individuals, the data table will have *400 000* rows.
-Here's an example of what that would look like:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |>
-  select(person_id, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
-  tail(10)
-#+END_SRC
-
-#+RESULTS:
-| person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
-|-----------+-------+--------------+-----------+----------------+-------------+-------------------|
-|     99997 | SCZ   |            0 |        34 | half_siblings  |           2 |                 1 |
-|     99997 | SCZ   |            0 |        34 | parents        |           2 |                 0 |
-|     99998 | CAD   |            2 |        67 | half_siblings  |           4 |                 0 |
-|     99998 | CAD   |            2 |        67 | parents        |           4 |                 1 |
-|     99998 | SCZ   |            2 |        67 | half_siblings  |           4 |                 0 |
-|     99998 | SCZ   |            2 |        67 | parents        |           4 |                 0 |
-|     99999 | CAD   |            0 |        53 | half_siblings  |           2 |                 0 |
-|     99999 | CAD   |            0 |        53 | parents        |           2 |                 2 |
-|     99999 | SCZ   |            0 |        53 | half_siblings  |           2 |                 1 |
-|     99999 | SCZ   |            0 |        53 | parents        |           2 |                 0 |
-
-This ~data.table~ is called the time-to-event "pool". It's called a "pool" because all data is kept
-there and only the relevant rows are pulled out when a genetic correlation is produced.
-
-Besides the actual TTE data, the pipeline needs to know:
-
-- Which trait, kinds of relatives and relatedness to use for heritability 1
-- Which trait, kinds of relatives and relatedness to use for heritability 2
-
-The next chapters shows you how this works in practice.
 
 * Running the pipeline
 
