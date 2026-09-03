@@ -391,6 +391,8 @@ out$intermediate$cif_cross$results |> tail(10)
 
 ** Args
 
+The returned arguments is provided in the expanded advanced format:
+
 #+BEGIN_SRC R :exports both :results output :tangle no
 message(rjson::toJSON(out$args, indent = 2))
 #+END_SRC
