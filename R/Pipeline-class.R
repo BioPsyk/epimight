@@ -501,32 +501,32 @@ Pipeline <- R6::R6Class( #nolint
       rg_args <- list(
         h2_t1 = list(
           cif_pop = list(
-            index_trait = "SCZ"
+            index_trait = args$heritability1$index_trait
           ),
           cif_fh = list(
-            index_trait     = "SCZ",
-            relatives_trait = "SCZ",
-            relatives_kind  = "half_siblings"
+            index_trait     = args$heritability1$index_trait,
+            relatives_trait = args$heritability1$relatives_trait,
+            relatives_kind  = args$heritability1$relatives_kind
           ),
-          relatedness = 0.25
+          relatedness = args$heritability1$relatedness
         ),
         h2_t2 = list(
           cif_pop = list(
-            index_trait = "CAD"
+            index_trait = args$heritability2$index_trait
           ),
           cif_fh = list(
-            index_trait     = "CAD",
-            relatives_trait = "CAD",
-            relatives_kind  = "half_siblings"
+            index_trait     = args$heritability2$index_trait,
+            relatives_trait = args$heritability2$relatives_trait,
+            relatives_kind  = args$heritability2$relatives_kind
           ),
-          relatedness = 0.25
+          relatedness = args$heritability2$relatedness
         ),
         cif_cross = list(
-          index_trait     = "SCZ",
-          relatives_trait = "CAD",
-          relatives_kind  = "parents"
+          index_trait     = args$genetic_correlation$index_trait,
+          relatives_trait = args$genetic_correlation$relatives_trait,
+          relatives_kind  = args$genetic_correlation$relatives_kind
         ),
-        relatedness = 0.5
+        relatedness  = args$genetic_correlation$relatedness
       )
 
       rg <- do.call(self$run_rg, rg_args)
