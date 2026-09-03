@@ -210,7 +210,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       ][
         ,
         .(
-          time, cif, se, l95, u95, var,
+          age, cif, se, l95, u95, var,
           cases = cumsum(
             ifelse(is.na(cases_amount), 0, cases_amount)
           )
