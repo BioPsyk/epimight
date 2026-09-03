@@ -318,10 +318,10 @@ Pipeline <- R6::R6Class( #nolint
 
       self$add_results("cif", cif, args)
 
-      return(list(
+      list(
         args    = args,
         results = cif
-      ))
+      )
     },
     #' @description
     #' Helper that runs h2 on the given time-to-event data and handles prefixing columns according to
@@ -389,10 +389,10 @@ Pipeline <- R6::R6Class( #nolint
 
       self$add_results("h2", h2, args)
 
-      return(list(
+      list(
         args    = args,
         results = h2
-      ))
+      )
     },
     run_rg = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$rg$properties)
@@ -460,92 +460,83 @@ Pipeline <- R6::R6Class( #nolint
 
       self$add_results("rg", rg, args)
 
-      return(list(
+      list(
         args    = args,
         results = rg
-      ))
+      )
     },
     #' @description
     #' Runs a single analysis using the given two traits, relationship kind, straitfy colums
     #' and amount of draws.
     run = function(...) {
-      validation_rules <- list(
-        heritability1       = self$validation_rules$analysis,
-        heritability2       = self$validation_rules$analysis,
-        genetic_correlation = self$validation_rules$analysis
+      heritability_rules <- list(
+        required = TRUE,
+        type = "named_list",
+        properties = list(
+          trait = list(
+            required = TRUE,
+            type     = "string"
+          ),
+          relatives_kind = list(
+            required = FALSE,
+            type     = "string"
+          ),
+          relatedness = list(
+            required = TRUE,
+            type     = "numeric",
+            minimum  = 0
+          )
+        )
       )
-      validation_rules$genetic_correlation$required                 <- FALSE
-      validation_rules$genetic_correlation$relatives_trait$required <- TRUE
 
-      validator <- do.call(ArgumentsValidator$new, validation_rules)
+      validator <- ArgumentsValidator$new(
+        heritability1 = heritability_rules,
+        heritability2 = heritability_rules,
+        stratify_columns = list(
+          type    = "list",
+          items   = list(type = "string"),
+          default = list()
+        ),
+        use_weighted = list(
+          type    = "logical",
+          default = TRUE
+        )
+      )
 
       args <- validator$run(...)
-
-      if (!("relatives_trait" %in% names(args$heritability1))) {
-        args$heritability1$relatives_trait <- args$heritability1$index_trait
-      }
-
-      if (!("relatives_trait" %in% names(args$heritability2))) {
-        args$heritability2$relatives_trait <- args$heritability2$index_trait
-      }
-
-      if (!("genetic_correlation" %in% names(args))) {
-        args$genetic_correlation <- list(
-          index_trait     = args$heritability1$index_trait,
-          relatives_trait = args$heritability2$relatives_trait,
-          relatives_kind  = args$heritability2$relatives_kind,
-          relatedness     = args$heritability2$relatedness
-        )
-      }
 
       rg_args <- list(
         h2_t1 = list(
           cif_pop = list(
-            index_trait = args$heritability1$index_trait
+            index_trait = args$heritability1$trait
           ),
           cif_fh = list(
-            index_trait     = args$heritability1$index_trait,
-            relatives_trait = args$heritability1$relatives_trait,
+            index_trait     = args$heritability1$trait,
+            relatives_trait = args$heritability1$trait,
             relatives_kind  = args$heritability1$relatives_kind
           ),
           relatedness = args$heritability1$relatedness
         ),
         h2_t2 = list(
           cif_pop = list(
-            index_trait = args$heritability2$index_trait
+            index_trait = args$heritability2$trait
           ),
           cif_fh = list(
-            index_trait     = args$heritability2$index_trait,
-            relatives_trait = args$heritability2$relatives_trait,
+            index_trait     = args$heritability2$trait,
+            relatives_trait = args$heritability2$trait,
             relatives_kind  = args$heritability2$relatives_kind
           ),
           relatedness = args$heritability2$relatedness
         ),
         cif_cross = list(
-          index_trait     = args$genetic_correlation$index_trait,
-          relatives_trait = args$genetic_correlation$relatives_trait,
-          relatives_kind  = args$genetic_correlation$relatives_kind
+          index_trait     = args$heritability1$trait,
+          relatives_trait = args$heritability2$trait,
+          relatives_kind  = args$heritability2$relatives_kind
         ),
-        relatedness  = args$genetic_correlation$relatedness
+        relatedness = args$heritability2$relatedness
       )
 
-      rg <- do.call(self$run_rg, rg_args)
-
-      list(
-        metadata = list(
-          version   = as.character(packageVersion(methods::getPackageName())),
-          arguments = rg_args
-        ),
-        cif = rbindlist(list(
-          cif_t1_pop,
-          cif_t1_fh1,
-          cif_cross,
-          cif_t2_pop,
-          cif_t2_fh2
-        )),
-        h2 = rbindlist(list(h2_t1, h2_t2)),
-        rg = rg
-      )
+      do.call(self$run_rg, rg_args)
     },
     run_meta = function(results) {
       validator <- ArgumentsValidator$new(
