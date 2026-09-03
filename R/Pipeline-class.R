@@ -152,12 +152,19 @@ Pipeline <- R6::R6Class( #nolint
       if (!is.data.table(results)) stop("Given `results` was not a data.table")
       if (!is.list(args)) stop("Given `args` was not a named list")
 
-      for (arg in args) {
-        message(arg)
-      }
+      args <- args[order(names(args))]
+      key  <- rjson::toJSON(args)
+
+      private$results[[key]] <- results
     },
     get_results = function(type, args) {
+      if (!is.character(type)) stop("Given `type` was not a character")
+      if (!is.list(args)) stop("Given `args` was not a named list")
 
+      args <- args[order(names(args))]
+      key  <- rjson::toJSON(args)
+
+      private$results[[key]]
     },
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and

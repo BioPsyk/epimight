@@ -134,7 +134,12 @@ describe("initialize", {
 #})
 
 describe("get_results", {
-  it("successfully retrieves results using same type and arguments as when added", {
+  it("fails when given parameters are of wrong type", {
+    expect_error(pipeline$get_results("cif", NULL))
+    expect_error(pipeline$get_results(1231, list()))
+    expect_error(pipeline$get_results(NULL, list()))
+  })
+  it("successfully retrieves results regardless of arguments order", {
     pipeline$clear_results()
 
     results <- data.table(
@@ -152,6 +157,65 @@ describe("get_results", {
     )
 
     pipeline$add_results("cif", results, args)
+
+    retrieved_results <- pipeline$get_results("cif", list(
+      relatives_trait = "CAD",
+      relatives_kind  = "parents",
+      index_trait     = "SCZ"
+    ))
+
+    expect_dataframe_equal(results, retrieved_results)
+  })
+})
+
+describe("add_results", {
+  it("fails when given parameters are of wrong type", {
+    results <- data.table(
+      age = c(1, 2, 1, 2),
+      cif = c(0.3, 0.31, 0.21, 0.25),
+      se  = c(0.3, 0.31, 0.21, 0.25),
+      l95 = c(0.3, 0.31, 0.21, 0.25),
+      u95 = c(0.3, 0.31, 0.21, 0.25)
+    )
+
+    expect_error(pipeline$add_results("cif", "hellO", list()))
+    expect_error(pipeline$add_results("cif", results, NULL))
+    expect_error(pipeline$add_results(1231, results, list()))
+    expect_error(pipeline$add_results(NULL, results, list()))
+  })
+
+  it("overwrites results if they already exist with the given analysis arguments", {
+    pipeline$clear_results()
+
+    results <- data.table(
+      age = c(1, 2, 1, 2),
+      cif = c(0.3, 0.31, 0.21, 0.25),
+      se  = c(0.3, 0.31, 0.21, 0.25),
+      l95 = c(0.3, 0.31, 0.21, 0.25),
+      u95 = c(0.3, 0.31, 0.21, 0.25)
+    )
+
+    results2 <- data.table(
+      age = c(3, 5, 4, 4),
+      cif = c(0.1, 0.4, 0.7, 0.5),
+      se  = c(0.13, 0.41, 0.72, 0.51),
+      l95 = c(0.1, 0.4, 0.7, 0.5),
+      u95 = c(0.1, 0.4, 0.7, 0.5)
+    )
+
+    args <- list(
+      index_trait     = "SCZ",
+      relatives_trait = "CAD",
+      relatives_kind  = "parents"
+    )
+
+    pipeline$add_results("cif", results, args)
+    retrieved_results <- pipeline$get_results("cif", args)
+    expect_dataframe_equal(results, retrieved_results)
+
+    pipeline$add_results("cif", results2, args)
+    retrieved_results <- pipeline$get_results("cif", args)
+    expect_dataframe_equal(results2, retrieved_results)
   })
 })
 
