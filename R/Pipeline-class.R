@@ -306,27 +306,17 @@ Pipeline <- R6::R6Class( #nolint
     #' Helper that runs h2 on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
     run_h2 = function(...) {
-      message(rjson::toJSON(self$validation_rules$h2$properties, indent = 2))
-
-      validator  <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
-      args       <- validator$run(...)
-
-      message(rjson::toJSON(args, indent = 2))
-
-      stop("asd")
-
-      cached_h2  <- self$get_results("h2", args)
+      validator <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
+      args      <- validator$run(...)
+      cached_h2 <- self$get_results("h2", args)
 
       if (!is.null(cached_h2)) return(cached_h2)
-
-      print(args$cif_pop$stratify_columns)
-
-      print(all.equal(args$cif_pop$stratify_columns, args$cif_fh$stratify_columns))
 
       cif_pop <- do.call(self$run_cif, args$cif_pop)
       cif_fh  <- do.call(self$run_cif, args$cif_fh)
 
-      stratify_symbols <- rlang::syms(args$stratify_columns)
+      stratify_columns <- args$cif_pop$stratify_columns
+      stratify_symbols <- rlang::syms(stratify_columns)
 
       cif <- cif_pop |>
         inner_join(cif_fh, by = join_by(age, !!!stratify_columns)) |>
@@ -340,12 +330,12 @@ Pipeline <- R6::R6Class( #nolint
 
       h2 <- private$analyses$h2$run(
         cif         = cif,
-        relatedness = analysis$relatedness
+        relatedness = args$relatedness
       ) |>
-        mutate(index_trait = analysis$index_trait) |>
+        mutate(index_trait = args$cif_pop$index_trait) |>
         select(index_trait, age, !!!stratify_symbols, h2, se, l95, u95)
 
-      if (is.null(h2)) stop(paste0("No valid results found when producing h2_", trait_key))
+      if (is.null(h2)) stop(paste0("No valid results found when producing h2 for trait ", args$cif_pop$index_trait))
 
       self$add_results("h2", h2, args)
 

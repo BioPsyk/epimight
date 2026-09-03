@@ -263,7 +263,7 @@ describe("run_h2", {
   it("returns cached results if the analysis have already been run", {
     pipeline$clear_results()
 
-    results <- pipeline$run_h2(
+    args <- list(
       cif_pop = list(
         index_trait = "SCZ"
       ),
@@ -275,7 +275,20 @@ describe("run_h2", {
       relatedness = 0.5
     )
 
-    print(results)
+    results <- data.table(
+      index_trait = c("SCZ"),
+      age         = c(1),
+      h2          = c(0.098),
+      se          = c(0.0254),
+      l95         = c(-0.040),
+      u95         = c(0.058)
+    )
+
+    pipeline$add_results("h2", results, args)
+
+    cached_results <- do.call(pipeline$run_h2, args)
+
+    expect_dataframe_equal(results, cached_results)
   })
 })
 
