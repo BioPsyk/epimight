@@ -213,7 +213,7 @@ Once we have an instance of the pipeline, we need to tell the pipeline:
 We supply this information as named arguments to the ~run~ function:
 
 #+BEGIN_SRC R :exports code :results output
-results <- pipeline$run(
+out <- pipeline$run(
   heritability1 = list(
     trait          = "SCZ",
     relatives_kind = "parents",
@@ -315,63 +315,139 @@ t3_rel -UP-> rg
 
 Both interfaces has the same output format, a single named list with the following members:
 
-| Name     | Description                                              |
-|----------+----------------------------------------------------------|
-| rg       | All genetic correlations as a single ~data.table~        |
-| h2       | All heritabilities as a single ~data.table~              |
-| cif      | All cumulative incidences as a single ~data.table~       |
-| metadata | Pipeline verison and arguments supplied to the interface |
+| Name         | Description                                        |
+|--------------+----------------------------------------------------|
+| results      | All genetic correlations as a single ~data.table~  |
+| intermediate | All intermediate results as separate ~data.tables~ |
+| args         | Arguments supplied to the interface                |
 
 * Output format
 
-** Genetic correlation
+** Results
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-results$rg |> tail(10)
+out$results |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-: Could not parse R result
+|                rg |                 se |                 l95 |                u95 |
+|-------------------+--------------------+---------------------+--------------------|
+| 0.520397184639629 | 0.0392336825399842 | -0.0714165159431155 | 0.0823795196136227 |
 
-** Heritability
+** Intermediate
+
+As shown in the "Genetic correlation components" diagram, the intermediate results used to calculate the
+genetic correlation are:
+
+| Name         | Description                                               |
+|--------------+-----------------------------------------------------------|
+| ~cif_t1_pop~ | Cumulative incidence for trait 1 in target cohort         |
+| ~cif_t2_pop~ | Cumulative incidence for trait 2 in target cohort         |
+| ~cif_cross~  | Cumulative incidence for index trait 1, relatives trait 2 |
+| ~h2_t1~      | Heritability of trait 1                                   |
+| ~h2_t2~      | Heritability of trait 2                                   |
+
+You can access these intermediate results using ~out$intermediate[[name]]$results~.
+
+For example, heritability 1:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-results$h2 |> tail(10)
+out$intermediate$h2_t1$results |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| index_trait | time | birth_year |                h2 |                 se |                 l95 |               u95 |
-|-------------+------+------------+-------------------+--------------------+---------------------+-------------------|
-| CAD         |    1 |       2021 | 0.496932556546836 |  0.331678236153875 |  -0.153156786314758 |  1.14702189940843 |
-| CAD         |    2 |       2021 |  0.40991313505927 |  0.303938409254187 |  -0.185806147078937 |  1.00563241719748 |
-| CAD         |    3 |       2021 |  0.42378442126557 |  0.297901981919888 |  -0.160103463297411 |  1.00767230582855 |
-| CAD         |    4 |       2021 | 0.519997720004412 |  0.284918168735904 | -0.0384418907179599 |  1.07843733072678 |
-| CAD         |    5 |       2021 | 0.601058412455967 |  0.108151065465792 |   0.389082324143015 | 0.813034500768918 |
-| CAD         |    1 |       2023 | 0.594013956389342 |  0.315824924803152 | -0.0250028962248364 |  1.21303080900352 |
-| CAD         |    2 |       2023 | 0.437547505013097 |  0.305432070554166 |  -0.161099353273069 |  1.03619436329926 |
-| CAD         |    3 |       2023 | 0.541822424425517 | 0.0961163833678636 |   0.353434313024504 | 0.730210535826529 |
-| CAD         |    2 |       2024 | 0.341865432112926 | 0.0983404127120427 |   0.149118223197322 | 0.534612641028529 |
-| CAD         |    1 |       2025 | 0.451036950622591 | 0.0962894437347706 |   0.262309640902441 | 0.639764260342742 |
+| index_trait | age |                  h2 |                 se |                 l95 |                u95 |
+|-------------+-----+---------------------+--------------------+---------------------+--------------------|
+| SCZ         |  40 |  0.0116495313078649 |   0.01816027286379 | -0.0239446035051634 | 0.0472436661208933 |
+| SCZ         |  41 |  0.0102093627165386 | 0.0181883235912873 | -0.0254397515223845 | 0.0458584769554617 |
+| SCZ         |  42 |  0.0105620545446725 | 0.0182106709931989 | -0.0251308606019974 | 0.0462549696913423 |
+| SCZ         |  43 |  0.0100200954247007 | 0.0182244967288411 | -0.0256999181638279 | 0.0457401090132293 |
+| SCZ         |  44 |  0.0099676862356099 | 0.0182458406312651 | -0.0257941614016697 | 0.0457295338728894 |
+| SCZ         |  45 | 0.00961226264629415 | 0.0182449552007819 | -0.0261478495472384 | 0.0453723748398267 |
+| SCZ         |  46 |  0.0108213333674349 | 0.0182670387201862 |   -0.02498206252413 | 0.0466247292589998 |
+| SCZ         |  47 |  0.0105333041704472 | 0.0182716558829353 | -0.0252791413601059 | 0.0463457497010004 |
+| SCZ         |  49 | 0.00941576869276033 | 0.0182760833207631 | -0.0264053546159354 | 0.0452368920014561 |
+| SCZ         |  51 | 0.00946506294482911 |  0.018289807375317 | -0.0263829595107923 | 0.0453130854004505 |
 
-** Cumulative incidence
+Cross trait cumulative incidence:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-results$cif |> tail(10)
+out$intermediate$cif_cross$results |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| index_trait | relatives_trait | relatives_kind | birth_year | time |                 cif |                  se |                   l95 |                u95 |                  var |            cases |
-|-------------+-----------------+----------------+------------+------+---------------------+---------------------+-----------------------+--------------------+----------------------+------------------|
-| CAD         | CAD             | half_siblings  |       2022 |    4 | 0.00608619574727072 | 0.00525473608934777 |  -0.00421289773611376 | 0.0163852892306552 | 2.76122513686939e-05 |             42.5 |
-| CAD         | CAD             | half_siblings  |       2023 |    0 |                   0 |                   0 |                     0 |                  0 |                    0 |                3 |
-| CAD         | CAD             | half_siblings  |       2023 |    1 |  0.0125799350036691 | 0.00721720005825521 |  -0.00156551717973143 | 0.0267253871870697 |  5.2087976680879e-05 | 3.33333333333333 |
-| CAD         | CAD             | half_siblings  |       2023 |    2 |  0.0139777055596324 |  0.0076022103557721 | -0.000922352940578358 | 0.0288777640598431 | 5.77936022934086e-05 | 4.33333333333333 |
-| CAD         | CAD             | half_siblings  |       2023 |    3 |  0.0181710172275221 | 0.00864940265617126 |   0.00121849953364136 | 0.0351235349214028 | 7.48121663085824e-05 | 44.0785714285714 |
-| CAD         | CAD             | half_siblings  |       2024 |    0 |                   0 |                   0 |                     0 |                  0 |                    0 |                3 |
-| CAD         | CAD             | half_siblings  |       2024 |    2 |  0.0138735706643715 | 0.00795415267026652 |  -0.00171628209688394 |  0.029463423425627 |  6.3268544701908e-05 | 40.0166666666667 |
-| CAD         | CAD             | half_siblings  |       2025 |    0 |                   0 |                   0 |                     0 |                  0 |                    0 |              2.5 |
-| CAD         | CAD             | half_siblings  |       2025 |    1 |  0.0111443476045844 | 0.00700891988106757 |  -0.00259288293283479 | 0.0248815781420036 | 4.91249578992242e-05 | 35.2023809523809 |
-| CAD         | CAD             | half_siblings  |       2026 |    0 |                   0 |                   0 |                     0 |                  0 |                    0 |            37.95 |
+| index_trait | relatives_trait | relatives_kind | age |               cif |                  se |               l95 |               u95 |                  var |            cases |
+|-------------+-----------------+----------------+-----+-------------------+---------------------+-------------------+-------------------+----------------------+------------------|
+| SCZ         |                 |                |  39 | 0.125601170688606 | 0.00292287401345741 | 0.119872442890881 |  0.13132989848633 | 8.54319249854462e-06 | 1679.07063492064 |
+| SCZ         |                 |                |  40 | 0.126061509335914 | 0.00293038385595051 | 0.120318062517374 | 0.131804956154455 | 8.58714954321537e-06 |  1688.6873015873 |
+| SCZ         |                 |                |  41 | 0.127200886688793 |  0.0029495067967285 | 0.121419959595049 | 0.132981813782537 | 8.69959034394762e-06 |  1691.1873015873 |
+| SCZ         |                 |                |  42 | 0.127504992260531 | 0.00295412543073292 |  0.12171501281048 | 0.133294971710581 | 8.72685706050295e-06 |  1692.6873015873 |
+| SCZ         |                 |                |  43 | 0.127692928194853 | 0.00295605542137307 | 0.121899166032657 | 0.133486690357048 | 8.73826365422909e-06 |  1694.4373015873 |
+| SCZ         |                 |                |  44 | 0.127918946190156 | 0.00295802881325761 | 0.122121316250939 | 0.133716576129372 | 8.74993446006225e-06 | 1697.52063492063 |
+| SCZ         |                 |                |  45 | 0.128329971720704 | 0.00296406286539596 | 0.122520515256615 | 0.134139428184792 | 8.78566867001932e-06 | 1698.35396825397 |
+| SCZ         |                 |                |  46 | 0.128444608095048 | 0.00296390726278152 |  0.12263545660648 | 0.134253759583617 | 8.78474626236907e-06 | 1700.35396825397 |
+| SCZ         |                 |                |  47 | 0.128728080855949 | 0.00296680376408114 | 0.122913252329152 | 0.134542909382745 | 8.80192457456601e-06 | 1700.85396825397 |
+| SCZ         |                 |                |  48 |  0.12880137284206 | 0.00296565591355671 |  0.12298879406095 | 0.134613951623169 | 8.79511499761391e-06 | 1701.85396825397 |
+
+** Args
+
+#+BEGIN_SRC R :exports both :results output :tangle no
+message(rjson::toJSON(out$args, indent = 2))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+{
+  "h2_t1":{
+    "cif_pop":{
+      "index_trait":"SCZ",
+      "stratify_columns":[
+
+      ],
+      "use_weighted":      true
+    },
+    "cif_fh":{
+      "index_trait":"SCZ",
+      "relatives_trait":"SCZ",
+      "relatives_kind":"parents",
+      "stratify_columns":[
+
+      ],
+      "use_weighted":      true
+    },
+    "relatedness":    0.5
+  },
+  "h2_t2":{
+    "cif_pop":{
+      "index_trait":"CAD",
+      "stratify_columns":[
+
+      ],
+      "use_weighted":      true
+    },
+    "cif_fh":{
+      "index_trait":"CAD",
+      "relatives_trait":"CAD",
+      "relatives_kind":"half_siblings",
+      "stratify_columns":[
+
+      ],
+      "use_weighted":      true
+    },
+    "relatedness":    0.25
+  },
+  "cif_cross":{
+    "index_trait":"SCZ",
+    "relatives_trait":"CAD",
+    "relatives_kind":"half_siblings",
+    "stratify_columns":[
+
+    ],
+    "use_weighted":    true
+  },
+  "relatedness":  0.25
+}
+#+end_example
 
 
 * Advanced interface
