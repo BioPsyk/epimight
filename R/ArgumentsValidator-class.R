@@ -110,6 +110,14 @@ ArgumentsValidator <- R6::R6Class( #nolint
         stop("Rule for argument '", key, "' did not have 'properties' specified")
       }
 
+      value_names <- names(value)
+      prop_names  <- names(rule$properties)
+      diff_names  <- value_names[!(value_names %in% prop_names)]
+
+      if (length(diff_names) > 0) {
+        stop("Argument '", key, "' contained unknown members: ", paste(diff_names, sep = ", "))
+      }
+
       for (prop_key in names(rule$properties)) {
         prop_rule <- rule$properties[[prop_key]]
         full_key  <- sprintf("%s[[%s]]", key, prop_key)
