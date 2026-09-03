@@ -376,8 +376,7 @@ describe("run_rg", {
   it("only allows using the same stratify_columns for both h2s", {
     args <- copy(rg_args)
 
-    args$h2_t1$cif_pop$stratify_columns <- list()
-    args$h2_t2$cif_pop$stratify_columns <- list()
+    args$h2_t1$cif_pop$stratify_columns <- list("birth_year")
 
     expect_error(do.call(pipeline$run_rg, args))
   })
@@ -385,8 +384,8 @@ describe("run_rg", {
   it("only allows using the same stratify_columns for h2s and cif_cross", {
     args <- copy(rg_args)
 
-    args$cif_cross$stratify_columns <- list()
-    args$cif_cross$stratify_columns <- list()
+    args$h2_t1$cif_pop$stratify_columns <- list("birth_year")
+    args$cif_cross$stratify_columns     <- list()
 
     expect_error(do.call(pipeline$run_rg, args))
   })
