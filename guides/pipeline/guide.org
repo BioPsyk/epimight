@@ -98,16 +98,16 @@ The advanced interface gives the user full control of the underlying analyses (c
 While the simple interface gives the user less control, but uses sane defaults that should work
 for the majority of use cases.
 
-This guide is separated into 4 main chapters:
+This guide is separated into 3 main chapters:
 
 - Time-to-event data format
 - Simple interface
 - Advanced interface
-- Results
 
 * Time-to-event data format
 
-To run the pipeline, you need to supply a set of individuals, which for each trait contains:
+For each individual in the target cohort, the pipeline needs the following information for each trait
+and kind of relatives:
 
 - The individuals trait status (0 = censored, 1 = affected, 2 = competing risk)
 - The individuals age at status (in years)
@@ -176,14 +176,56 @@ tte |>
 |     99999 | SCZ   |            0 |        53 | parents        |           2 |                 0 |
 
 This ~data.table~ is called the time-to-event "pool". It's called a "pool" because all data is kept
-there and only the relevant rows are pulled out when a genetic correlation is produced.
+there and only the relevant rows are pulled out of the pool during analysis.
 
-Besides the actual TTE data, the pipeline needs to know:
+* Simple interface
 
-- Which trait, kinds of relatives and relatedness to use for heritability 1
-- Which trait, kinds of relatives and relatedness to use for heritability 2
+To use the simple interface, you
 
-The next chapters shows you how this works in practice.
+To setup the pipeline, we start by importing the epimight library and loading the test dataset [[../../tests/data/pipeline-tte.csv][pipeline-tts.csv]]:
+
+#+BEGIN_SRC R :exports code :eval no
+library(dplyr)
+library(readr)
+library(data.table)
+library(epimight)
+
+tte <- read_csv(
+  "./pipeline-tte.csv",
+  show_col_type = FALSE,
+  col_types = cols(person_id = col_character()),
+) |> as.data.table()
+#+END_SRC
+
+And then create a new instance with our TTE pool:
+
+#+BEGIN_SRC R :exports both
+pipeline <- Pipeline$new(pool = tte)
+#+END_SRC
+
+#+RESULTS:
+
+Now the pool is full of data and you can start running the pipeline to produce genetic correlations between specific traits.
+
+Let's say we want to produce a genetic correlation between first diagnosis of "Schizophrenia" and
+"Coronary Artery Disease" using parents as relatives. And we want to stratify the results on the
+newly added column ~birth_year~ that contains the individuals birth year. We would then run:
+
+#+BEGIN_SRC R :exports code :results output
+results <- pipeline$run(
+  heritability1 = list(
+    index_trait    = "SCZ",
+    relatives_kind = "parents",
+    relatedness    = 0.5
+  ),
+  heritability2 = list(
+    index_trait    = "CAD",
+    relatives_kind = "half_siblings",
+    relatedness    = 0.25
+  ),
+  stratify_columns = list("birth_year")
+)
+#+END_SRC
 
 * Advanced interface
 
