@@ -85,53 +85,53 @@ describe("initialize", {
   })
 })
 
-#describe("get_tte", {
-#  it("fails on unknown traits", {
-#    expect_error(pipeline$get_tte(
-#      index_trait     = "unknown",
-#      relatives_trait = "SCZ",
-#      relatives_kind  = "half_siblings"
-#    ))
-#
-#    expect_error(pipeline$get_tte(
-#      index_trait     = "CAD",
-#      relatives_trait = "unknown",
-#      relatives_kind  = "half_siblings"
-#    ))
-#  })
-#
-#  it("fails on unknown relatives kind", {
-#    expect_error(pipeline$get_tte(
-#      index_trait     = "CAD",
-#      relatives_trait = "SCZ",
-#      relatives_kind  = "unknown"
-#    ))
-#  })
-#
-#  it("doesn't add relatives columns when population is requested", {
-#    tte <- pipeline$get_tte(
-#      index_trait = "CAD"
-#    )
-#
-#    expect_true(!("relatives_kind" %in% colnames(tte)))
-#    expect_true(!("relatives_n" %in% colnames(tte)))
-#    expect_true(!("relatives_n_trait" %in% colnames(tte)))
-#    expect_true(!("weight" %in% colnames(tte)))
-#  })
-#
-#  it("adds relatives columns when relatives are requested", {
-#    tte <- pipeline$get_tte(
-#      index_trait     = "CAD",
-#      relatives_trait = "SCZ",
-#      relatives_kind  = "half_siblings"
-#    )
-#
-#    expect_true("relatives_kind" %in% colnames(tte))
-#    expect_true("relatives_n" %in% colnames(tte))
-#    expect_true("relatives_n_trait" %in% colnames(tte))
-#    expect_true("weight" %in% colnames(tte))
-#  })
-#})
+describe("get_tte", {
+  it("fails on unknown traits", {
+    expect_error(pipeline$get_tte(
+      index_trait     = "unknown",
+      relatives_trait = "SCZ",
+      relatives_kind  = "half_siblings"
+    ))
+
+    expect_error(pipeline$get_tte(
+      index_trait     = "CAD",
+      relatives_trait = "unknown",
+      relatives_kind  = "half_siblings"
+    ))
+  })
+
+  it("fails on unknown relatives kind", {
+    expect_error(pipeline$get_tte(
+      index_trait     = "CAD",
+      relatives_trait = "SCZ",
+      relatives_kind  = "unknown"
+    ))
+  })
+
+  it("doesn't add relatives columns when population is requested", {
+    tte <- pipeline$get_tte(
+      index_trait = "CAD"
+    )
+
+    expect_true(!("relatives_kind" %in% colnames(tte)))
+    expect_true(!("relatives_n" %in% colnames(tte)))
+    expect_true(!("relatives_n_trait" %in% colnames(tte)))
+    expect_true(!("weight" %in% colnames(tte)))
+  })
+
+  it("adds relatives columns when relatives are requested", {
+    tte <- pipeline$get_tte(
+      index_trait     = "CAD",
+      relatives_trait = "SCZ",
+      relatives_kind  = "half_siblings"
+    )
+
+    expect_true("relatives_kind" %in% colnames(tte))
+    expect_true("relatives_n" %in% colnames(tte))
+    expect_true("relatives_n_trait" %in% colnames(tte))
+    expect_true("weight" %in% colnames(tte))
+  })
+})
 
 describe("get_results", {
   it("fails when given parameters are of wrong type", {
@@ -139,6 +139,7 @@ describe("get_results", {
     expect_error(pipeline$get_results(1231, list()))
     expect_error(pipeline$get_results(NULL, list()))
   })
+
   it("successfully retrieves results regardless of arguments order", {
     pipeline$clear_results()
 
@@ -219,17 +220,19 @@ describe("add_results", {
   })
 })
 
-#describe("run_cif", {
-#  it("adds produced result to cache", {
-#    results <- pipeline$run_cif(
-#      index_trait     = "SCZ",
-#      relatives_trait = "CAD",
-#      relatives_kind  = "parents"
-#    )
-#
-#    print(results)
-#  })
-#})
+describe("run_cif", {
+  it("adds produced result to cache", {
+    pipeline$clear_results()
+
+    results <- pipeline$run_cif(
+      index_trait     = "SCZ",
+      relatives_trait = "CAD",
+      relatives_kind  = "parents"
+    )
+
+    print(results)
+  })
+})
 
 #
 #describe("run", {
