@@ -36,31 +36,18 @@ describe("defaults", {
       )
     )
 
-
     h2_rules <- list(
       required   = TRUE,
       type       = "named_list",
       properties = list(
-        cif_pop = cif_rules,
-        cif_fh  = cif_rules,
-        relatedness = list(
-          required = TRUE,
-          type     = "numeric",
-          minimum  = 0
-        )
+        cif_pop = cif_rules
       )
     )
 
     args <- list(
       cif_pop = list(
         index_trait = "SCZ"
-      ),
-      cif_fh = list(
-        index_trait     = "SCZ",
-        relatives_trait = "SCZ",
-        relatives_kind  = "parents"
-      ),
-      relatedness = 0.5
+      )
     )
 
     validator      <- do.call(ArgumentsValidator$new, h2_rules$properties)
@@ -69,9 +56,7 @@ describe("defaults", {
     message(rjson::toJSON(validated_args, indent = 2))
 
     expect_true("use_weighted" %in% validated_args$cif_pop)
-    expect_true("use_weighted" %in% validated_args$cif_fh)
     expect_true("stratify_columns" %in% validated_args$cif_pop)
-    expect_true("stratify_columns" %in% validated_args$cif_fh)
   })
 })
 
