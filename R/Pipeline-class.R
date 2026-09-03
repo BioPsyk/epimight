@@ -316,6 +316,10 @@ Pipeline <- R6::R6Class( #nolint
           stop("Using different index_traits and relatives_trait in cif_fh is not allowed")
         }
 
+        if (!identical(args$cif_pop$stratify_columns, args$cif_fh$stratify_columns)) {
+          stop("Using different stratify_columns in cif_pop and cif_fh is not allowed")
+        }
+
         return(args)
       })
 

@@ -234,7 +234,7 @@ pipeline <- Pipeline$new(pool = pool_tte)
 #})
 
 describe("run_cif", {
-  it("returns cached results if the analysis have already been run", {
+  it("returns cached results if they exist", {
     pipeline$clear_results()
 
     results <- data.table(
@@ -260,7 +260,7 @@ describe("run_cif", {
 })
 
 describe("run_h2", {
-  it("returns cached results if the analysis have already been run", {
+  it("returns cached results if they exist", {
     pipeline$clear_results()
 
     args <- list(
@@ -313,8 +313,25 @@ describe("run_h2", {
         index_trait = "SCZ"
       ),
       cif_fh = list(
+        index_trait     = "SCZ",
+        relatives_trait = "CAD",
+        relatives_kind  = "parents"
+      ),
+      relatedness = 0.5
+    )
+
+    expect_error(do.call(pipeline$run_h2, args))
+  })
+
+  it("only allows using the same stratify_columns for both CIFs", {
+    args <- list(
+      cif_pop = list(
+        index_trait      = "CAD",
+        stratify_columns = list("birth_year")
+      ),
+      cif_fh = list(
         index_trait     = "CAD",
-        relatives_trait = "SCZ",
+        relatives_trait = "CAD",
         relatives_kind  = "parents"
       ),
       relatedness = 0.5
