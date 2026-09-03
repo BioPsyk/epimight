@@ -123,13 +123,26 @@ describe("get_tte", {
     tte <- pipeline$get_tte(
       index_trait     = "CAD",
       relatives_trait = "SCZ",
-      relatives_kind  = "half_siblings"
+      relatives_kind  = "half_siblings",
+      use_weighted    = TRUE
     )
 
     expect_true("relatives_kind" %in% colnames(tte))
     expect_true("relatives_n" %in% colnames(tte))
     expect_true("relatives_n_trait" %in% colnames(tte))
     expect_true("weight" %in% colnames(tte))
+
+    tte <- pipeline$get_tte(
+      index_trait     = "CAD",
+      relatives_trait = "SCZ",
+      relatives_kind  = "half_siblings",
+      use_weighted    = FALSE
+    )
+
+    expect_true("relatives_kind" %in% colnames(tte))
+    expect_true("relatives_n" %in% colnames(tte))
+    expect_true("relatives_n_trait" %in% colnames(tte))
+    expect_true(!("weight" %in% colnames(tte)))
   })
 })
 

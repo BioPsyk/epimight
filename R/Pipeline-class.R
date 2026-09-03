@@ -11,11 +11,9 @@
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
-    pool             = NULL,
-    stratify_columns = NULL,
-    use_weighted_cif = NULL,
-    analyses         = NULL,
-    results = list(
+    pool     = NULL,
+    analyses = NULL,
+    results  = list(
       cif = list(),
       h2  = list(),
       rg  = list()
@@ -64,28 +62,11 @@ Pipeline <- R6::R6Class( #nolint
               required = TRUE
             )
           )
-        ),
-        stratify_columns = list(
-          type    = "list",
-          items   = list(type = "string"),
-          default = list()
-        ),
-        use_weighted_cif = list(
-          type    = "logical",
-          default = TRUE
         )
       )
 
-      args                     <- validator$run(...)
-      private$pool             <- args$pool
-      private$stratify_columns <- args$stratify_columns
-      private$use_weighted_cif <- args$use_weighted_cif
-
-      for (col in args$stratify_columns) {
-        if (!(col %in% colnames(private$pool))) {
-          stop("Column \"", col, "\" was not found in the TTE pool: ", paste(colnames(private$pool), collapse = ", "))
-        }
-      }
+      args         <- validator$run(...)
+      private$pool <- args$pool
 
       self$validation_rules$cif <- list(
         required   = TRUE,
@@ -102,6 +83,15 @@ Pipeline <- R6::R6Class( #nolint
           relatives_kind = list(
             required = FALSE,
             type     = "string"
+          ),
+          stratify_columns = list(
+            type    = "list",
+            items   = list(type = "string"),
+            default = list()
+          ),
+          use_weighted = list(
+            type    = "logical",
+            default = TRUE
           )
         )
       )
@@ -151,6 +141,11 @@ Pipeline <- R6::R6Class( #nolint
       if (!is.character(type)) stop("Given `type` was not a character")
       if (!is.data.table(results)) stop("Given `results` was not a data.table")
       if (!is.list(args)) stop("Given `args` was not a named list")
+      if (!(type %in% names(self$validation_rules))) stop("Given `type` \"", type, "\" was unknown")
+
+      rules     <- self$validation_rules[[type]]
+      validator <- do.call(ArgumentsValidator$new, rules$properties)
+      args      <- do.call(validator$run, args)
 
       args <- args[order(names(args))]
       key  <- rjson::toJSON(args)
@@ -160,9 +155,13 @@ Pipeline <- R6::R6Class( #nolint
     get_results = function(type, args) {
       if (!is.character(type)) stop("Given `type` was not a character")
       if (!is.list(args)) stop("Given `args` was not a named list")
+      if (!(type %in% names(self$validation_rules))) stop("Given `type` \"", type, "\" was unknown")
 
-      args <- args[order(names(args))]
-      key  <- rjson::toJSON(args)
+      rules     <- self$validation_rules[[type]]
+      validator <- do.call(ArgumentsValidator$new, rules$properties)
+      args      <- do.call(validator$run, args)
+      args      <- args[order(names(args))]
+      key       <- rjson::toJSON(args)
 
       private$results[[type]][[key]]
     },
@@ -173,10 +172,12 @@ Pipeline <- R6::R6Class( #nolint
     get_tte = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$cif$properties)
       args      <- validator$run(...)
-      columns   <- c("person_id", "trait_status", "trait_age")
+      columns   <- c(c("person_id", "trait_status", "trait_age"), unlist(args$stratify_columns))
 
-      if (!is.null(private$stratify_columns) && is.list(private$stratify_columns)) {
-        columns <- c(columns, unlist(private$stratify_columns))
+      for (col in columns) {
+        if (!(col %in% colnames(private$pool))) {
+          stop("Column \"", col, "\" was not found in the TTE pool: ", paste(colnames(private$pool), collapse = ", "))
+        }
       }
 
       tte <- private$pool[
@@ -212,7 +213,7 @@ Pipeline <- R6::R6Class( #nolint
           relatives_n_trait > 0
         ]
 
-        if (isTRUE(private$use_weighted_cif)) {
+        if (isTRUE(args$use_weighted)) {
           tte <- tte[
             , weight := ifelse(relatives_n_trait > 0.0, relatives_n_trait / relatives_n, 0.0)
           ]
@@ -275,7 +276,7 @@ Pipeline <- R6::R6Class( #nolint
       tte <- do.call(self$get_tte, args)
       cif <- private$analyses$cif$run(
         tte              = tte,
-        stratify_columns = private$stratify_columns
+        stratify_columns = args$stratify_columns
       ) |>
         mutate(
           index_trait     = args$index_trait,
@@ -286,7 +287,7 @@ Pipeline <- R6::R6Class( #nolint
           index_trait,
           relatives_trait,
           relatives_kind,
-          all_of(unlist(private$stratify_columns)),
+          all_of(unlist(args$stratify_columns)),
           age,
           everything()
         )
