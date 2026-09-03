@@ -180,9 +180,7 @@ there and only the relevant rows are pulled out of the pool during analysis.
 
 * Simple interface
 
-To use the simple interface, you
-
-To setup the pipeline, we start by importing the epimight library and loading the test dataset [[../../tests/data/pipeline-tte.csv][pipeline-tts.csv]]:
+To use the simple interface, we start by importing the epimight library and loading the test dataset [[../../tests/data/pipeline-tte.csv][pipeline-tts.csv]]:
 
 #+BEGIN_SRC R :exports code :eval no
 library(dplyr)
@@ -197,35 +195,187 @@ tte <- read_csv(
 ) |> as.data.table()
 #+END_SRC
 
-And then create a new instance with our TTE pool:
+Then we create an instance of the pipeline with the test dataset:
 
 #+BEGIN_SRC R :exports both
 pipeline <- Pipeline$new(pool = tte)
 #+END_SRC
 
-#+RESULTS:
+Once we have an instance of the pipeline, we need to tell the pipeline:
 
-Now the pool is full of data and you can start running the pipeline to produce genetic correlations between specific traits.
+- Which trait should be trait 1
+- Which trait should be trait 2
+- What kind of relatives and relatedness to use for the two heritabilities
 
-Let's say we want to produce a genetic correlation between first diagnosis of "Schizophrenia" and
-"Coronary Artery Disease" using parents as relatives. And we want to stratify the results on the
-newly added column ~birth_year~ that contains the individuals birth year. We would then run:
+We supply this information as named arguments to the ~run~ function:
 
 #+BEGIN_SRC R :exports code :results output
 results <- pipeline$run(
   heritability1 = list(
-    index_trait    = "SCZ",
+    trait          = "SCZ",
     relatives_kind = "parents",
     relatedness    = 0.5
   ),
   heritability2 = list(
-    index_trait    = "CAD",
+    trait          = "CAD",
     relatives_kind = "half_siblings",
     relatedness    = 0.25
-  ),
-  stratify_columns = list("birth_year")
+  )
 )
 #+END_SRC
+
+The ~trait~ and ~relatives_kind~ values for the two heritabilities are just used as
+filters on the time-to-event columns ~trait~ and ~relatives_kind~. In the test dataset our traits
+are first diagnosis, where we use a 3 letter abbreviation of the disorder. You can define your
+traits and name them any way you like.
+
+The simple interface acts as a thin layer of abstraction, which takes the given 6 arguments and
+expands them into 14 advanced interface arguments that it uses to then run the advanced interface.
+It does this by making a choice on how the genetic correlation is constructed.
+
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:rg-components
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/rg-components.png :exports results
+@startuml
+!include <material7.4.47/AccountUser/AccountGroup>
+!include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
+!include ../diagrams/ibp.puml
+
+skinparam nodesep 80
+skinparam ranksep 80
+
+<style>
+  root {
+    FontColor #111111
+  }
+
+  title {
+    LineColor transparent
+  }
+
+  file {
+    LineColor #333333
+  }
+
+  rectangle {
+    LineColor #333333
+  }
+
+  card {
+    RoundCorner     0
+    BackgroundColor transparent
+    LineColor       transparent
+  }
+</style>
+
+skinparam defaultTextAlignment center
+
+title "**Genetic correlation components**"
+
+legend left
+  <#silver>|= Color|= Trait usage |
+  |<#dd2e44>|Index trait 1, Relatives trait 1|
+  |<#54adef>|Index trait 2, Relatives trait 2|
+  |<#c254ef>|Index trait 1, Relatives trait 2|
+endlegend
+
+file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #dd2e44
+file "**H2**\n""h2_t1""" as h2_t1 #dd2e44
+file "**CIF**\n""cif_cross""" as cif_cross #c254ef
+file "**CIF**\n""cif_t2_pop""" as cif_t2_pop #54adef
+file "**H2**\n""h2_t2""" as h2_t2 #54adef
+file "**RG**\n""rg_t1_t2""" as rg #c254ef
+
+rectangle "Relatedness" as t3_rel #54adef
+
+cif_t1_pop --> rg
+cif_t2_pop --> rg
+cif_cross --> rg
+h2_t1 --> rg
+h2_t2 --> rg
+
+t3_rel -UP-> rg
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Genetic correlation components
+#+RESULTS: fig:rg-components
+[[file:../diagrams/rg-components.png]]
+
+
+Both
+interfaces provide the same output, a named list with the following members:
+
+| Name     | Description                                                 |
+|----------+-------------------------------------------------------------|
+| rg       | All genetic correlations as a single ~data.table~           |
+| h2       | All heritabilities as a single ~data.table~                 |
+| cif      | All cumulative incidences as a single ~data.table~          |
+| metadata | Contains the version of pipeline and the arguments supplied |
+
+** Genetic correlation
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+results$rg |> tail(10)
+#+END_SRC
+
+#+RESULTS:
+| birth_year |                rg |                se |                l95 |                u95 |
+|------------+-------------------+-------------------+--------------------+--------------------|
+|       2013 | 0.409996279186738 | 0.162341385621829 | -0.262339539355842 |  0.374038692281729 |
+|       2014 | -4.42614128968753 | 0.153127479661764 | -0.810150881715246 |  -0.20989116144113 |
+|       2006 |  2.90152900531141 | 0.352780423173207 | -0.310509427437125 |   1.07238983140185 |
+|       2011 | -3.51988543593551 | 0.406093836429339 |  -1.08577533686132 |  0.506112501941691 |
+|       2016 | -2.28098071323738 | 0.165076992440446 | -0.531991453173115 |  0.115110357193435 |
+|       2017 | 0.698042514378488 | 0.166039648731239 |   -0.1277058302671 |  0.523169592759359 |
+|       2018 | -1.97287753766852 | 0.139489995138325 | -0.470223402896504 | 0.0765773780457289 |
+|       2020 |   1.5545307367187 |  0.13838997038137 |  0.193273567889789 |  0.735762251784761 |
+|       2021 |   4.2575417476688 | 0.123846578785789 |  0.203972409990044 |  0.689450998830337 |
+|       1988 | 0.679932928634086 | 0.372425084049931 | -0.633441922205357 |  0.826464407270374 |
+
+** Heritability
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+results$h2 |> tail(10)
+#+END_SRC
+
+#+RESULTS:
+| index_trait | time | birth_year |                h2 |                 se |                 l95 |               u95 |
+|-------------+------+------------+-------------------+--------------------+---------------------+-------------------|
+| CAD         |    1 |       2021 | 0.496932556546836 |  0.331678236153875 |  -0.153156786314758 |  1.14702189940843 |
+| CAD         |    2 |       2021 |  0.40991313505927 |  0.303938409254187 |  -0.185806147078937 |  1.00563241719748 |
+| CAD         |    3 |       2021 |  0.42378442126557 |  0.297901981919888 |  -0.160103463297411 |  1.00767230582855 |
+| CAD         |    4 |       2021 | 0.519997720004412 |  0.284918168735904 | -0.0384418907179599 |  1.07843733072678 |
+| CAD         |    5 |       2021 | 0.601058412455967 |  0.108151065465792 |   0.389082324143015 | 0.813034500768918 |
+| CAD         |    1 |       2023 | 0.594013956389342 |  0.315824924803152 | -0.0250028962248364 |  1.21303080900352 |
+| CAD         |    2 |       2023 | 0.437547505013097 |  0.305432070554166 |  -0.161099353273069 |  1.03619436329926 |
+| CAD         |    3 |       2023 | 0.541822424425517 | 0.0961163833678636 |   0.353434313024504 | 0.730210535826529 |
+| CAD         |    2 |       2024 | 0.341865432112926 | 0.0983404127120427 |   0.149118223197322 | 0.534612641028529 |
+| CAD         |    1 |       2025 | 0.451036950622591 | 0.0962894437347706 |   0.262309640902441 | 0.639764260342742 |
+
+** Cumulative incidence
+
+#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
+results$cif |> tail(10)
+#+END_SRC
+
+#+RESULTS:
+| index_trait | relatives_trait | relatives_kind | birth_year | time |                 cif |                  se |                   l95 |                u95 |                  var |            cases |
+|-------------+-----------------+----------------+------------+------+---------------------+---------------------+-----------------------+--------------------+----------------------+------------------|
+| CAD         | CAD             | half_siblings  |       2022 |    4 | 0.00608619574727072 | 0.00525473608934777 |  -0.00421289773611376 | 0.0163852892306552 | 2.76122513686939e-05 |             42.5 |
+| CAD         | CAD             | half_siblings  |       2023 |    0 |                   0 |                   0 |                     0 |                  0 |                    0 |                3 |
+| CAD         | CAD             | half_siblings  |       2023 |    1 |  0.0125799350036691 | 0.00721720005825521 |  -0.00156551717973143 | 0.0267253871870697 |  5.2087976680879e-05 | 3.33333333333333 |
+| CAD         | CAD             | half_siblings  |       2023 |    2 |  0.0139777055596324 |  0.0076022103557721 | -0.000922352940578358 | 0.0288777640598431 | 5.77936022934086e-05 | 4.33333333333333 |
+| CAD         | CAD             | half_siblings  |       2023 |    3 |  0.0181710172275221 | 0.00864940265617126 |   0.00121849953364136 | 0.0351235349214028 | 7.48121663085824e-05 | 44.0785714285714 |
+| CAD         | CAD             | half_siblings  |       2024 |    0 |                   0 |                   0 |                     0 |                  0 |                    0 |                3 |
+| CAD         | CAD             | half_siblings  |       2024 |    2 |  0.0138735706643715 | 0.00795415267026652 |  -0.00171628209688394 |  0.029463423425627 |  6.3268544701908e-05 | 40.0166666666667 |
+| CAD         | CAD             | half_siblings  |       2025 |    0 |                   0 |                   0 |                     0 |                  0 |                    0 |              2.5 |
+| CAD         | CAD             | half_siblings  |       2025 |    1 |  0.0111443476045844 | 0.00700891988106757 |  -0.00259288293283479 | 0.0248815781420036 | 4.91249578992242e-05 | 35.2023809523809 |
+| CAD         | CAD             | half_siblings  |       2026 |    0 |                   0 |                   0 |                     0 |                  0 |                    0 |            37.95 |
+
 
 * Advanced interface
 
@@ -361,77 +511,6 @@ Once the pipeline has estimated that final cumulative incidence, it has produced
 The pipeline estimates the genetic correlation from 5 of these estimates and the relatedness of the
 relatives in the family history 2 cohort:
 
-#+LATEX: \vspace{0.5cm}
-#+LATEX: \begin{center}
-#+NAME: fig:rg-data-flow
-#+ATTR_HTML: :style max-width: 100%;
-#+BEGIN_SRC plantuml :file ../diagrams/rg-data-flow.png :exports results
-@startuml
-!include <material7.4.47/AccountUser/AccountGroup>
-!include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
-!include ../diagrams/ibp.puml
-
-skinparam nodesep 80
-skinparam ranksep 80
-
-<style>
-  root {
-    FontColor #111111
-  }
-
-  title {
-    LineColor transparent
-  }
-
-  file {
-    LineColor #333333
-  }
-
-  rectangle {
-    LineColor #333333
-  }
-
-  card {
-    RoundCorner     0
-    BackgroundColor transparent
-    LineColor       transparent
-  }
-</style>
-
-skinparam defaultTextAlignment center
-
-title "**Genetic correlation data flow**"
-
-legend left
-  <#silver>|= Color|= Trait usage |
-  |<#dd2e44>|Index trait 1|
-  |<#54adef>|Index trait 2|
-  |<#c254ef>|Index trait 1, Relatives trait 2|
-endlegend
-
-file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #dd2e44
-file "**H2**\n""h2_t1""" as h2_t1 #dd2e44
-file "**CIF**\n""cif_cross""" as cif_cross #c254ef
-file "**CIF**\n""cif_t2_pop""" as cif_t2_pop #54adef
-file "**H2**\n""h2_t2""" as h2_t2 #54adef
-file "**RG**\n""rg_t1_t2""" as rg #c254ef
-
-rectangle "Relatedness" as t3_rel
-
-cif_t1_pop --> rg
-cif_t2_pop --> rg
-cif_cross --> rg
-h2_t1 --> rg
-h2_t2 --> rg
-
-t3_rel -UP-> rg
-@enduml
-#+END_SRC
-
-#+ATTR_LATEX: :placement [H]
-#+CAPTION: Genetic correlation data flow
-#+RESULTS: fig:rg-data-flow
-[[file:../diagrams/rg-data-flow.png]]
 
 
 * Running the pipeline
