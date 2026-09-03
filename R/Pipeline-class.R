@@ -115,8 +115,6 @@ Pipeline <- R6::R6Class( #nolint
         required   = TRUE,
         type       = "named_list",
         properties = list(
-          cif_t1_pop = self$validation_rules$cif,
-          cif_t2_pop = self$validation_rules$cif,
           cif_cross  = self$validation_rules$cif,
           h2_t1      = self$validation_rules$h2,
           h2_t2      = self$validation_rules$h2,
@@ -127,6 +125,8 @@ Pipeline <- R6::R6Class( #nolint
           )
         )
       )
+      self$validation_rules$rg$properties$cif_cross$relatives_trait$required <- TRUE
+      self$validation_rules$rg$properties$cif_cross$relatives_kind$required  <- TRUE
 
       private$analyses <- list(
         core = Analysis$new(),
