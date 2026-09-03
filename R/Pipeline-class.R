@@ -205,8 +205,17 @@ Pipeline <- R6::R6Class( #nolint
     #' straitfy columns. Makes sure that the retrieved data fulfills the requirements of carrying out
     #' a single pipeline run.
     get_tte = function(...) {
+      validator <- do.call(ArgumentsValidator$new, self$validation_rules$cif$properties)
+      args      <- validator$run(...)
+
+      columns <- c("person_id", "trait_status", "trait_age")
+
+      if (!is.null(private$stratify_columns) && is.list(private$stratify_columns)) {
+        columns <- c(columns, unlist(private$stratify_columns))
+      }
+
       tte <- private$pool[
-        trait == index_trait
+        trait == args$index_trait
       ][
         , .SD[1], by = "person_id"
       ][
@@ -215,9 +224,9 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(tte) == 0) stop(paste0("No proband TTE data found for trait ", index_trait))
 
-      if (!is.null(rel_trait) && !is.null(rel_kind)) {
+      if (!is.null(args$relatives_trait) && !is.null(args$relatives_kind)) {
         relatives_tte <- private$pool[
-          trait == rel_trait & relatives_kind == rel_kind
+          trait == args$relatives_trait & relatives_kind == args$relatives_kind
         ][
           , .SD[1], by = "person_id"
         ][
@@ -226,8 +235,8 @@ Pipeline <- R6::R6Class( #nolint
 
         if (nrow(relatives_tte) == 0) {
           stop(paste0(
-            "No family history TTE data found for trait \"", rel_trait,
-            "\" and relationship kind \"", rel_kind, "\""
+            "No family history TTE data found for trait \"", args$relatives_trait,
+            "\" and relationship kind \"", args$relatives_kind, "\""
           ))
         }
 
@@ -238,7 +247,7 @@ Pipeline <- R6::R6Class( #nolint
           relatives_n_trait > 0
         ]
 
-        if (isTRUE(use_weighted_cif)) {
+        if (isTRUE(private$use_weighted_cif)) {
           tte <- tte[
             , weight := ifelse(relatives_n_trait > 0.0, relatives_n_trait / relatives_n, 0.0)
           ]
@@ -247,7 +256,7 @@ Pipeline <- R6::R6Class( #nolint
         if (nrow(tte) == 0) {
           stop(paste0(
             "No probands with at least 1 relative (of kind \"",
-            rel_kind, "\") with trait \"", rel_trait, "\""
+            args$relatives_kind, "\") with trait \"", args$relatives_trait, "\""
           ))
         }
       }

@@ -14,6 +14,8 @@ pool_tte <- read_csv(
   col_types=cols(person_id = col_character()),
 ) |> as.data.table()
 
+pipeline <- Pipeline$new(pool = pool_tte)
+
 #=================================================================================
 # Tests
 #=================================================================================
@@ -83,73 +85,53 @@ pool_tte <- read_csv(
 #  })
 #})
 #
-#describe("get_tte", {
-#  it("fails on unknown stratify_columns", {
-#    expect_error(pipeline$get_tte(
-#      list("unknown"),
-#      FALSE,
-#      "CAD",
-#      "SCZ",
-#      "half_siblings"
-#    ))
-#  })
-#
-#  it("fails on unknown traits", {
-#    expect_error(pipeline$get_tte(
-#      list(),
-#      FALSE,
-#      "CAD",
-#      "unknown",
-#      "half_siblings"
-#    ))
-#
-#    expect_error(pipeline$get_tte(
-#      list("birth_year"),
-#      TRUE,
-#      "unknown",
-#      "SCZ",
-#      "half_siblings"
-#    ))
-#  })
-#
-#  it("fails on unknown family history relationship kind", {
-#    expect_error(pipeline$get_tte(
-#      list("birth_year"),
-#      TRUE,
-#      "CAD",
-#      "SCZ",
-#      "unknown"
-#    ))
-#  })
-#
-#  it("doesn't add relatives columns when population is requested", {
-#    tte <- pipeline$get_tte(
-#      list("birth_year"),
-#      TRUE,
-#      "CAD"
-#    )
-#
-#    expect_true(!("relatives_kind" %in% colnames(tte)))
-#    expect_true(!("relatives_n" %in% colnames(tte)))
-#    expect_true(!("relatives_n_trait" %in% colnames(tte)))
-#    expect_true(!("weight" %in% colnames(tte)))
-#  })
-#
-#  it("adds relatives columns when relatives are requested", {
-#    tte <- pipeline$get_tte(
-#      list("birth_year"),
-#      TRUE,
-#      "CAD",
-#      "SCZ",
-#      "parents"
-#    )
-#
-#    expect_true("relatives_kind" %in% colnames(tte))
-#    expect_true("relatives_n" %in% colnames(tte))
-#    expect_true("relatives_n_trait" %in% colnames(tte))
-#    expect_true("weight" %in% colnames(tte))
-#  })
-#})
+describe("get_tte", {
+  it("fails on unknown traits", {
+    expect_error(pipeline$get_tte(
+      index_trait     = "unknown",
+      relatives_trait = "SCZ",
+      relatives_kind  = "half_siblings"
+    ))
+
+    expect_error(pipeline$get_tte(
+      index_trait     = "CAD",
+      relatives_trait = "unknown",
+      relatives_kind  = "half_siblings"
+    ))
+  })
+
+  it("fails on unknown relatives kind", {
+    expect_error(pipeline$get_tte(
+      index_trait     = "CAD",
+      relatives_trait = "SCZ",
+      relatives_kind  = "unknown"
+    ))
+  })
+
+  it("doesn't add relatives columns when population is requested", {
+    tte <- pipeline$get_tte(
+      index_trait = "CAD"
+    )
+
+    expect_true(!("relatives_kind" %in% colnames(tte)))
+    expect_true(!("relatives_n" %in% colnames(tte)))
+    expect_true(!("relatives_n_trait" %in% colnames(tte)))
+    expect_true(!("weight" %in% colnames(tte)))
+  })
+
+  it("adds relatives columns when relatives are requested", {
+    tte <- pipeline$get_tte(
+      index_trait     = "CAD",
+      relatives_trait = "SCZ",
+      relatives_kind  = "half_siblings"
+    )
+
+    expect_true("relatives_kind" %in% colnames(tte))
+    expect_true("relatives_n" %in% colnames(tte))
+    expect_true("relatives_n_trait" %in% colnames(tte))
+    expect_true("weight" %in% colnames(tte))
+  })
+})
 
 #describe("results", {
 #  it("fails when the given results is not a data.table", {
@@ -363,14 +345,14 @@ pool_tte <- read_csv(
 #  })
 #})
 
-describe("run_expert", {
-  pipeline <- Pipeline$new(pool = pool_tte)
-
-  results <- pipeline$run_cif(
-    index_trait     = "SCZ",
-    relatives_trait = "CAD",
-    relatives_kind  = "parents"
-  )
-
-  print(results)
-})
+#describe("run_expert", {
+#  pipeline <- Pipeline$new(pool = pool_tte)
+#
+#  results <- pipeline$run_cif(
+#    index_trait     = "SCZ",
+#    relatives_trait = "CAD",
+#    relatives_kind  = "parents"
+#  )
+#
+#  print(results)
+#})
