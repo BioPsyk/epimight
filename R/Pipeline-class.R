@@ -145,7 +145,7 @@ Pipeline <- R6::R6Class( #nolint
       )
     },
     clear_results = function() {
-      private$results <- list()
+      private$results <- list(cif = list(), h2 = list(), rg = list())
     },
     add_results = function(type, results, args) {
       if (!is.character(type)) stop("Given `type` was not a character")
@@ -155,7 +155,7 @@ Pipeline <- R6::R6Class( #nolint
       args <- args[order(names(args))]
       key  <- rjson::toJSON(args)
 
-      private$results[[key]] <- results
+      private$results[[type]][[key]] <- results
     },
     get_results = function(type, args) {
       if (!is.character(type)) stop("Given `type` was not a character")
@@ -164,7 +164,7 @@ Pipeline <- R6::R6Class( #nolint
       args <- args[order(names(args))]
       key  <- rjson::toJSON(args)
 
-      private$results[[key]]
+      private$results[[type]][[key]]
     },
     #' @description
     #' Retrieves time-to-event data to use in a run based on the given traits, relationship kind and
@@ -173,8 +173,7 @@ Pipeline <- R6::R6Class( #nolint
     get_tte = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$cif$properties)
       args      <- validator$run(...)
-
-      columns <- c("person_id", "trait_status", "trait_age")
+      columns   <- c("person_id", "trait_status", "trait_age")
 
       if (!is.null(private$stratify_columns) && is.list(private$stratify_columns)) {
         columns <- c(columns, unlist(private$stratify_columns))
@@ -267,8 +266,11 @@ Pipeline <- R6::R6Class( #nolint
     #' Helper that runs cif on the given time-to-event data and handles prefixing columns according to
     #' given trait and cohort naming.
     run_cif = function(...) {
-      validator <- do.call(ArgumentsValidator$new, self$validation_rules$cif$properties)
-      args      <- validator$run(...)
+      validator  <- do.call(ArgumentsValidator$new, self$validation_rules$cif$properties)
+      args       <- validator$run(...)
+      cached_cif <- self$get_results("cif", args)
+
+      if (!is.null(cached_cif)) return(cached_cif)
 
       tte <- do.call(self$get_tte, args)
       cif <- private$analyses$cif$run(
@@ -288,6 +290,8 @@ Pipeline <- R6::R6Class( #nolint
           age,
           everything()
         )
+
+      self$add_results("cif", cif, args)
 
       if (is.null(cif)) {
         stop(paste0(
