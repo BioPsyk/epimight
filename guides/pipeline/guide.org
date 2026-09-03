@@ -349,7 +349,7 @@ genetic correlation are:
 
 You can access these intermediate results using ~out$intermediate[[name]]$results~.
 
-For example, heritability 1:
+*** Heritability trait 1
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 out$intermediate$h2_t1$results |> tail(10)
@@ -369,7 +369,7 @@ out$intermediate$h2_t1$results |> tail(10)
 | SCZ         |  49 | 0.00941576869276033 | 0.0182760833207631 | -0.0264053546159354 | 0.0452368920014561 |
 | SCZ         |  51 | 0.00946506294482911 |  0.018289807375317 | -0.0263829595107923 | 0.0453130854004505 |
 
-Cross trait cumulative incidence:
+*** Cross trait cumulative incidence
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 out$intermediate$cif_cross$results |> tail(10)
