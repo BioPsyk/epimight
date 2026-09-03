@@ -304,21 +304,10 @@ Pipeline <- R6::R6Class( #nolint
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$cif$properties)
       args      <- validator$run(...)
 
-      if (length(stratify_columns) == 0) {
-        stratify_label <- "NULL"
-      } else {
-        stratify_label <- paste(stratify_columns, sep = ",")
-      }
-
-      results_path <- list("cif", stratify_label, use_weighted_cif, index_trait, rel_trait, rel_kind)
-      resultsd_cif <- do.call(self$get_results, results_path)
-
-      if (!is.null(resultsd_cif)) return(resultsd_cif)
-
       tte <- do.call(self$get_tte, args)
       cif <- private$analyses$cif$run(
         tte              = tte,
-        stratify_columns = stratify_columns
+        stratify_columns = private$stratify_columns
       ) |>
         mutate(
           index_trait     = args$index_trait,
@@ -333,10 +322,6 @@ Pipeline <- R6::R6Class( #nolint
           time,
           everything()
         )
-
-      results_args <- append(list(cif), results_path)
-
-      do.call(self$add_results, results_args)
 
       if (is.null(cif)) {
         stop(paste0(
