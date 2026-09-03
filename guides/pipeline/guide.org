@@ -230,8 +230,14 @@ are first diagnosis, where we use a 3 letter abbreviation of the disorder. You c
 traits and name them any way you like.
 
 The simple interface acts as a thin layer of abstraction, which takes the given 6 arguments and
-expands them into 14 advanced interface arguments that it uses to then run the advanced interface.
-It does this by making a choice on how the genetic correlation is constructed.
+expands them into 14 advanced interface arguments that it uses to run the advanced interface.
+It does this by making the following decision:
+
+- For the cross trait ~cif~
+  - Use ~heritability1~ trait as index trait
+  - Use ~heritability2~ trait as relatives trait
+- For the genetic correlation calculation
+  - Use ~heritability2~ relatedness
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
