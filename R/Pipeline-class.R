@@ -298,8 +298,8 @@ Pipeline <- R6::R6Class( #nolint
       ) |>
         mutate(
           index_trait     = args$index_trait,
-          relatives_trait = ifelse("relatives_trait" %in% args, args$relatives_trait, NA),
-          relatives_kind  = ifelse("relatives_kind" %in% args,  args$relatives_kind,  NA)
+          relatives_trait = ifelse("relatives_trait" %in% names(args), args$relatives_trait, NA),
+          relatives_kind  = ifelse("relatives_kind" %in% names(args),  args$relatives_kind,  NA)
         ) |>
         select(
           index_trait,
@@ -329,11 +329,11 @@ Pipeline <- R6::R6Class( #nolint
     run_h2 = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
       validator$add_post_validation(function(args, rules) {
-        if ("relatives_trait" %in% args$cif_pop) {
+        if ("relatives_trait" %in% names(args$cif_pop)) {
           stop("Using `relatives_trait` in `cif_pop` is not allowed")
         }
 
-        if ("relatives_kind" %in% args$cif_pop) {
+        if ("relatives_kind" %in% names(args$cif_pop)) {
           stop("Using `relatives_kind` in `cif_pop` is not allowed")
         }
 
