@@ -133,8 +133,8 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           cases = cumsum(weight_event_1),
           var   = ifelse(trait_age == 0, 0, lag(var))
         ) |>
-        rename(time = trait_age) |>
-        select(time, cif, cases, var) |>
+        rename(age = trait_age) |>
+        select(age, cif, cases, var) |>
         mutate(
           se  = sqrt(var),
           l95 = cif - qnorm(0.975) * sqrt(var),
@@ -179,17 +179,17 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       if (is.null(cuminc_results)) return(NULL)
 
       results <- data.table(
-        time = cuminc_results$time,
-        cif  = cuminc_results$est,
-        var  = cuminc_results$var
+        age = cuminc_results$time,
+        cif = cuminc_results$est,
+        var = cuminc_results$var
       )[
         ,
         head(.SD, 1),
-        by = time
+        by = age
       ][
         ,
         .(
-          time,
+          age,
           cif,
           se  = sqrt(var),
           l95 = cif - qnorm(0.975) * sqrt(var),
@@ -201,12 +201,12 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       results <- counts[
         trait_status == 1,
         .(
-          time         = trait_age,
+          age          = trait_age,
           cases_amount = N
         )
       ][
         results,
-        on = .(time)
+        on = .(age)
       ][
         ,
         .(

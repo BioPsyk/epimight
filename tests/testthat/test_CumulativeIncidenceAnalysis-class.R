@@ -179,7 +179,7 @@ describe("run", {
         )
     )
 
-    diff <- inner_join(original, no_competing_risk, by = join_by(time)) |>
+    diff <- inner_join(original, no_competing_risk, by = join_by(age)) |>
       mutate(
         cif_diff = abs(cif.x - cif.y),
       ) |>
@@ -201,7 +201,7 @@ describe("run", {
         )
     )
 
-    diff <- inner_join(original, no_competing_risk, by = join_by(time)) |>
+    diff <- inner_join(original, no_competing_risk, by = join_by(age)) |>
       mutate(
         cif_diff = abs(cif.x - cif.y),
       ) |>
@@ -243,12 +243,12 @@ describe("run", {
     original <- analysis$run(tte = pipeline_tte |> select(-weight))
     weighted <- analysis$run(tte = pipeline_tte)
 
-    combined <- inner_join(original, weighted, by = join_by(time)) |>
+    combined <- inner_join(original, weighted, by = join_by(age)) |>
       mutate(
         cif_diff = abs(cif.x - cif.y)
       ) |>
       filter(
-        time >= 1
+        age >= 1
       )
 
     diff <- combined |>
@@ -275,12 +275,12 @@ describe("run", {
         )
     )
 
-    combined <- inner_join(original, multiple, by = join_by(time)) |>
+    combined <- inner_join(original, multiple, by = join_by(age)) |>
       mutate(
         cif_diff = abs(cif.x - cif.y)
       ) |>
       filter(
-        time >= 1
+        age >= 1
       )
 
     diff <- combined |>
@@ -293,7 +293,7 @@ describe("run", {
     original <- analysis$run(tte = pipeline_tte |> select(-weight))
     weighted <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0))
 
-    cif_diff <- inner_join(original, weighted, by = join_by(time)) |>
+    cif_diff <- inner_join(original, weighted, by = join_by(age)) |>
       mutate(
         cif_diff = abs(cif.x - cif.y)
       ) |>
@@ -303,7 +303,7 @@ describe("run", {
 
     expect_equal(nrow(cif_diff), 0)
 
-    se_diff <- inner_join(original, weighted, by = join_by(time)) |>
+    se_diff <- inner_join(original, weighted, by = join_by(age)) |>
       mutate(
         se_diff  = abs(se.x - se.y)
       ) |>
@@ -327,7 +327,7 @@ describe("run", {
         as.data.table()
 
       cif <- analysis$run(tte = tte) |>
-        arrange(desc(time)) |>
+        arrange(desc(age)) |>
         filter(row_number() == 1) |>
         pull(cif)
 

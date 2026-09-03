@@ -312,7 +312,7 @@ Pipeline <- R6::R6Class( #nolint
         mutate(
           index_trait     = args$index_trait,
           relatives_trait = ifelse("relatives_trait" %in% args, args$relatives_trait, NA),
-          relatives_kind  = ifelse("relatives_kind" %in% args, args$relatives_kind, NA)
+          relatives_kind  = ifelse("relatives_kind" %in% args,  args$relatives_kind,  NA)
         ) |>
         select(
           index_trait,
