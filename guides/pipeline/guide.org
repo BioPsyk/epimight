@@ -356,43 +356,7 @@ It will automatically use the trait from ~heritability1~ as the index trait and
 the relatives cohort from ~heritability2~ for the cross trait cumulative incidence
 and the relatedness from ~heritability2~ for the ~rg~ calculation.
 
-** Results cache
-
-When the pipeline is run, under the hood it produces these intermediate analysis results,
-that are used to produce the genetic correlation:
-
-| Name         | Description                                       |
-|--------------+---------------------------------------------------|
-| ~cif_t1_pop~ | CIF for trait 1 in target cohort                  |
-| ~cif_t1_fh1~ | CIF for trait 1 in target family history cohort 1 |
-| ~cif_t2_pop~ | CIF for trait 2 in target cohort                  |
-| ~cif_t2_fh2~ | CIF for trait 2 in family history cohort 2        |
-| ~cif_cross~  | CIF for trait 1 in family history cohort 2        |
-| ~h2_t1~      | Heritability of trait 1                           |
-| ~h2_t2~      | Heritability of trait 2                           |
-
-If we changed the relatives in ~heritability2~ to "parents" and rerun the
-pipeline, the only intermediate results that would come out different
-would be:
-
-- ~cif_t2_fh2~
-- ~cif_cross~
-- ~h2_t2~
-
-Since the pipeline is deterministic, all other intermediate results would
-be identical, since their arguments wasn't changed.
-
-In order not to waste time on producing results that have already been produced,
-the pipeline caches all results (cif, h2, rg). If we would execute the
-~run~ function twice, with the same arguments, the second time would return
-immediately, since it wouldn't run any of the analyses and just return the
-cached results.
-
-The pipeline has a function called ~clear_results~ that can be used to clear the
-results cache. It also has functions to add and get results from the cache, but
-those functions are used internally by each analysis function.
-
-* Output format
+** Output format
 
 Both interfaces has the same output format, a single named list with the following members:
 
@@ -402,7 +366,7 @@ Both interfaces has the same output format, a single named list with the followi
 | intermediate | All intermediate results as separate ~data.tables~ |
 | args         | Arguments supplied to the interface                |
 
-** Results
+*** Results
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 out$results |> tail(10)
@@ -422,7 +386,7 @@ out$results |> tail(10)
 |       1988 | 0.977664428475216 | 0.372425084049931 | -0.633441922205357 |  0.826464407270374 |
 |       1953 |  2.28227939672956 | 0.454417970167461 | -0.386552639557042 |    1.3947658034994 |
 
-** Intermediate
+*** Intermediate
 
 As shown in the "Genetic correlation arguments" diagram, the intermediate results used to calculate the
 genetic correlation are:
@@ -437,7 +401,7 @@ genetic correlation are:
 
 You can access these intermediate results using ~out$intermediate[[name]]$results~.
 
-*** Heritability trait 1
+**** Heritability trait 1
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 out$intermediate$h2_t1$results |> tail(5)
@@ -452,7 +416,7 @@ out$intermediate$h2_t1$results |> tail(5)
 | SCZ         |   6 |       2020 |  0.130911875983188 | 0.0577361164458347 |  0.0177490877493519 | 0.244074664217024 |
 | SCZ         |   5 |       2021 | 0.0183155579458407 | 0.0503458474991384 | -0.0803623031524707 | 0.116993419044152 |
 
-*** Cross trait cumulative incidence
+**** Cross trait cumulative incidence
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 out$intermediate$cif_cross$results |> tail(5)
@@ -467,7 +431,7 @@ out$intermediate$cif_cross$results |> tail(5)
 | SCZ         | CAD             | half_siblings  |       2025 |   1 | 0.00921266068645643 | 0.00637881611384672 | -0.00328958916068688 | 0.0217149105335998 | 4.06892950142706e-05 | 25.2190476190476 |
 | SCZ         | CAD             | half_siblings  |       2026 |   0 |                   0 |                   0 |                    0 |                  0 |                    0 | 15.6666666666667 |
 
-** Args
+*** Args
 
 The returned arguments is provided in the expanded advanced format:
 
@@ -529,22 +493,17 @@ message(rjson::toJSON(out$args, indent = 2))
 }
 #+end_example
 
-
-* Advanced interface
-
-TBD
-
-* Meta-analyzing the results
+** Meta-analyzing the results
 
 When using stratification, we can meta-analyze the results simply by passing the results into the ~run_meta~ function:
 
 #+BEGIN_SRC R :exports code :results output
-meta <- pipeline$run_meta(results)
+meta <- pipeline$run_meta(out)
 #+END_SRC
 
 #+RESULTS:
 
-** Genetic correlation
+*** Genetic correlation
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 meta$rg
@@ -555,7 +514,7 @@ meta$rg
 |--------------------+--------------------+--------------------+--------------------+--------------------+-------------------+-------------------+--------------------|
 | -0.211973596554467 | 0.0353127443451976 | -0.281186575471054 | -0.142760617637879 | -0.520264889410516 | 0.301925030673011 | -1.11203794952962 | 0.0715081707085861 |
 
-** Heritability
+*** Heritability
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 meta$h2
@@ -567,7 +526,7 @@ meta$h2
 | CAD         |  0.715775395422912 | 0.00606210835088367 |   0.70389366305518 | 0.727657127790644 |  0.693234807049214 | 0.0109262177785944 |  0.671819420203169 | 0.714650193895259 |
 | SCZ         | 0.0900743390689683 | 0.00598307379270799 | 0.0783475144352606 | 0.101801163702676 | 0.0892884813095656 |  0.016885516890457 | 0.0561928682042699 | 0.122384094414861 |
 
-** Cumulative incidence
+*** Cumulative incidence
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 meta$cif |> head(10)
@@ -586,3 +545,142 @@ meta$cif |> head(10)
 | CAD         | CAD             | half_siblings  |    7 |  0.0188126855520141 |  0.00125146467502704 |  0.0163598147889611 |  0.0212655563150671 | 0.0223937018922035 | 0.00731008484614951 |  0.00806593559375049 | 0.0367214681906566 |
 | CAD         | CAD             | half_siblings  |    8 |  0.0246110679584983 |  0.00143542195912442 |  0.0217976409186144 |  0.0274244949983822 | 0.0279445043750021 | 0.00740957713784416 |   0.0134217331848276 | 0.0424672755651767 |
 | CAD         | CAD             | half_siblings  |    9 |  0.0296606583992051 |  0.00159593935344437 |  0.0265326172664541 |  0.0327886995319561 | 0.0340405759592111 | 0.00751728586671703 |   0.0193066956604457 | 0.0487744562579765 |
+
+** Results cache
+
+When the pipeline is run, under the hood it produces these intermediate analysis results,
+that are used to produce the genetic correlation:
+
+| Name         | Description                                       |
+|--------------+---------------------------------------------------|
+| ~cif_t1_pop~ | CIF for trait 1 in target cohort                  |
+| ~cif_t1_fh1~ | CIF for trait 1 in target family history cohort 1 |
+| ~cif_t2_pop~ | CIF for trait 2 in target cohort                  |
+| ~cif_t2_fh2~ | CIF for trait 2 in family history cohort 2        |
+| ~cif_cross~  | CIF for trait 1 in family history cohort 2        |
+| ~h2_t1~      | Heritability of trait 1                           |
+| ~h2_t2~      | Heritability of trait 2                           |
+
+If we changed the relatives in ~heritability2~ to "parents" and rerun the
+pipeline, the only intermediate results that would come out different
+would be:
+
+- ~cif_t2_fh2~
+- ~cif_cross~
+- ~h2_t2~
+
+Since the pipeline is deterministic, all other intermediate results would
+be identical, since their arguments wasn't changed.
+
+In order not to waste time on producing results that have already been produced,
+the pipeline caches all results (cif, h2, rg). If we would execute the
+~run~ function twice, with the same arguments, the second time would return
+immediately, since it wouldn't run any of the analyses and just return the
+cached results.
+
+The pipeline has a function called ~clear_results~ that can be used to clear the
+results cache. It also has functions to add and get results from the cache, but
+those functions are used internally by each analysis function.
+
+* Advanced interface
+
+The advanced interface consists of 3 functions:
+
+- ~run_cif~
+- ~run_h2~
+- ~run_rg~
+
+These functions form a hierarchy, where their results are used as inputs to the other more complex functions.
+
+The starting function is the one producing cumulative incidences, called ~run_cif~:
+
+#+BEGIN_SRC R :exports code :results output
+advanced_cif_pop <- pipeline$run_rg(
+  index_trait = "SCZ"
+)
+
+advanced_cif_cross <- pipeline$run_rg(
+  index_trait      = "SCZ",
+  relatives_trait  = "CAD",
+  relatives_kind   = "parents",
+  stratify_columns = list("birth_year")
+)
+#+END_SRC
+
+The next function is the one producing heritability, called ~run_h2~:
+
+#+BEGIN_SRC R :exports code :results output
+advanced_h2_t1 <- pipeline$run_rg(
+  cif_pop = list(
+    index_trait      = "SCZ",
+    stratify_columns = list("birth_year")
+  ),
+  cif_fh = list(
+    index_trait      = "SCZ",
+    relatives_trait  = "SCZ",
+    relatives_kind   = "half_siblings",
+    stratify_columns = list("birth_year")
+  ),
+  relatedness = 0.25
+)
+#+END_SRC
+
+This function passes the arguments ~cif_pop~ and ~cif_fh~ as input arguments to the ~run_cif~ function.
+It then uses the returned results along with the relatedness argument to perform the heritability calculation.
+
+The final function is the one producing the genetic correlation, called ~run_rg~:
+
+#+BEGIN_SRC R :exports code :results output
+advanced_rg <- pipeline$run_rg(
+  h2_t1 = list(
+    cif_pop = list(
+      index_trait      = "SCZ",
+      stratify_columns = list("birth_year")
+    ),
+    cif_fh = list(
+      index_trait      = "SCZ",
+      relatives_trait  = "SCZ",
+      relatives_kind   = "half_siblings",
+      stratify_columns = list("birth_year")
+    ),
+    relatedness = 0.25
+  ),
+  h2_t2 = list(
+    cif_pop = list(
+      index_trait      = "CAD",
+      stratify_columns = list("birth_year")
+    ),
+    cif_fh = list(
+      index_trait      = "CAD",
+      relatives_trait  = "CAD",
+      relatives_kind   = "half_siblings",
+      stratify_columns = list("birth_year")
+    ),
+    relatedness = 0.25
+  ),
+  cif_cross = list(
+    index_trait      = "SCZ",
+    relatives_trait  = "CAD",
+    relatives_kind   = "parents",
+    stratify_columns = list("birth_year")
+  ),
+  relatedness = 0.5
+)
+#+END_SRC
+
+This function passes:
+
+- The arguments ~h2_t1~ and ~h2_t2~ as input arguments to the ~run_h2~ function
+- The argument ~cif_cross~ as input arguments to the ~run_cif~ function
+
+It then uses the returned results along with the relatedness argument to perform the genetic
+correlation calculation.
+
+Each of these functions uses the same output format as the simple interface, a named list
+with the following members:
+
+| Name         | Description                                        |
+|--------------+----------------------------------------------------|
+| results      | Analysis results as a single ~data.table~          |
+| intermediate | All intermediate results as separate ~data.tables~ |
+| args         | Arguments supplied to the interface                |
