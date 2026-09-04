@@ -98,12 +98,12 @@ The advanced interface gives the user full control of the underlying analyses (c
 While the simple interface gives the user less control, but uses defaults that are sane the
 majority of use cases.
 
-This guide is separated into 4 chapters:
+This guide is separated into 4 chapters that can be read in order:
 
-- [[#time-to-event-input-format][Time-to-event input format]]
-- [[#simple-interface][Simple interface]]
-- [[#output-format][Output format]]
-- [[#advanced-interface][Advanced interface]]
+1. [[#time-to-event-input-format][Time-to-event input format]]
+2. [[#simple-interface][Simple interface]]
+3. [[#output-format][Output format]]
+4. [[#advanced-interface][Advanced interface]]
 
 * Time-to-event input format
 
