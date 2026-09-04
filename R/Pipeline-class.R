@@ -355,15 +355,19 @@ Pipeline <- R6::R6Class( #nolint
       args      <- validator$run(...)
       cached_h2 <- self$get_results("h2", args)
 
+      cif_pop <- do.call(self$run_cif, args$cif_pop)
+      cif_fh  <- do.call(self$run_cif, args$cif_fh)
+
       if (!is.null(cached_h2)) {
         return(list(
           args    = args,
-          results = cached_h2
+          results = cached_h2,
+          intermediate = list(
+            cif_pop = cif_pop,
+            cif_fh  = cif_fh
+          )
         ))
       }
-
-      cif_pop <- do.call(self$run_cif, args$cif_pop)
-      cif_fh  <- do.call(self$run_cif, args$cif_fh)
 
       stratify_columns <- args$cif_pop$stratify_columns
       stratify_symbols <- rlang::syms(stratify_columns)
@@ -416,18 +420,25 @@ Pipeline <- R6::R6Class( #nolint
       args      <- validator$run(...)
       cached_rg <- self$get_results("rg", args)
 
-      if (!is.null(cached_rg)) {
-        return(list(
-          args    = args,
-          results = cached_rg
-        ))
-      }
-
       cif_t1_pop <- do.call(self$run_cif, args$h2_t1$cif_pop)
       cif_t2_pop <- do.call(self$run_cif, args$h2_t2$cif_pop)
       h2_t1      <- do.call(self$run_h2, args$h2_t1)
       h2_t2      <- do.call(self$run_h2, args$h2_t1)
       cif_cross  <- do.call(self$run_cif, args$cif_cross)
+
+      if (!is.null(cached_rg)) {
+        return(list(
+          args    = args,
+          results = cached_rg,
+          intermediate = list(
+            cif_t1_pop = cif_t1_pop,
+            cif_t2_pop = cif_t2_pop,
+            h2_t1      = h2_t1,
+            h2_t2      = h2_t2,
+            cif_cross  = cif_cross
+          )
+        ))
+      }
 
       stratify_columns <- args$cif_cross$stratify_columns
       join_columns     <- c(list("age"), stratify_columns)
