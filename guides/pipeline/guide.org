@@ -330,7 +330,7 @@ rg --> rg_results
 [[file:../diagrams/rg-arguments.png]]
 
 The simple interface allows you to specify index traits, relatives kind and relatedness
-of the two heritabilities, like this:
+of the two heritabilities, along with the columns to stratify the results on:
 
 #+BEGIN_SRC R :exports code :results output
 out <- pipeline$run(
@@ -343,9 +343,12 @@ out <- pipeline$run(
     trait          = "CAD",
     relatives_kind = "half_siblings",
     relatedness    = 0.25
-  )
+  ),
+  stratify_columns = list("birth_year")
 )
 #+END_SRC
+
+#+RESULTS:
 
 It will automatically use the trait from ~heritability1~ as the index trait and
 the relatives cohort from ~heritability2~ for the cross trait cumulative incidence
@@ -353,6 +356,7 @@ and the relatedness from ~heritability2~ for the ~rg~ calculation.
 
 In earlier versions of epimight, this was the way genetic correlations were produced.
 
+See the [[#advanced-interface][Advanced interface]] for full control of all arguments and intermediate analyses.
 
 * Output format
 
@@ -377,7 +381,7 @@ out$results |> tail(10)
 
 ** Intermediate
 
-As shown in the "Genetic correlation components" diagram, the intermediate results used to calculate the
+As shown in the "Genetic correlation arguments" diagram, the intermediate results used to calculate the
 genetic correlation are:
 
 | Name         | Description                                      |
@@ -393,17 +397,12 @@ You can access these intermediate results using ~out$intermediate[[name]]$result
 *** Heritability trait 1
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-out$intermediate$h2_t1$results |> tail(10)
+out$intermediate$h2_t1$results |> tail(5)
 #+END_SRC
 
 #+RESULTS:
 | index_trait | age |                  h2 |                 se |                 l95 |                u95 |
 |-------------+-----+---------------------+--------------------+---------------------+--------------------|
-| SCZ         |  40 |  0.0116495313078649 |   0.01816027286379 | -0.0239446035051634 | 0.0472436661208933 |
-| SCZ         |  41 |  0.0102093627165386 | 0.0181883235912873 | -0.0254397515223845 | 0.0458584769554617 |
-| SCZ         |  42 |  0.0105620545446725 | 0.0182106709931989 | -0.0251308606019974 | 0.0462549696913423 |
-| SCZ         |  43 |  0.0100200954247007 | 0.0182244967288411 | -0.0256999181638279 | 0.0457401090132293 |
-| SCZ         |  44 |  0.0099676862356099 | 0.0182458406312651 | -0.0257941614016697 | 0.0457295338728894 |
 | SCZ         |  45 | 0.00961226264629415 | 0.0182449552007819 | -0.0261478495472384 | 0.0453723748398267 |
 | SCZ         |  46 |  0.0108213333674349 | 0.0182670387201862 |   -0.02498206252413 | 0.0466247292589998 |
 | SCZ         |  47 |  0.0105333041704472 | 0.0182716558829353 | -0.0252791413601059 | 0.0463457497010004 |
@@ -413,17 +412,12 @@ out$intermediate$h2_t1$results |> tail(10)
 *** Cross trait cumulative incidence
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-out$intermediate$cif_cross$results |> tail(10)
+out$intermediate$cif_cross$results |> tail(5)
 #+END_SRC
 
 #+RESULTS:
 | index_trait | relatives_trait | relatives_kind | age |               cif |                  se |               l95 |               u95 |                  var |            cases |
 |-------------+-----------------+----------------+-----+-------------------+---------------------+-------------------+-------------------+----------------------+------------------|
-| SCZ         | CAD             | half_siblings  |  39 | 0.125601170688606 | 0.00292287401345741 | 0.119872442890881 |  0.13132989848633 | 8.54319249854462e-06 | 1679.07063492064 |
-| SCZ         | CAD             | half_siblings  |  40 | 0.126061509335914 | 0.00293038385595051 | 0.120318062517374 | 0.131804956154455 | 8.58714954321537e-06 |  1688.6873015873 |
-| SCZ         | CAD             | half_siblings  |  41 | 0.127200886688793 |  0.0029495067967285 | 0.121419959595049 | 0.132981813782537 | 8.69959034394762e-06 |  1691.1873015873 |
-| SCZ         | CAD             | half_siblings  |  42 | 0.127504992260531 | 0.00295412543073292 |  0.12171501281048 | 0.133294971710581 | 8.72685706050295e-06 |  1692.6873015873 |
-| SCZ         | CAD             | half_siblings  |  43 | 0.127692928194853 | 0.00295605542137307 | 0.121899166032657 | 0.133486690357048 | 8.73826365422909e-06 |  1694.4373015873 |
 | SCZ         | CAD             | half_siblings  |  44 | 0.127918946190156 | 0.00295802881325761 | 0.122121316250939 | 0.133716576129372 | 8.74993446006225e-06 | 1697.52063492063 |
 | SCZ         | CAD             | half_siblings  |  45 | 0.128329971720704 | 0.00296406286539596 | 0.122520515256615 | 0.134139428184792 | 8.78566867001932e-06 | 1698.35396825397 |
 | SCZ         | CAD             | half_siblings  |  46 | 0.128444608095048 | 0.00296390726278152 |  0.12263545660648 | 0.134253759583617 | 8.78474626236907e-06 | 1700.35396825397 |

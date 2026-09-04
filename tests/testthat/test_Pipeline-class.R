@@ -469,7 +469,7 @@ describe("run", {
       )
     )
 
-    rg_expert <- pipeline$run_rg(
+    rg_advanced <- pipeline$run_rg(
       h2_t1 = list(
         cif_pop = list(
           index_trait = "SCZ"
@@ -500,6 +500,26 @@ describe("run", {
       relatedness = 0.5
     )
 
-    expect_dataframe_equal(rg_simple$results, rg_expert$results)
+    expect_dataframe_equal(rg_simple$results, rg_advanced$results)
+  })
+
+  it("produces multiple rgs when using stratification", {
+    pipeline$clear_results()
+
+    rg <- pipeline$run(
+      heritability1 = list(
+        trait          = "SCZ",
+        relatives_kind = "half_siblings",
+        relatedness    = 0.25
+      ),
+      heritability2 = list(
+        trait          = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
+      ),
+      stratify_columns = list("birth_year")
+    )
+
+    expect_great(nrow(rg$results), 1)
   })
 })
