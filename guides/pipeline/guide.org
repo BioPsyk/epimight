@@ -197,45 +197,18 @@ pipeline <- Pipeline$new(pool = tte)
 #+RESULTS:
 
 It's called a "pool" because all data is kept there and only the relevant rows are pulled
-out of the pool during analysis.
+out of the pool during analysis. It's designed this way for simplicity, but also so that
+the time-to-event data is immutable during analysis.
 
-Once we have an instance of the pipeline, we run the pipeline by passing in:
-
-- Which trait should be "trait 1"
-- Which trait should be "trait 2"
-- What kind of relatives and relatedness to use for the two traits
-
-We supply this information as named arguments to the ~run~ function:
-
-#+BEGIN_SRC R :exports code :results output
-out <- pipeline$run(
-  heritability1 = list(
-    trait          = "SCZ",
-    relatives_kind = "parents",
-    relatedness    = 0.5
-  ),
-  heritability2 = list(
-    trait          = "CAD",
-    relatives_kind = "half_siblings",
-    relatedness    = 0.25
-  )
-)
-#+END_SRC
-
-#+RESULTS:
-
-The simple interface acts as a thin layer of abstraction, which takes the given 6 arguments and
-expands them into 14 advanced interface arguments that it uses to run the advanced interface.
-It does this by making the following decision in the genetic correlation calculation:
-
-- Use ~heritability1~ trait as index trait
-- Use ~heritability2~ relatives trait and relatedness
+Before understanding how the simple interface works, we must first understand some basic
+concepts of how the pipeline produces genetic correlations (~rg~). The underlying ~rg~
+calculation accepts 6 arguments:
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
-#+NAME: fig:rg-components
+#+NAME: fig:rg-arguments
 #+ATTR_HTML: :style max-width: 100%;
-#+BEGIN_SRC plantuml :file ../diagrams/rg-components.png :exports results
+#+BEGIN_SRC plantuml :file ../diagrams/rg-arguments.png :exports results
 @startuml
 !include <material7.4.47/AccountUser/AccountGroup>
 !include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
@@ -270,13 +243,16 @@ skinparam ranksep 80
 
 skinparam defaultTextAlignment center
 
-title "**Genetic correlation components**"
+title "**Genetic correlation arguments**"
 
 legend left
-  <#silver>|= Color|= Trait usage |
-  |<#dd2e44>|Index trait 1, Relatives trait 1|
-  |<#54adef>|Index trait 2, Relatives trait 2|
-  |<#c254ef>|Index trait 1, Relatives trait 2|
+  <#silver>|= Color|= Index trait |= Cohort |
+  |<#dd2e44>|Trait 1 | Target |
+  |<#54adef>|Trait 2 | Target |
+  |<#c254ef>|Trait 1 | Relatives with trait 1|
+  |<#dd2e44>|Trait 1 | Relatives with trait 2|
+  |<#54adef>|Trait 2 | Relatives with trait 1|
+  |<#c254ef>|Trait 2 | Relatives with trait 2|
 endlegend
 
 file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #dd2e44
@@ -299,9 +275,37 @@ t3_rel -UP-> rg
 #+END_SRC
 
 #+ATTR_LATEX: :placement [H]
-#+CAPTION: Genetic correlation components
-#+RESULTS: fig:rg-components
-[[file:../diagrams/rg-components.png]]
+#+CAPTION: Genetic correlation arguments
+#+RESULTS: fig:rg-arguments
+[[file:../diagrams/rg-arguments.png]]
+
+
+
+
+
+- Which trait should be "trait 1"
+- Which trait should be "trait 2"
+- What kind of relatives and relatedness to use for the two traits
+
+We supply this information as named arguments to the ~run~ function:
+
+#+BEGIN_SRC R :exports code :results output
+out <- pipeline$run(
+  heritability1 = list(
+    trait          = "SCZ",
+    relatives_kind = "parents",
+    relatedness    = 0.5
+  ),
+  heritability2 = list(
+    trait          = "CAD",
+    relatives_kind = "half_siblings",
+    relatedness    = 0.25
+  )
+)
+#+END_SRC
+
+
+* Output format
 
 Both interfaces has the same output format, a single named list with the following members:
 
@@ -310,8 +314,6 @@ Both interfaces has the same output format, a single named list with the followi
 | results      | All genetic correlations as a single ~data.table~  |
 | intermediate | All intermediate results as separate ~data.tables~ |
 | args         | Arguments supplied to the interface                |
-
-* Output format
 
 ** Results
 
@@ -329,13 +331,13 @@ out$results |> tail(10)
 As shown in the "Genetic correlation components" diagram, the intermediate results used to calculate the
 genetic correlation are:
 
-| Name         | Description                                               |
-|--------------+-----------------------------------------------------------|
-| ~cif_t1_pop~ | Cumulative incidence for trait 1 in target cohort         |
-| ~cif_t2_pop~ | Cumulative incidence for trait 2 in target cohort         |
-| ~cif_cross~  | Cumulative incidence for index trait 1, relatives trait 2 |
-| ~h2_t1~      | Heritability of trait 1                                   |
-| ~h2_t2~      | Heritability of trait 2                                   |
+| Name         | Description                                      |
+|--------------+--------------------------------------------------|
+| ~cif_t1_pop~ | CIF for trait 1 in target cohort                 |
+| ~cif_t2_pop~ | CIF for trait 2 in target cohort                 |
+| ~cif_cross~  | CIF for index trait 1 in family history cohort 2 |
+| ~h2_t1~      | Heritability of trait 1                          |
+| ~h2_t2~      | Heritability of trait 2                          |
 
 You can access these intermediate results using ~out$intermediate[[name]]$results~.
 
