@@ -676,6 +676,8 @@ This function passes:
 It then uses the returned results along with the relatedness argument to perform the genetic
 correlation calculation.
 
+By using the advanced interface, we have total control over each distinct analysis.
+
 Each of these functions uses the same output format as the simple interface, a named list
 with the following members:
 
