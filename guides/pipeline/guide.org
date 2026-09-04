@@ -370,6 +370,8 @@ Both interfaces has the same output format, a single named list with the followi
 
 *** Results
 
+Looking at the results, we see that we get a genetic correlation for for each birth year:
+
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 out$results |> tail(10)
 #+END_SRC
@@ -401,9 +403,7 @@ genetic correlation are:
 | ~h2_t1~      | Heritability of trait 1                          |
 | ~h2_t2~      | Heritability of trait 2                          |
 
-You can access these intermediate results using ~out$intermediate[[name]]$results~.
-
-**** Heritability trait 1
+You can access these intermediate results using ~out$intermediate[[name]]$results~, like this:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 out$intermediate$h2_t1$results |> tail(5)
@@ -417,8 +417,6 @@ out$intermediate$h2_t1$results |> tail(5)
 | SCZ         |   5 |       2020 |  0.153642358914136 |  0.171565904409788 |  -0.182626813729049 | 0.489911531557321 |
 | SCZ         |   6 |       2020 |  0.130911875983188 | 0.0577361164458347 |  0.0177490877493519 | 0.244074664217024 |
 | SCZ         |   5 |       2021 | 0.0183155579458407 | 0.0503458474991384 | -0.0803623031524707 | 0.116993419044152 |
-
-**** Cross trait cumulative incidence
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
 out$intermediate$cif_cross$results |> tail(5)
