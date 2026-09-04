@@ -232,6 +232,10 @@ skinparam ranksep 80
     LineColor #333333
   }
 
+  process {
+    LineColor #333333
+  }
+
   card {
     RoundCorner     0
     BackgroundColor transparent
@@ -249,17 +253,70 @@ legend left
   |<#54adef>|Trait 2 | Relatives with trait 2 |
   |<#c254ef>|Trait 1 | Relatives with trait 2 |
 
-  Note: "Relatives with trait X" = individuals with at least 1 relative with trait X.
+  **Relatives with trait X** = Individuals with at least 1 relative with trait X.
 endlegend
 
-file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #f1a7b0
-file "**H2**\n""h2_t1""" as h2_t1 #dd2e44
-file "**CIF**\n""cif_cross""" as cif_cross #c254ef
-file "**CIF**\n""cif_t2_pop""" as cif_t2_pop #a1d2f7
-file "**H2**\n""h2_t2""" as h2_t2 #54adef
-file "**RG**\n""rg_t1_t2""" as rg #efb054
+file cif_t1_pop #f1a7b0 [
+**CIF**
+""cif_t1_pop""
 
-rectangle "**Relatedness**\n""rel_t2""" as t3_rel #54adef
+| **age**  | **cif** | **cases** |
+|       40 | 0.1256  | 1679      |
+|       41 | 0.1260  | 1688      |
+|       42 | 0.1272  | 1691      |
+]
+
+file h2_t1 #dd2e44 [
+**H2**
+""h2_t1""
+
+| **age** | **h2**  |
+|  40     |  0.0116 |
+|  41     |  0.0102 |
+|  42     |  0.0105 |
+]
+
+file cif_cross #c254ef [
+**CIF**
+""cif_cross""
+
+| **age**  | **cif** | **cases** |
+|       40 | 0.1210  | 1578      |
+|       41 | 0.1227  | 1587      |
+|       42 | 0.1301  | 1592      |
+]
+
+file cif_t2_pop #a1d2f7 [
+**CIF**
+""cif_t2_pop""
+
+| **age**  | **cif** | **cases** |
+|       40 | 0.1310  | 1478      |
+|       41 | 0.1327  | 1487      |
+|       42 | 0.1401  | 1492      |
+]
+
+file h2_t2 #54adef [
+**H2**
+""h2_t2""
+
+| **age** | **h2**  |
+|  40     |  0.0107 |
+|  41     |  0.0103 |
+|  42     |  0.0111 |
+]
+
+process "Calculate rg" as rg
+
+file rg_results #efb054 [
+**RG**
+""rg_t1_t2""
+
+| **rg** | **se** | **l95** | **u95** |
+| 0.5203 | 0.0392 | -0.0714 | 0.0823  |
+]
+
+rectangle "**Relatedness**\n""rel_t2""\n0.5" as t3_rel #54adef
 
 cif_t1_pop --> rg
 cif_t2_pop --> rg
@@ -267,7 +324,9 @@ cif_cross --> rg
 h2_t1 --> rg
 h2_t2 --> rg
 
-t3_rel -UP-> rg
+t3_rel -LEFT-> rg
+
+rg --> rg_results
 @enduml
 #+END_SRC
 
@@ -275,6 +334,7 @@ t3_rel -UP-> rg
 #+CAPTION: Genetic correlation arguments
 #+RESULTS: fig:rg-arguments
 [[file:../diagrams/rg-arguments.png]]
+
 
 - Which trait should be "trait 1"
 - Which trait should be "trait 2"
