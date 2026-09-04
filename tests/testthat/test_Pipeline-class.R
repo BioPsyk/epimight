@@ -518,6 +518,40 @@ describe("run", {
     expect_dataframe_equal(rg_simple$results, rg_advanced$results)
   })
 
+  it("produces different results when using weighted cif", {
+    pipeline$clear_results()
+
+    rg <- pipeline$run(
+      heritability1 = list(
+        trait          = "SCZ",
+        relatives_kind = "half_siblings",
+        relatedness    = 0.25
+      ),
+      heritability2 = list(
+        trait          = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
+      ),
+      use_weighted_cif = FALSE
+    )
+
+    weighted_rg <- pipeline$run(
+      heritability1 = list(
+        trait          = "SCZ",
+        relatives_kind = "half_siblings",
+        relatedness    = 0.25
+      ),
+      heritability2 = list(
+        trait          = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
+      ),
+      use_weighted_cif = TRUE
+    )
+
+    expect_dataframe_not_equal(rg$results, weighted_rg$results)
+  })
+
   it("produces multiple rows when using stratification", {
     pipeline$clear_results()
 
