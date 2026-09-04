@@ -468,7 +468,7 @@ describe("run_rg", {
 })
 
 describe("run", {
-  it("produces different results when using weighted cif", {
+  it("produces same results as advanced interface", {
     pipeline$clear_results()
 
     rg_simple <- pipeline$run(

@@ -508,7 +508,7 @@ Pipeline <- R6::R6Class( #nolint
           items   = list(type = "string"),
           default = list()
         ),
-        use_weighted = list(
+        use_weighted_cif = list(
           type    = "logical",
           default = TRUE
         )
@@ -519,30 +519,40 @@ Pipeline <- R6::R6Class( #nolint
       rg_args <- list(
         h2_t1 = list(
           cif_pop = list(
-            index_trait = args$heritability1$trait
+            index_trait      = args$heritability1$trait,
+            stratify_columns = args$stratify_columns,
+            use_weighted     = args$use_weighted_cif
           ),
           cif_fh = list(
-            index_trait     = args$heritability1$trait,
-            relatives_trait = args$heritability1$trait,
-            relatives_kind  = args$heritability1$relatives_kind
+            index_trait      = args$heritability1$trait,
+            relatives_trait  = args$heritability1$trait,
+            relatives_kind   = args$heritability1$relatives_kind,
+            stratify_columns = args$stratify_columns,
+            use_weighted     = args$use_weighted_cif
           ),
           relatedness = args$heritability1$relatedness
         ),
         h2_t2 = list(
           cif_pop = list(
-            index_trait = args$heritability2$trait
+            index_trait      = args$heritability2$trait,
+            stratify_columns = args$stratify_columns,
+            use_weighted     = args$use_weighted_cif
           ),
           cif_fh = list(
-            index_trait     = args$heritability2$trait,
-            relatives_trait = args$heritability2$trait,
-            relatives_kind  = args$heritability2$relatives_kind
+            index_trait      = args$heritability2$trait,
+            relatives_trait  = args$heritability2$trait,
+            relatives_kind   = args$heritability2$relatives_kind,
+            stratify_columns = args$stratify_columns,
+            use_weighted     = args$use_weighted_cif
           ),
           relatedness = args$heritability2$relatedness
         ),
         cif_cross = list(
-          index_trait     = args$heritability1$trait,
-          relatives_trait = args$heritability2$trait,
-          relatives_kind  = args$heritability2$relatives_kind
+          index_trait      = args$heritability1$trait,
+          relatives_trait  = args$heritability2$trait,
+          relatives_kind   = args$heritability2$relatives_kind,
+          stratify_columns = args$stratify_columns,
+          use_weighted     = args$use_weighted_cif
         ),
         relatedness = args$heritability2$relatedness
       )
