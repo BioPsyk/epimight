@@ -100,7 +100,7 @@ majority of use cases.
 
 This guide is separated into 4 chapters:
 
-- [[*Time-to-event input format]]
+- [[Time-to-event input format]]
 - Simple interface
 - Output format
 - Advanced interface
