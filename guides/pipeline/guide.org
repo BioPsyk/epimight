@@ -249,16 +249,15 @@ legend left
   <#silver>|= Color|= Index trait |= Cohort |
   |<#f1a7b0>|Trait 1 | Target |
   |<#dd2e44>|Trait 1 | Relatives with trait 1 |
+  |<#c254ef>|Trait 1 | Relatives with trait 2 |
   |<#a1d2f7>|Trait 2 | Target |
   |<#54adef>|Trait 2 | Relatives with trait 2 |
-  |<#c254ef>|Trait 1 | Relatives with trait 2 |
 
   **Relatives with trait X** = Individuals with at least 1 relative with trait X.
 endlegend
 
 file cif_t1_pop #f1a7b0 [
 **CIF**
-""cif_t1_pop""
 
 | **age**  | **cif** | **cases** |
 |       40 | 0.1256  | 1679      |
@@ -268,7 +267,6 @@ file cif_t1_pop #f1a7b0 [
 
 file h2_t1 #dd2e44 [
 **H2**
-""h2_t1""
 
 | **age** | **h2**  |
 |  40     |  0.0116 |
@@ -278,7 +276,6 @@ file h2_t1 #dd2e44 [
 
 file cif_cross #c254ef [
 **CIF**
-""cif_cross""
 
 | **age**  | **cif** | **cases** |
 |       40 | 0.1210  | 1578      |
@@ -288,7 +285,6 @@ file cif_cross #c254ef [
 
 file cif_t2_pop #a1d2f7 [
 **CIF**
-""cif_t2_pop""
 
 | **age**  | **cif** | **cases** |
 |       40 | 0.1310  | 1478      |
@@ -298,7 +294,6 @@ file cif_t2_pop #a1d2f7 [
 
 file h2_t2 #54adef [
 **H2**
-""h2_t2""
 
 | **age** | **h2**  |
 |  40     |  0.0107 |
@@ -310,13 +305,12 @@ process "Calculate rg" as rg
 
 file rg_results #efb054 [
 **RG**
-""rg_t1_t2""
 
 | **rg** | **se** | **l95** | **u95** |
 | 0.5203 | 0.0392 | -0.0714 | 0.0823  |
 ]
 
-rectangle "**Relatedness**\n""rel_t2""\n0.5" as t3_rel #54adef
+rectangle "**Relatedness**\n0.5" as t3_rel #54adef
 
 cif_t1_pop --> rg
 cif_t2_pop --> rg
@@ -335,12 +329,8 @@ rg --> rg_results
 #+RESULTS: fig:rg-arguments
 [[file:../diagrams/rg-arguments.png]]
 
-
-- Which trait should be "trait 1"
-- Which trait should be "trait 2"
-- What kind of relatives and relatedness to use for the two traits
-
-We supply this information as named arguments to the ~run~ function:
+The simple interface allows you to specify index traits, relatives kind and relatedness
+of the two heritabilities, like this:
 
 #+BEGIN_SRC R :exports code :results output
 out <- pipeline$run(
@@ -356,6 +346,12 @@ out <- pipeline$run(
   )
 )
 #+END_SRC
+
+It will automatically use the trait from ~heritability1~ as the index trait and
+the relatives cohort from ~heritability2~ for the cross trait cumulative incidence
+and the relatedness from ~heritability2~ for the ~rg~ calculation.
+
+In earlier versions of epimight, this was the way genetic correlations were produced.
 
 
 * Output format
