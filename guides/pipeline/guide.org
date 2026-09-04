@@ -352,9 +352,11 @@ out <- pipeline$run(
 
 #+RESULTS:
 
-It will automatically use the trait from ~heritability1~ as the index trait and
-the relatives cohort from ~heritability2~ for the cross trait cumulative incidence
-and the relatedness from ~heritability2~ for the ~rg~ calculation.
+It will automatically use:
+
+- The trait from ~heritability1~ as the index trait
+- The relatives cohort from ~heritability2~ for the cross trait cumulative incidence
+- The relatedness from ~heritability2~ for the ~rg~ calculation
 
 ** Output format
 
