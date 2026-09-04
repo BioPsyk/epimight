@@ -95,8 +95,8 @@ in a population/target cohort:
 
 Both interfaces uses the same time-to-event data format, but offers different levels of control.
 The advanced interface gives the user full control of the underlying analyses (cif, h2, rg).
-While the simple interface gives the user less control, but uses sane defaults that should work
-for the majority of use cases.
+While the simple interface gives the user less control, but uses defaults that are sane the
+majority of use cases.
 
 This guide is separated into 4 chapters:
 
@@ -128,33 +128,37 @@ The pipeline accepts this data as a ~data.table~ with the following columns:
 | ~relatives_n~       | Amount of relatives                              |
 | ~relatives_n_trait~ | Amount of relatives with trait                   |
 
-Here's an example of what that data would look like for a single trait (first diagnosis of Schizophrenia)
-and where the relatives are half siblings:
+To look at some examples of valid data, we can download [[../data/pipeline-tte.csv][the randomly generated time-to-event dataset]]
+as "pipeline-tte.csv" and load it:
 
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |>
-  select(person_id, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
-  filter(trait == "SCZ", relatives_kind == "half_siblings") |>
-  tail(10)
+#+BEGIN_SRC R :exports code :eval no
+library(dplyr)
+library(readr)
+library(data.table)
+library(epimight)
+
+tte <- read_csv(
+  "./pipeline-tte.csv",
+  show_col_type = FALSE,
+  col_types = cols(person_id = col_character()),
+) |> as.data.table()
 #+END_SRC
 
-#+RESULTS:
-| person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
-|-----------+-------+--------------+-----------+----------------+-------------+-------------------|
-|     99990 | SCZ   |            0 |        59 | half_siblings  |           2 |                 2 |
-|     99991 | SCZ   |            0 |        19 | half_siblings  |           0 |                 0 |
-|     99992 | SCZ   |            0 |        27 | half_siblings  |           2 |                 1 |
-|     99993 | SCZ   |            0 |        52 | half_siblings  |           1 |                 0 |
-|     99994 | SCZ   |            0 |        13 | half_siblings  |           3 |                 0 |
-|     99995 | SCZ   |            0 |        31 | half_siblings  |           1 |                 1 |
-|     99996 | SCZ   |            0 |        15 | half_siblings  |           0 |                 0 |
-|     99997 | SCZ   |            0 |        34 | half_siblings  |           2 |                 1 |
-|     99998 | SCZ   |            2 |        67 | half_siblings  |           4 |                 0 |
-|     99999 | SCZ   |            0 |        53 | half_siblings  |           2 |                 1 |
+Note that the reason why we force the ~person_id~ column to be a character vector, is because
+some versions of dplyr removes precision of large numbers in join operations. This means that
+multiple unique individuals gets interpreted as a single unique individual.
 
-The pipeline uses a single ~data.table~ for all traits and relative kinds, so if you for example have *2* different traits,
-*2* different relative kinds and *100 000* individuals, the data table will have *400 000* rows.
-Here's an example of what that would look like:
+The test data defines traits as "first diagnosis of disorder" and it contains two traits:
+
+- ~SCZ~ = First diagnosis of Schizophrenia
+- ~CAD~ = First diagnosis of Coronary Artery Disease
+
+And it contains two different kinds of relatives:
+
+- ~half_siblings~
+- ~parents~
+
+Here's an example of what that looks like:
 
 #+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
 tte |>
@@ -176,27 +180,15 @@ tte |>
 |     99999 | SCZ   |            0 |        53 | half_siblings  |           2 |                 1 |
 |     99999 | SCZ   |            0 |        53 | parents        |           2 |                 0 |
 
-This ~data.table~ is called the time-to-event "pool". It's called a "pool" because all data is kept
-there and only the relevant rows are pulled out of the pool during analysis.
+Note that each individual appears once for every ~trait~ and ~relatives_kind~ combination.
+
+We are free to define/name traits and relative kinds however we want, epimight only uses the
+label as a means to filter the time-to-event data.
 
 * Simple interface
 
-To use the simple interface, we start by importing the epimight library and loading the test dataset [[../../tests/data/pipeline-tte.csv][pipeline-tts.csv]]:
-
-#+BEGIN_SRC R :exports code :eval no
-library(dplyr)
-library(readr)
-library(data.table)
-library(epimight)
-
-tte <- read_csv(
-  "./pipeline-tte.csv",
-  show_col_type = FALSE,
-  col_types = cols(person_id = col_character()),
-) |> as.data.table()
-#+END_SRC
-
-Then we create an instance of the pipeline with the test dataset:
+To use any interface of the pipeline, we first need to create an instance of the pipeline
+and pass it our time-to-event data:
 
 #+BEGIN_SRC R :exports both
 pipeline <- Pipeline$new(pool = tte)
@@ -204,7 +196,10 @@ pipeline <- Pipeline$new(pool = tte)
 
 #+RESULTS:
 
-Once we have an instance of the pipeline, we need to tell the pipeline:
+It's called a "pool" because all data is kept there and only the relevant rows are pulled
+out of the pool during analysis.
+
+Once we have an instance of the pipeline, we run the pipeline by passing in:
 
 - Which trait should be "trait 1"
 - Which trait should be "trait 2"
@@ -228,11 +223,6 @@ out <- pipeline$run(
 #+END_SRC
 
 #+RESULTS:
-
-The ~trait~ and ~relatives_kind~ values for the two heritabilities are just used as
-filters on the time-to-event columns ~trait~ and ~relatives_kind~. In the test dataset our traits
-are first diagnosis, where we use a 3 letter abbreviation of the diagnosed disorder. You can define your
-traits and name them any way you like.
 
 The simple interface acts as a thin layer of abstraction, which takes the given 6 arguments and
 expands them into 14 advanced interface arguments that it uses to run the advanced interface.
