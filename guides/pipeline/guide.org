@@ -356,9 +356,41 @@ It will automatically use the trait from ~heritability1~ as the index trait and
 the relatives cohort from ~heritability2~ for the cross trait cumulative incidence
 and the relatedness from ~heritability2~ for the ~rg~ calculation.
 
-In earlier versions of epimight, this was the way genetic correlations were produced.
+** Results cache
 
-See the [[#advanced-interface][Advanced interface]] for full control of all arguments and intermediate analyses.
+When the pipeline is run, under the hood it produces these intermediate analysis results,
+that are used to produce the genetic correlation:
+
+| Name         | Description                                       |
+|--------------+---------------------------------------------------|
+| ~cif_t1_pop~ | CIF for trait 1 in target cohort                  |
+| ~cif_t1_fh1~ | CIF for trait 1 in target family history cohort 1 |
+| ~cif_t2_pop~ | CIF for trait 2 in target cohort                  |
+| ~cif_t2_fh2~ | CIF for trait 2 in family history cohort 2        |
+| ~cif_cross~  | CIF for trait 1 in family history cohort 2        |
+| ~h2_t1~      | Heritability of trait 1                           |
+| ~h2_t2~      | Heritability of trait 2                           |
+
+If we changed the relatives in ~heritability2~ to "parents" and rerun the
+pipeline, the only intermediate results that would come out different
+would be:
+
+- ~cif_t2_fh2~
+- ~cif_cross~
+- ~h2_t2~
+
+Since the pipeline is deterministic, all other intermediate results would
+be identical, since their arguments wasn't changed.
+
+In order not to waste time on producing results that have already been produced,
+the pipeline caches all results (cif, h2, rg). If we would execute the
+~run~ function twice, with the same arguments, the second time would return
+immediately, since it wouldn't run any of the analyses and just return the
+cached results.
+
+The pipeline has a function called ~clear_results~ that can be used to clear the
+results cache. It also has functions to add and get results from the cache, but
+those functions are used internally by each analysis function.
 
 * Output format
 
