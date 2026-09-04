@@ -200,9 +200,7 @@ It's called a "pool" because all data is kept there and only the relevant rows a
 out of the pool during analysis. It's designed this way for simplicity, but also so that
 the time-to-event data is immutable during analysis.
 
-Before understanding how the simple interface works, we must first understand some basic
-concepts of how the pipeline produces genetic correlations (~rg~). The underlying ~rg~
-calculation accepts 6 arguments:
+The underlying genetic correlation calculation accepts 6 arguments:
 
 #+LATEX: \vspace{0.5cm}
 #+LATEX: \begin{center}
@@ -241,8 +239,6 @@ skinparam ranksep 80
   }
 </style>
 
-skinparam defaultTextAlignment center
-
 title "**Genetic correlation arguments**"
 
 legend left
@@ -252,6 +248,8 @@ legend left
   |<#a1d2f7>|Trait 2 | Target |
   |<#54adef>|Trait 2 | Relatives with trait 2 |
   |<#c254ef>|Trait 1 | Relatives with trait 2 |
+
+  Note: "Relatives with trait X" = individuals with at least 1 relative with trait X.
 endlegend
 
 file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #f1a7b0
@@ -277,10 +275,6 @@ t3_rel -UP-> rg
 #+CAPTION: Genetic correlation arguments
 #+RESULTS: fig:rg-arguments
 [[file:../diagrams/rg-arguments.png]]
-
-
-
-
 
 - Which trait should be "trait 1"
 - Which trait should be "trait 2"
