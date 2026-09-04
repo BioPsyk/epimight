@@ -247,22 +247,21 @@ title "**Genetic correlation arguments**"
 
 legend left
   <#silver>|= Color|= Index trait |= Cohort |
-  |<#dd2e44>|Trait 1 | Target |
-  |<#54adef>|Trait 2 | Target |
-  |<#c254ef>|Trait 1 | Relatives with trait 1|
-  |<#dd2e44>|Trait 1 | Relatives with trait 2|
-  |<#54adef>|Trait 2 | Relatives with trait 1|
-  |<#c254ef>|Trait 2 | Relatives with trait 2|
+  |<#f1a7b0>|Trait 1 | Target |
+  |<#dd2e44>|Trait 1 | Relatives with trait 1 |
+  |<#a1d2f7>|Trait 2 | Target |
+  |<#54adef>|Trait 2 | Relatives with trait 2 |
+  |<#c254ef>|Trait 1 | Relatives with trait 2 |
 endlegend
 
-file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #dd2e44
+file "**CIF**\n""cif_t1_pop""" as cif_t1_pop #f1a7b0
 file "**H2**\n""h2_t1""" as h2_t1 #dd2e44
 file "**CIF**\n""cif_cross""" as cif_cross #c254ef
-file "**CIF**\n""cif_t2_pop""" as cif_t2_pop #54adef
+file "**CIF**\n""cif_t2_pop""" as cif_t2_pop #a1d2f7
 file "**H2**\n""h2_t2""" as h2_t2 #54adef
-file "**RG**\n""rg_t1_t2""" as rg #c254ef
+file "**RG**\n""rg_t1_t2""" as rg #efb054
 
-rectangle "Relatedness" as t3_rel #54adef
+rectangle "**Relatedness**\n""rel_t2""" as t3_rel #54adef
 
 cif_t1_pop --> rg
 cif_t2_pop --> rg
