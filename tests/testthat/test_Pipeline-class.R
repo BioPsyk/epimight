@@ -520,6 +520,6 @@ describe("run", {
       stratify_columns = list("birth_year")
     )
 
-    expect_great(nrow(rg$results), 1)
+    expect_gt(nrow(rg$results), 1)
   })
 })
