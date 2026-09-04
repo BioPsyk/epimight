@@ -450,6 +450,21 @@ describe("run_rg", {
 
     expect_dataframe_not_equal(rg$results, weighted_rg$results)
   })
+
+  it("produces multiple rows when using stratification", {
+    pipeline$clear_results()
+
+    args <- copy(rg_args)
+    args$cif_cross$stratify_columns     <- list("birth_year")
+    args$h2_t1$cif_pop$stratify_columns <- list("birth_year")
+    args$h2_t1$cif_fh$stratify_columns  <- list("birth_year")
+    args$h2_t2$cif_pop$stratify_columns <- list("birth_year")
+    args$h2_t2$cif_fh$stratify_columns  <- list("birth_year")
+
+    rg <- do.call(pipeline$run_rg, args)
+
+    expect_gt(nrow(rg$results), 1)
+  })
 })
 
 describe("run", {
@@ -503,7 +518,7 @@ describe("run", {
     expect_dataframe_equal(rg_simple$results, rg_advanced$results)
   })
 
-  it("produces multiple rgs when using stratification", {
+  it("produces multiple rows when using stratification", {
     pipeline$clear_results()
 
     rg <- pipeline$run(
