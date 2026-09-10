@@ -8,7 +8,8 @@ source("../utils.R")
 # Preparation
 #=================================================================================
 
-h2_analysis <- HeritabilityAnalysis$new()
+h2_analysis  <- HeritabilityAnalysis$new()
+cif_analysis <- CumulativeIncidenceAnalysis$new()
 
 #=================================================================================
 # Tests
@@ -43,5 +44,37 @@ describe("calculate_h2", {
     }
 
     expect_dataframe_equal(results1, results2)
+  })
+
+  it("produces h2 > 2 when all relatives have trait if the proband have the trait", {
+    tte_pop <- tte_random_probands(10000) |>
+      tte_random_trait("SCZ", 0.5, 20, 11) |>
+      mutate(
+        relatives_n_trait = ifelse(trait_status == 1, relatives_n, 0)
+      )
+
+    tte_fh  <- tte_pop |>
+      filter(relatives_n_trait > 0) |>
+      select(person_id, trait_status, trait_age) |> as.data.table()
+
+    tte_pop <- tte_pop |> select(person_id, trait_status, trait_age) |> as.data.table()
+
+    cif_pop <- cif_analysis$run(tte = tte_pop) |>
+        select(age, cif, cases) |>
+        rename(pop_cif = cif, pop_cases = cases)
+
+    cif_fh <- cif_analysis$run(tte = tte_fh) |>
+        select(age, cif, cases) |>
+        rename(fh_cif = cif, fh_cases = cases)
+
+    h2 <- h2_analysis$run(
+      cif = inner_join(cif_pop, cif_fh, by = join_by(age)) |>
+        arrange(desc(age)) |>
+        filter(row_number() == 1) |>
+        as.data.table(),
+      relatedness = 0.5
+    )
+
+    expect_gt(h2$h2, 2)
   })
 })

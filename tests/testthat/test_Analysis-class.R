@@ -90,5 +90,7 @@ describe("run_meta", {
       estimate_column = "h2",
       se_column = "se"
     )
+
+    succeed()
   })
 })

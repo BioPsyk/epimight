@@ -28,10 +28,6 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
     #' @param rc relationship coefficient.
     #' @returns Data.table with results
     calculate_h2 = function(id, k1, kr, a1, ar, rc) {
-      if (is.character(rc)) {
-        rc <- self$relationship_coefficient_from_kind(rc)
-      }
-
       # lifetime prevalence unaffected/general population represeting the upper tail z value
       t1 <- qnorm(k1, lower.tail = FALSE)
       y  <- dnorm(t1)
@@ -53,15 +49,13 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
       l95 <- h2 - 1.96 * se
       u95 <- h2 + 1.96 * se
 
-      output <- data.table(
+      data.table(
         id  = id,
         h2  = h2,
         se  = se,
         l95 = l95,
         u95 = u95
       )
-
-      return(output)
     },
     #' @description
     #' Calculates heritability from the given risk estimates.
@@ -69,49 +63,49 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
     #' @returns Data.table with heritability.
     run = function(...) {
       validator <- ArgumentsValidator$new(
-        relationship_kind = list(
-          required = TRUE,
-          type = "string",
-          enum = names(epimight:::relationship_kinds)
-        ),
-        estimates = list(
+        cif = list(
           required = TRUE,
           type = "data.table",
           columns = list(
-            c1_cif = list(
+            pop_cif = list(
               required = TRUE,
               type     = "numeric"
             ),
-            c1_cif_cases = list(
+            pop_cases = list(
               required = TRUE,
               type     = "numeric",
               minimum  = 0
             ),
-            c2_cif = list(
+            fh_cif = list(
               required = TRUE,
               type     = "numeric"
             ),
-            c2_cif_cases = list(
+            fh_cases = list(
               required = TRUE,
               type     = "numeric",
               minimum  = 0
             )
           )
+        ),
+        relatedness = list(
+          required = TRUE,
+          type     = "numeric",
+          minimum  = 0
         )
       )
 
       args <- validator$run(...)
 
-      estimates <- args$estimates |> mutate(id = row_number())
+      cif <- args$cif |> mutate(id = row_number())
 
       suppressWarnings({
         results <- self$calculate_h2(
-          estimates$id,
-          estimates$c1_cif,
-          estimates$c2_cif,
-          estimates$c1_cif_cases,
-          estimates$c2_cif_cases,
-          args$relationship_kind
+          cif$id,
+          cif$pop_cif,
+          cif$fh_cif,
+          cif$pop_cases,
+          cif$fh_cases,
+          args$relatedness
         ) |>
           filter_all(
             all_vars(!is.infinite(.) & !is.na(.))
@@ -121,11 +115,9 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
           )
       })
 
-      results <- estimates |>
+      cif |>
         inner_join(results, by = join_by(id)) |>
         select(-id)
-
-      return(results)
     },
     run_meta = function(...) {
       super$run_meta(...)

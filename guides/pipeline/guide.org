@@ -69,9 +69,7 @@ devtools::load_all(".")
 source("./tests/utils.R")
 #+END_SRC
 
-#+RESULTS:
-
-#+BEGIN_SRC R :exports results :results output :tangle no
+#+BEGIN_SRC R :exports none :tangle no
 tte <- read_csv(
   "./tests/data/pipeline-tte.csv",
   show_col_type = FALSE,
@@ -81,274 +79,115 @@ tte <- read_csv(
 
 #+RESULTS:
 
-This is a guide that explains how to run the epimight pipeline to estimates genetic
-correlation between two disorders stratified by birth year.
+This is a guide that explains how the epimight pipeline works conceptually and how to run it.
 
 - Any data shown in this guide comes from [[../data/pipeline-tte.csv][this randomly generated time-to-event dataset]]
-  - 100 000 individuals
-  - 2 disorders (schizophrenia and coronary artery disease)
-  - 2 types of relatives (parent/offspring and full siblings)
 - All code shown in this guide have been written to [[./guide.R][this R file]]
 
-#+LATEX: \vspace{0.5cm}
-#+LATEX: \begin{center}
-#+NAME: fig:pipeline-component-diagram
-#+ATTR_HTML: :style max-width: 100%;
-#+BEGIN_SRC plantuml :file ../diagrams/pipeline-component-diagram.png :exports results
-@startuml
-!include <material7.4.47/Database/DatabaseClock>
-!include <material7.4.47/Science/Flask>
-!include <material/account>
-!include <material/chart_line>
-!include <material/data>
-!include <material/database>
-!include <material/matrix>
-!include ../diagrams/ibp.puml
+The pipeline has two interfaces that can be used to estimate genetic correlation between 2 binary traits
+in a population/target cohort:
 
-skinparam nodesep 80
-skinparam ranksep 80
+- Simple
+- Advanced
 
-file tte [
-<color:#255ba7><$mdiDatabaseClock{scale=0.35}></color>  **Time-to-event**
+Both interfaces uses the same time-to-event data format, but offers different levels of control.
+The advanced interface gives the user full control of the underlying analyses (cif, h2, rg).
+While the simple interface gives the user less control, but uses defaults that are sane the
+majority of use cases.
 
-| **person_id**  | **born_at_year** | **disorder** | **failure_status** | **failure_time** | **relationship_kind** | **relatives_amount** | **relatives_diagnosed** |
-| ...            | ...              | ...          | ...                | ...              | ...                   | ...                  | ...                     |
-<#76b354>| 99962 | 1999             | SCZ          | 1                  | 29               | PO                    | 2                    | 1                       |
-| 99962          | 1999             | SCZ          | 1                  | 29               | FS                    | 1                    | 1                       |
-<#76b354>| 99962 | 1999             | CAD          | 2                  | 34               | PO                    | 2                    | 0                       |
-| 99962          | 1999             | CAD          | 2                  | 34               | FS                    | 1                    | 0                       |
-<#76b354>| 99963 | 2000             | SCZ          | 1                  | 28               | PO                    | 3                    | 1                       |
-| 99963          | 2000             | SCZ          | 1                  | 28               | FS                    | 2                    | 1                       |
-<#76b354>| 99963 | 2000             | CAD          | 0                  | 33               | PO                    | 3                    | 0                       |
-| 99963          | 2000             | CAD          | 0                  | 33               | FS                    | 2                    | 0                       |
-]
+This guide is separated into 4 chapters that can be read in order:
 
-rectangle "**Disorder 1**\nSCZ" as disorder1 #76b354
-rectangle "**Disorder 2**\nCAD" as disorder2 #76b354
-rectangle "**Relationship kind**\nPO" as relkind #76b354
-rectangle "**Stratify columns**\nborn_at_year" as stratcols #76b354
-rectangle "<color:#255ba7><$mdiFlask{scale=0.35}></color>  **Analysis arguments**" as args
-rectangle "<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Analysis results**" as results
+1. [[./#time-to-event-input-format][Time-to-event input format]]
+2. [[./#simple-interface][Simple interface]]
+3. [[./#output-format][Output format]]
+4. [[./#advanced-interface][Advanced interface]]
 
-' rectangle "Combined" as combined
-' rectangle "Meta-analyzed" as meta
+* Time-to-event input format
 
-file combined_cif [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Cumulative incidence**
-(disorder × cohort × born_at_year × time)
+For each individual in the target cohort, the pipeline needs the following information for each trait
+and kind of relatives:
 
-| **disorder** | **cohort** | **born_at_year** | **time**  | **cif** |
-| SCZ          | c1         | 1999             | 25        | 0.054   |
-| SCZ          | c1         | 1999             | 26        | 0.048   |
-| SCZ          | c1         | 2000             | 25        | 0.048   |
-| SCZ          | c1         | 2000             | 26        | 0.048   |
-| ...          | ...        | ...              | ...       | ...     |
-| CAD          | c1         | 1999             | 25        | 0.054   |
-| CAD          | c1         | 1999             | 26        | 0.048   |
-| CAD          | c1         | 2000             | 25        | 0.048   |
-| CAD          | c1         | 2000             | 26        | 0.048   |
-| ...          | ...        | ...              | ...       | ...     |
-]
+- The individual's trait status (0 = censored, 1 = affected, 2 = competing risk)
+- The individual's age at status (in years)
+- How many relatives the individual have
+- How many of them have the trait
+- What "kind" of relative they are (parents, half siblings, cousins, etc.)
 
-file combined_h2 [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**
-(disorder × born_at_year)
+The pipeline accepts this data as a ~data.table~ with the following columns:
 
-| **disorder** | **born_at_year** | **h2** |
-| SCZ          | 1999             | 0.054  |
-| SCZ          | 2000             | 0.048  |
-| ...          | ...              | ...    |
-| CAD          | 1999             | 0.053  |
-| CAD          | 2000             | 0.049  |
-| ...          | ...              | ...    |
-]
+| Column name         | Description                                      |
+|---------------------+--------------------------------------------------|
+| ~person_id~         | Unique identifier of the individual              |
+| ~trait~             | Identifier of the trait                          |
+| ~trait_status~      | 0 = censored, 1 = have trait, 2 = competing risk |
+| ~trait_age~         | Age of individual at the time of status          |
+| ~relatives_kind~    | Identifier of the kind of relatives              |
+| ~relatives_n~       | Amount of relatives                              |
+| ~relatives_n_trait~ | Amount of relatives with trait                   |
 
-file combined_rg [
-<color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**
-(born_at_year)
-
-| **born_at_year** | **rg** |
-| 1999             | 0.054  |
-| 2000             | 0.054  |
-]
-
-' file meta_h2 [
-' <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Heritability**
-' (disorder)
-'
-' | **disorder** | **h2** |
-' | SCZ          | 0.054  |
-' | CAD          | 0.053  |
-' ]
-'
-' file meta_rg [
-' <color:#255ba7><$ma_matrix{scale=0.35}></color>  **Genetic correlation**
-'
-' | **rg** |
-' | 0.054  |
-' ]
-
-Boundary1(epimight, "Epimight") {
-  Database(pool, "**TTE pool**")
-  Process(new, "**new**")
-  Process(run, "**run**")
-}
-
-stratcols --> args
-relkind --> args
-disorder2 --> args
-disorder1 --> args
-
-args --> run : " Given to"
-
-tte -RIGHT-> new : " Given to"
-new -RIGHT-> pool : " Stores data in"
-run -LEFT-> pool : " Reads data from"
-
-run --> results : " Outputs"
-
-' results --> combined
-' results --> meta
-
-results --> combined_cif
-results --> combined_h2
-results --> combined_rg
-
-' meta --> meta_h2
-' meta --> meta_rg
-@enduml
-#+END_SRC
-
-#+ATTR_LATEX: :placement [H]
-#+CAPTION: Pipeline component diagram
-#+RESULTS: fig:pipeline-component-diagram
-[[file:../diagrams/pipeline-component-diagram.png]]
-
-The basic concept of the pipeline is pretty simple, you create a dataset that contains
-time-to-event for all disorders and types of relatives you want to analyse. You feed this
-dataset to the pipeline when you create it. Then you tell the pipeline which pair of disorders
-and type of relatives you want to analyse and it will output cumulative incidences, heritabilities
-and genetic correlations.
-
-The most work you have to do is to format the data in a way that the pipeline expects.
-
-* Glossary
-
-- ~d1~ :: Disorder 1
-- ~d2~ :: Disorder 2
-- ~c1~ :: Cohort 1, target cohort
-- ~c2~ :: Cohort 2, individuals with at least 1 relative diagnosed with ~d1~
-- ~c3~ :: Cohort 3, individuals with at least 1 relative diagnosed with ~d2~
-- ~cif~ :: Cumulative incidence function
-- ~h2~ :: Heritability
-- ~rg~ :: Genetic correlation
-
-* Creating the time-to-event data
-
-We need to be able to uniquely identify every individual in our sample population.
-In the test data of this guide we use a unique number for each individual:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |> distinct(person_id) |> tail(4)
-#+END_SRC
-
-#+RESULTS:
-| person_id |
-|-----------|
-|     99996 |
-|     99997 |
-|     99998 |
-|     99999 |
-
-Then we need to have the stratification data of each individual (in our example, we stratify on birth year):
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |>
-  distinct(person_id, born_at_year) |>
-  tail(4)
-#+END_SRC
-
-#+RESULTS:
-| person_id | born_at_year |
-|-----------+--------------|
-|     99996 |         1981 |
-|     99997 |         2003 |
-|     99998 |         1982 |
-|     99999 |         1951 |
-
-Then for each relationship kind, we need to know how many relatives each individual has. In the test data
-of this guide, we have 2 relationship kinds (~PO~ = "parent offspring", ~FS~ = "full siblings"):
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |>
-  distinct(person_id, born_at_year, relationship_kind, relatives) |>
-  tail(4 * 2)
-#+END_SRC
-
-#+RESULTS:
-| person_id | born_at_year | relationship_kind | relatives |
-|-----------+--------------+-------------------+-----------|
-|     99996 |         1955 | FS                |         5 |
-|     99996 |         1955 | PO                |         5 |
-|     99997 |         1977 | FS                |         1 |
-|     99997 |         1977 | PO                |         1 |
-|     99998 |         1978 | FS                |         2 |
-|     99998 |         1978 | PO                |         2 |
-|     99999 |         2019 | FS                |         4 |
-|     99999 |         2019 | PO                |         4 |
-
-Then for each disorder, we need to know:
-
-- The identifier of each distinct disorder
-- The individuals failure status/time
-- The relatives diagnosis status
-
-Since there are 2 disorders and 2 types of relatives, each individual gets 4 rows:
-
-#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
-tte |> tail(4 * 4)
-#+END_SRC
-
-#+RESULTS:
-| person_id | born_at_year | disorder | failure_status | failure_time | relationship_kind | relatives | relatives_diagnosed |
-|-----------+--------------+----------+----------------+--------------+-------------------+-----------+---------------------|
-|     99996 |         1955 | CAD      |              2 |           69 | FS                |         5 |                   0 |
-|     99996 |         1955 | CAD      |              2 |           69 | PO                |         5 |                   2 |
-|     99996 |         1955 | SCZ      |              2 |           69 | FS                |         5 |                   0 |
-|     99996 |         1955 | SCZ      |              2 |           69 | PO                |         5 |                   0 |
-|     99997 |         1977 | CAD      |              0 |           49 | FS                |         1 |                   0 |
-|     99997 |         1977 | CAD      |              0 |           49 | PO                |         1 |                   1 |
-|     99997 |         1977 | SCZ      |              0 |           49 | FS                |         1 |                   0 |
-|     99997 |         1977 | SCZ      |              0 |           49 | PO                |         1 |                   1 |
-|     99998 |         1978 | CAD      |              0 |           48 | FS                |         2 |                   0 |
-|     99998 |         1978 | CAD      |              0 |           48 | PO                |         2 |                   0 |
-|     99998 |         1978 | SCZ      |              0 |           48 | FS                |         2 |                   0 |
-|     99998 |         1978 | SCZ      |              0 |           48 | PO                |         2 |                   0 |
-|     99999 |         2019 | CAD      |              0 |            7 | FS                |         4 |                   0 |
-|     99999 |         2019 | CAD      |              0 |            7 | PO                |         4 |                   0 |
-|     99999 |         2019 | SCZ      |              1 |            7 | FS                |         4 |                   0 |
-|     99999 |         2019 | SCZ      |              0 |            7 | PO                |         4 |                   0 |
-
-* Setting up the pipeline
-
-To setup the pipeline, we start by importing the epimight library:
+To look at some examples of valid data, we can download [[../data/pipeline-tte.csv][the randomly generated time-to-event dataset]]
+as "pipeline-tte.csv" and load it:
 
 #+BEGIN_SRC R :exports code :eval no
-library(dplyr)
-library(readr)
-library(data.table)
-library(epimight)
-#+END_SRC
+library(dplyr, quietly = TRUE, warn.conflicts = FALSE)
+library(readr, quietly = TRUE, warn.conflicts = FALSE)
+library(data.table, quietly = TRUE, warn.conflicts = FALSE)
+library(epimight, quietly = TRUE, warn.conflicts = FALSE)
 
-#+BEGIN_SRC R :exports none :eval no
 tte <- read_csv(
-  "./test-tte.csv",
+  "./pipeline-tte.csv",
   show_col_type = FALSE,
   col_types = cols(person_id = col_character()),
 ) |> as.data.table()
 #+END_SRC
 
-And then create a new instance with our TTE pool (the variable ~tte~ is the data table shown in the previous chapter):
+Note that the reason why we force the ~person_id~ column to be a character vector, is because
+some versions of dplyr removes precision of large numbers in join operations. This means that
+multiple unique individuals gets interpreted as a single unique individual.
+
+The test data defines traits as "first diagnosis of disorder" and it contains two traits:
+
+- ~SCZ~ = First diagnosis of Schizophrenia
+- ~CAD~ = First diagnosis of Coronary Artery Disease
+
+And it contains two different kinds of relatives:
+
+- ~half_siblings~
+- ~parents~
+
+Here's an example of what that looks like:
+
+#+BEGIN_SRC R :exports results :results value :colnames yes :tangle no
+tte |>
+  select(person_id, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
+  tail(10)
+#+END_SRC
+
+#+RESULTS:
+| person_id | trait | trait_status | trait_age | relatives_kind | relatives_n | relatives_n_trait |
+|-----------+-------+--------------+-----------+----------------+-------------+-------------------|
+|     99997 | SCZ   |            0 |        34 | half_siblings  |           2 |                 1 |
+|     99997 | SCZ   |            0 |        34 | parents        |           2 |                 0 |
+|     99998 | CAD   |            2 |        67 | half_siblings  |           4 |                 0 |
+|     99998 | CAD   |            2 |        67 | parents        |           4 |                 1 |
+|     99998 | SCZ   |            2 |        67 | half_siblings  |           4 |                 0 |
+|     99998 | SCZ   |            2 |        67 | parents        |           4 |                 0 |
+|     99999 | CAD   |            0 |        53 | half_siblings  |           2 |                 0 |
+|     99999 | CAD   |            0 |        53 | parents        |           2 |                 2 |
+|     99999 | SCZ   |            0 |        53 | half_siblings  |           2 |                 1 |
+|     99999 | SCZ   |            0 |        53 | parents        |           2 |                 0 |
+
+Note that each individual appears once for every ~trait~ and ~relatives_kind~ combination.
+
+Traits and relative kinds can be defined however we want, epimight only uses the
+label as a means to filter the time-to-event data.
+
+If we would like to stratify the results, we can add any number of extra columns.
+
+* Simple interface
+
+To use any interface of the pipeline, we first need to create an instance of the pipeline
+and pass it our time-to-event data:
 
 #+BEGIN_SRC R :exports both
 pipeline <- Pipeline$new(pool = tte)
@@ -356,162 +195,464 @@ pipeline <- Pipeline$new(pool = tte)
 
 #+RESULTS:
 
-The supplied pool must be a ~data.table~ with the following required columns:
+It's called a "pool" because all data is kept there and only the relevant rows are pulled
+out of the pool during analysis. It's designed this way for simplicity, but also so that
+the time-to-event data is immutable during analysis.
 
-- ~person_id~
-  - Must be a string
-- ~disorder~
-  - Must be a string
-- ~failure_status~
-  - Must be one of these integers:
-    - ~0~ (censored)
-    - ~1~ (event of interest)
-    - ~2~ (competing risk)
-- ~failure_time~
-  - Must be numeric, minimum ~0.0~
-- ~relationship_kind~
-  - Must be one of these strings: [[../data/relationship-kinds.org][names(epimight:::relationship_kinds)]]
-- ~relatives~
-  - Must be an integer, minimum ~0~
-- ~relatives_diagnosed~
-  - Must be an integer, minimum ~0~
+The underlying genetic correlation calculation accepts 6 arguments:
 
-It accepts any additional columns used for stratification.
+#+LATEX: \vspace{0.5cm}
+#+LATEX: \begin{center}
+#+NAME: fig:rg-arguments
+#+ATTR_HTML: :style max-width: 100%;
+#+BEGIN_SRC plantuml :file ../diagrams/rg-arguments.png :exports results
+@startuml
+!include <material7.4.47/AccountUser/AccountGroup>
+!include <material7.4.47/PeopleFamily/HumanMaleFemaleChild>
+!include ../diagrams/ibp.puml
 
-* Running the pipeline
+<style>
+  title {
+    LineColor transparent
+  }
 
-After creating the pipeline instance, we run analyses by supplying the ~run~ function with:
+  file {
+    LineColor #333333
+  }
 
-- Disorder 1
-  - Identifier
-  - Earliest onset
-  - Latest onset
-- Disorder 2
-  - Identifier
-  - Earliest onset
-  - Latest onset
-- Relationship kind
-- What stratification columns to use (if any)
+  rectangle {
+    LineColor #333333
+  }
 
-For example, if we want to run an analysis between schizophrenia and coronary artery disease of full siblings,
-stratifying on birth year, we would run:
+  process {
+    LineColor #333333
+  }
+
+  card {
+    RoundCorner     0
+    BackgroundColor transparent
+    LineColor       transparent
+  }
+</style>
+
+title "**Genetic correlation arguments**"
+
+legend left
+  <#silver>|= Color|= Index trait |= Cohort |
+  |<#f1a7b0>|Trait 1 | Target |
+  |<#dd2e44>|Trait 1 | Relatives with trait 1 |
+  |<#c254ef>|Trait 1 | Relatives with trait 2 |
+  |<#a1d2f7>|Trait 2 | Target |
+  |<#54adef>|Trait 2 | Relatives with trait 2 |
+
+  ,**Relatives with trait X** = Individuals with at least 1 relative with trait X.
+endlegend
+
+file cif_t1_pop #f1a7b0 [
+,**CIF**
+
+| **age**  | **cif** | **cases** |
+|       40 | 0.1256  | 1679      |
+|       41 | 0.1260  | 1688      |
+|       42 | 0.1272  | 1691      |
+]
+
+file h2_t1 #dd2e44 [
+,**H2**
+
+| **age** | **h2**  |
+|  40     |  0.0116 |
+|  41     |  0.0102 |
+|  42     |  0.0105 |
+]
+
+file cif_cross #c254ef [
+,**CIF**
+
+| **age**  | **cif** | **cases** |
+|       40 | 0.1210  | 1578      |
+|       41 | 0.1227  | 1587      |
+|       42 | 0.1301  | 1592      |
+]
+
+file cif_t2_pop #a1d2f7 [
+,**CIF**
+
+| **age**  | **cif** | **cases** |
+|       40 | 0.1310  | 1478      |
+|       41 | 0.1327  | 1487      |
+|       42 | 0.1401  | 1492      |
+]
+
+file h2_t2 #54adef [
+,**H2**
+
+| **age** | **h2**  |
+|  40     |  0.0107 |
+|  41     |  0.0103 |
+|  42     |  0.0111 |
+]
+
+process "Calculate rg" as rg
+
+file rg_results #efb054 [
+,**RG**
+
+| **rg** | **se** | **l95** | **u95** |
+| 0.5203 | 0.0392 | -0.0714 | 0.0823  |
+]
+
+rectangle "**Relatedness**\n0.5" as t3_rel #54adef
+
+cif_t1_pop --> rg
+cif_t2_pop --> rg
+cif_cross --> rg
+h2_t1 --> rg
+h2_t2 --> rg
+
+t3_rel -LEFT-> rg
+
+rg --> rg_results
+@enduml
+#+END_SRC
+
+#+ATTR_LATEX: :placement [H]
+#+CAPTION: Genetic correlation arguments
+#+RESULTS: fig:rg-arguments
+[[file:../diagrams/rg-arguments.png]]
+
+The simple interface allows you to specify index traits, relatives kind and relatedness
+of the two heritabilities, along with the columns to stratify the results on:
 
 #+BEGIN_SRC R :exports code :results output
-results <- pipeline$run(
-  disorder1 = list(
-    id             = "SCZ",
-    earliest_onset = 1,
-    latest_onset   = 100
+out <- pipeline$run_default_rg(
+  heritability1 = list(
+    trait          = "SCZ",
+    relatives_kind = "parents",
+    relatedness    = 0.5
   ),
-  disorder2 = list(
-    id             = "CAD",
-    earliest_onset = 1,
-    latest_onset   = 100
+  heritability2 = list(
+    trait          = "CAD",
+    relatives_kind = "half_siblings",
+    relatedness    = 0.25
   ),
-  relationship_kind = "FS",
-  stratify_columns = list("born_at_year")
+  stratify_columns = list("birth_year")
 )
 #+END_SRC
 
 #+RESULTS:
 
-This will give us the genetic correlation between the two disorders and all the intermediate results (cif and h2)
-in a named list with the members ~cif~, ~h2~ and ~rg~ that contain the results as ~data.tables~.
+It will automatically use:
 
-** Cumulative incidence
+- The trait from ~heritability1~ as the index trait for the cross trait ~cif~
+- The relatives cohort from ~heritability2~ for the cross trait ~cif~
+- The relatedness from ~heritability2~ for the ~rg~ calculation
+
+** Output format
+
+Both interfaces has the same output format, a single named list with the following members:
+
+| Name         | Description                                       |
+|--------------+---------------------------------------------------|
+| metadata     | Metadata of the analysis performed                |
+| results      | All genetic correlations as a single ~data.table~ |
+| intermediate | All intermediate results as separate outputs      |
+
+*** Results
+
+Looking at the results, we see that we get a genetic correlation for each birth year:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-results$cif |> tail(10)
+out$results |> mutate_if(is.numeric, round, 4) |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| disorder | cohort | born_at_year | time |                 cif |         cif_cases |
-|----------+--------+--------------+------+---------------------+-------------------|
-| d2       | c3     |         2020 |    5 |  0.0163039540107727 |  2.08333333333333 |
-| d2       | c3     |         2020 |    6 |  0.0221009154368252 |             40.95 |
-| d2       | c3     |         2021 |    4 | 0.00526739337186334 |  1.16666666666667 |
-| d2       | c3     |         2021 |    5 |  0.0114126856390372 |  37.7142857142857 |
-| d2       | c3     |         2022 |    4 |  0.0195691855674059 |            33.875 |
-| d2       | c3     |         2023 |    2 | 0.00227516494945884 | 0.666666666666667 |
-| d2       | c3     |         2023 |    3 | 0.00530871821540395 |  40.2595238095238 |
-| d2       | c3     |         2024 |    1 | 0.00883733000413811 |               0.5 |
-| d2       | c3     |         2024 |    2 |  0.0110466625051726 |  37.3242063492063 |
-| d2       | c3     |         2025 |    1 | 0.00974876051473456 |                43 |
+| birth_year |       rg |     se |     l95 |     u95 |
+|------------+----------+--------+---------+---------|
+|       2014 | -29.5778 | 0.1531 | -0.8102 | -0.2099 |
+|       2006 |   4.6949 | 0.3528 | -0.3105 |  1.0724 |
+|       2016 | -11.5213 | 0.1651 |  -0.532 |  0.1151 |
+|       2017 |   1.5243 |  0.166 | -0.1277 |  0.5232 |
+|       2010 |   2.0901 | 0.3456 | -0.4207 |  0.9341 |
+|       2018 |  -2.8076 | 0.1395 | -0.4702 |  0.0766 |
+|       2020 |   3.5483 | 0.1384 |  0.1933 |  0.7358 |
+|       2021 |  24.3897 | 0.1238 |   0.204 |  0.6895 |
+|       1988 |   0.9777 | 0.3724 | -0.6334 |  0.8265 |
+|       1953 |   2.2823 | 0.4544 | -0.3866 |  1.3948 |
 
-** Heritability
+*** Intermediate
+
+As shown in the "Genetic correlation arguments" diagram, the intermediate results used to calculate the
+genetic correlation are:
+
+| Name         | Description                                      |
+|--------------+--------------------------------------------------|
+| ~cif_t1_pop~ | CIF for trait 1 in target cohort                 |
+| ~cif_t2_pop~ | CIF for trait 2 in target cohort                 |
+| ~cif_cross~  | CIF for index trait 1 in family history cohort 2 |
+| ~h2_t1~      | Heritability of trait 1                          |
+| ~h2_t2~      | Heritability of trait 2                          |
+
+You can access these intermediate results using ~out$intermediate[[name]]$results~, like this:
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-results$h2 |> tail(10)
+out$intermediate$h2_t1$results |> mutate_if(is.numeric, round, 4) |> tail(5)
 #+END_SRC
 
 #+RESULTS:
-| disorder | born_at_year | time |                h2 |              h2_se |             h2_l95 |            h2_u95 |
-|----------+--------------+------+-------------------+--------------------+--------------------+-------------------|
-| d2       |         2016 |   10 | 0.162351392356426 | 0.0669417896141256 | 0.0311454847127403 | 0.293557300000113 |
-| d2       |         2017 |    9 | 0.181602416010176 | 0.0650811742772046 | 0.0540433144268551 | 0.309161517593497 |
-| d2       |         2018 |    8 | 0.273810729693268 | 0.0525097964568126 |  0.170891528637915 | 0.376729930748621 |
-| d2       |         2019 |    7 | 0.387665326300518 | 0.0572989430627429 |  0.275359397897542 | 0.499971254703494 |
-| d2       |         2020 |    6 | 0.165041512628063 | 0.0566018785460026 | 0.0541018306778983 | 0.275981194578228 |
-| d2       |         2021 |    5 | 0.222005555785044 | 0.0464642529743621 |  0.130935619955294 | 0.313075491614793 |
-| d2       |         2022 |    4 | 0.362485252349326 | 0.0522938934929121 |  0.259989221103219 | 0.464981283595434 |
-| d2       |         2023 |    3 | 0.119562626189676 | 0.0407177290659117 | 0.0397558772204886 | 0.199369375158863 |
-| d2       |         2024 |    2 | 0.193074303549545 | 0.0472711248391886 |  0.100422898864735 | 0.285725708234355 |
-| d2       |         2025 |    1 |  0.22983020501722 | 0.0420798996861794 |  0.147353601632308 | 0.312306808402131 |
-
-** Genetic correlation
+| index_trait | age | birth_year |     h2 |     se |     l95 |    u95 |
+|-------------+-----+------------+--------+--------+---------+--------|
+| SCZ         |   2 |       2019 | 0.0456 |  0.177 | -0.3012 | 0.3925 |
+| SCZ         |   3 |       2020 | 0.1315 | 0.1581 | -0.1783 | 0.4412 |
+| SCZ         |   5 |       2020 | 0.1536 | 0.1716 | -0.1826 | 0.4899 |
+| SCZ         |   6 |       2020 | 0.1309 | 0.0577 |  0.0177 | 0.2441 |
+| SCZ         |   5 |       2021 | 0.0183 | 0.0503 | -0.0804 |  0.117 |
 
 #+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-results$rg |> tail(10)
+out$intermediate$cif_cross$results |> mutate_if(is.numeric, round, 4) |> tail(5)
 #+END_SRC
 
 #+RESULTS:
-| born_at_year |                    rg |              rg_se |              rg_l95 |             rg_u95 |
-|--------------+-----------------------+--------------------+---------------------+--------------------|
-|         2013 |    0.0309772717069844 | 0.0938098521125598 |  -0.750397195030223 |  0.812351738444191 |
-|         2014 |     0.180186431757905 | 0.0909668808801913 |  -0.517145930520094 |  0.877518794035904 |
-|         2015 | -0.000946614849161021 |   0.09450002890667 |  -0.684362863976957 |  0.682469634278635 |
-|         2017 |     -2.19452627793857 | 0.0720309104236831 |   -2.99625955957418 |  -1.39279299630296 |
-|         2018 |      1.08842596853878 | 0.0756580822895954 |  -0.309241944110761 |   2.48609388118833 |
-|         2019 |    -0.571246582879905 | 0.0794431248505967 |  -0.977986848601906 | -0.164506317157905 |
-|         2020 |    -0.920917747554769 |   0.07082990261602 |   -2.48671448616974 |  0.644878991060204 |
-|         2022 |     0.308418361095989 | 0.0620321389970337 | -0.0606583449091678 |  0.677495067101145 |
-|         2023 |    -0.436814571765798 | 0.0549437529602088 |   -1.27495721278628 |  0.401328069254681 |
-|         2025 |   0.00782408175429108 | 0.0518636811341281 |  -0.445000232319994 |  0.460648395828577 |
+| index_trait | relatives_trait | relatives_kind | birth_year | age |    cif |     se |     l95 |    u95 | var |   cases |
+|-------------+-----------------+----------------+------------+-----+--------+--------+---------+--------+-----+---------|
+| SCZ         | CAD             | half_siblings  |       2023 |   3 |        |        |         |        |     | 18.9667 |
+| SCZ         | CAD             | half_siblings  |       2024 |   2 |        |        |         |        |     | 15.2667 |
+| SCZ         | CAD             | half_siblings  |       2025 |   0 |      0 |      0 |       0 |      0 |   0 |  2.0667 |
+| SCZ         | CAD             | half_siblings  |       2025 |   1 | 0.0092 | 0.0064 | -0.0033 | 0.0217 |   0 |  25.219 |
+| SCZ         | CAD             | half_siblings  |       2026 |   0 |      0 |      0 |       0 |      0 |   0 | 15.6667 |
 
+*** Metadata
 
-* Meta-analyzing the results
+The metadata contains the version of epimight and which analysis name produced the results:
 
-When using stratification, we can meta-analyze the results simply by passing the results inte the ~run_meta~ function:
+#+BEGIN_SRC R :exports both :results output :tangle no
+message(out$metadata$epimight_version)
+message(out$metadata$analysis_name)
+#+END_SRC
+
+#+RESULTS:
+: 1.1.0
+: rg
+
+It also contains the expanded arguments used to produce the results:
+
+#+BEGIN_SRC R :exports both :results output :tangle no
+message(rjson::toJSON(out$metadata$analysis_arguments, indent = 2))
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+{
+  "h2_t1":{
+    "cif_pop":{
+      "index_trait":"SCZ",
+      "stratify_columns":[
+        "birth_year"
+      ],
+      "use_weighted":      true
+    },
+    "cif_fh":{
+      "index_trait":"SCZ",
+      "relatives_trait":"SCZ",
+      "relatives_kind":"parents",
+      "stratify_columns":[
+        "birth_year"
+      ],
+      "use_weighted":      true
+    },
+    "relatedness":    0.5
+  },
+  "h2_t2":{
+    "cif_pop":{
+      "index_trait":"CAD",
+      "stratify_columns":[
+        "birth_year"
+      ],
+      "use_weighted":      true
+    },
+    "cif_fh":{
+      "index_trait":"CAD",
+      "relatives_trait":"CAD",
+      "relatives_kind":"half_siblings",
+      "stratify_columns":[
+        "birth_year"
+      ],
+      "use_weighted":      true
+    },
+    "relatedness":    0.25
+  },
+  "cif_cross":{
+    "index_trait":"SCZ",
+    "relatives_trait":"CAD",
+    "relatives_kind":"half_siblings",
+    "stratify_columns":[
+      "birth_year"
+    ],
+    "use_weighted":    true
+  },
+  "relatedness":  0.25
+}
+#+end_example
+
+** Meta-analyzing the results
+
+When using stratification, we can meta-analyze the results simply by passing the results into the ~run_meta~ function:
 
 #+BEGIN_SRC R :exports code :results output
-meta <- pipeline$run_meta(results)
+meta <- pipeline$run_meta(
+  metadata = out$metadata,
+  results  = out$results
+)
 #+END_SRC
 
 #+RESULTS:
 
-#+BEGIN_SRC R :exports none :eval no
-print(meta$rg)
-#+END_SRC
-
-** Heritability
-
-#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-meta$h2 |> tail(10)
+#+BEGIN_SRC R :exports code :results value :colnames yes
+meta |> mutate_if(is.numeric, round, 4) |> print()
 #+END_SRC
 
 #+RESULTS:
-| disorder |        fixed_meta |            fixed_se |         fixed_l95 |         fixed_u95 |         rand_meta |            rand_se |          rand_l95 |          rand_u95 |
-|----------+-------------------+---------------------+-------------------+-------------------+-------------------+--------------------+-------------------+-------------------|
-| d1       | 0.295685808622196 | 0.00946539792453692 | 0.277133628690104 | 0.314237988554289 | 0.390016776078375 | 0.0206224087523882 | 0.349596854923695 | 0.430436697233056 |
-| d2       |  0.35135080247239 |  0.0101821334780323 | 0.331393820855447 | 0.371307784089333 | 0.418369216598284 | 0.0209586802400862 | 0.377290203327715 | 0.459448229868853 |
+| fixed_meta | fixed_se | fixed_l95 | fixed_u95 | rand_meta | rand_se | rand_l95 | rand_u95 |
+|------------+----------+-----------+-----------+-----------+---------+----------+----------|
+|    -2.1972 |   0.0347 |   -2.2652 |   -2.1292 |   -4.3634 |  2.6943 |  -9.6442 |   0.9174 |
 
-** Genetic correlation
+** Results cache
 
-#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-meta$rg |> tail(10)
+When the pipeline is run, under the hood it produces these intermediate analysis results,
+that are used to produce the genetic correlation:
+
+| Name         | Description                                       |
+|--------------+---------------------------------------------------|
+| ~cif_t1_pop~ | CIF for trait 1 in target cohort                  |
+| ~cif_t1_fh1~ | CIF for trait 1 in target family history cohort 1 |
+| ~cif_t2_pop~ | CIF for trait 2 in target cohort                  |
+| ~cif_t2_fh2~ | CIF for trait 2 in family history cohort 2        |
+| ~cif_cross~  | CIF for trait 1 in family history cohort 2        |
+| ~h2_t1~      | Heritability of trait 1                           |
+| ~h2_t2~      | Heritability of trait 2                           |
+
+If we changed the relatives in ~heritability2~ to "parents" and rerun the
+pipeline, the only intermediate results that would come out different
+would be:
+
+- ~cif_t2_fh2~
+- ~cif_cross~
+- ~h2_t2~
+
+Since the pipeline is deterministic, all other intermediate results would
+be identical, since their arguments wasn't changed.
+
+In order not to waste time on producing results that have already been produced,
+the pipeline caches all results (cif, h2, rg). If we would execute the
+~run~ function twice, with the same arguments, the second time would return
+immediately, since it wouldn't run any of the analyses and just return the
+cached results.
+
+The pipeline has a function called ~clear_results~ that can be used to clear the
+results cache. It also has functions to add and get results from the cache, but
+those functions are used internally by each analysis function.
+
+* Advanced interface
+
+The advanced interface consists of 3 functions:
+
+- ~run_cif~
+- ~run_h2~
+- ~run_rg~
+
+These functions form a hierarchy, where their results are used as inputs to the other more complex functions.
+
+The starting function is the one producing cumulative incidences, called ~run_cif~:
+
+#+BEGIN_SRC R :exports code :results output :tangle no
+advanced_cif_pop <- pipeline$run_cif(
+  index_trait = "SCZ"
+)
+
+advanced_cif_cross <- pipeline$run_cif(
+  index_trait      = "SCZ",
+  relatives_trait  = "CAD",
+  relatives_kind   = "parents",
+  stratify_columns = list("birth_year")
+)
 #+END_SRC
 
-#+RESULTS:
-|        fixed_meta |           fixed_se |          fixed_l95 |          fixed_u95 |           rand_meta |            rand_se |           rand_l95 |          rand_u95 |
-|-------------------+--------------------+--------------------+--------------------+---------------------+--------------------+--------------------+-------------------|
-| -0.13429766971937 | 0.0168610747178311 | -0.167345376166319 | -0.101249963272421 | -0.0657738025645494 | 0.0934880530018862 | -0.249010386448246 | 0.117462781319148 |
+The next function is the one producing heritability, called ~run_h2~:
+
+#+BEGIN_SRC R :exports code :results output :tangle no
+advanced_h2_t1 <- pipeline$run_h2(
+  cif_pop = list(
+    index_trait      = "SCZ",
+    stratify_columns = list("birth_year")
+  ),
+  cif_fh = list(
+    index_trait      = "SCZ",
+    relatives_trait  = "SCZ",
+    relatives_kind   = "half_siblings",
+    stratify_columns = list("birth_year")
+  ),
+  relatedness = 0.25
+)
+#+END_SRC
+
+This function passes the arguments ~cif_pop~ and ~cif_fh~ as input arguments to the ~run_cif~ function.
+It then uses the returned results along with the relatedness argument to perform the heritability calculation.
+
+The final function is the one producing the genetic correlation, called ~run_rg~:
+
+#+BEGIN_SRC R :exports code :results output :tangle no
+advanced_rg <- pipeline$run_rg(
+  h2_t1 = list(
+    cif_pop = list(
+      index_trait      = "SCZ",
+      stratify_columns = list("birth_year")
+    ),
+    cif_fh = list(
+      index_trait      = "SCZ",
+      relatives_trait  = "SCZ",
+      relatives_kind   = "half_siblings",
+      stratify_columns = list("birth_year")
+    ),
+    relatedness = 0.25
+  ),
+  h2_t2 = list(
+    cif_pop = list(
+      index_trait      = "CAD",
+      stratify_columns = list("birth_year")
+    ),
+    cif_fh = list(
+      index_trait      = "CAD",
+      relatives_trait  = "CAD",
+      relatives_kind   = "half_siblings",
+      stratify_columns = list("birth_year")
+    ),
+    relatedness = 0.25
+  ),
+  cif_cross = list(
+    index_trait      = "SCZ",
+    relatives_trait  = "CAD",
+    relatives_kind   = "parents",
+    stratify_columns = list("birth_year")
+  ),
+  relatedness = 0.5
+)
+#+END_SRC
+
+This function passes:
+
+- The arguments ~h2_t1~ and ~h2_t2~ as input arguments to the ~run_h2~ function
+- The argument ~cif_cross~ as input arguments to the ~run_cif~ function
+
+It then uses the returned results along with the relatedness argument to perform the genetic
+correlation calculation.
+
+By using the advanced interface, we have total control over each distinct analysis.
+
+Each of these functions uses the same output format as the simple interface, a named list
+with the following members:
+
+| Name         | Description                                        |
+|--------------+----------------------------------------------------|
+| results      | Analysis results as a single ~data.table~          |
+| intermediate | All intermediate results as separate ~data.tables~ |
+| args         | Arguments supplied to the interface                |

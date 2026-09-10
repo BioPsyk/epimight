@@ -17,9 +17,8 @@ TTERetriever <- R6::R6Class( #nolint
     render_template = function(template_name, data) {
       template_path <- file.path(private$sql_dir, template_name)
       template      <- readr::read_file(template_path)
-      results       <- jinjar::render(template, !!!data, .config = private$jinjar_config)
 
-      return(results)
+      jinjar::render(template, !!!data, .config = private$jinjar_config)
     },
     make_env = function() {
       env <- c()
@@ -32,7 +31,7 @@ TTERetriever <- R6::R6Class( #nolint
         env <- append(env, sprintf("PGPASSWORD=%s", self$password))
       }
 
-      return(env)
+      env
     }
   ),
   public = list(
@@ -74,7 +73,7 @@ TTERetriever <- R6::R6Class( #nolint
 
       args$relatives$using_vertical_relationship <- TRUE
 
-      return(args)
+      args
     },
     initialize = function(output_directory, hostname, username = NULL, password = NULL) {
       if (!dir.exists(output_directory)) {
@@ -110,9 +109,7 @@ TTERetriever <- R6::R6Class( #nolint
     generate_query = function(...) {
       data <- self$validator$run(...)
 
-      return(
-        private$render_template("base.sql", data)
-      )
+      private$render_template("base.sql", data)
     },
     #' @description
     #' Executes the given query using the PostgreSQL client psql outside of R
@@ -180,7 +177,7 @@ TTERetriever <- R6::R6Class( #nolint
         args_path,
         handlers = list(
           # This is needed so that homogeneous lists are converted into lists and not vectors.
-          seq = function(s) return(s)
+          seq = function(s) s
         )
       )
     },
@@ -217,11 +214,11 @@ TTERetriever <- R6::R6Class( #nolint
 
       data_path <- self$execute_query(output_path, query)
 
-      return(list(
+      list(
         data  = data_path,
         query = query_path,
         args  = args_path
-      ))
+      )
     },
     #' @description
     #' Reads the arguments YAML file from the given path then generates an SQL query and
@@ -234,9 +231,7 @@ TTERetriever <- R6::R6Class( #nolint
     run_from_file = function(output_prefix, args_path) {
       args <- self$read_args(args_path)
 
-      return(
-        self$run(output_prefix, args)
-      )
+      self$run(output_prefix, args)
     }
   )
 )

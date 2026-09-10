@@ -6,6 +6,202 @@ library(data.table, quietly = TRUE, warn.conflicts = FALSE)
 # Tests
 #=================================================================================
 
+describe("named lists arguments", {
+  it("fails when unknown members are found", {
+    validator <- ArgumentsValidator$new(
+      person = list(
+        type       = "named_list",
+        required   = TRUE,
+        properties = list(
+          name = list(
+            type     = "string",
+            required = TRUE
+          )
+        )
+      )
+    )
+
+    validator$run(person = list(name = "tester"))
+    expect_error(validator$run(person = list(name = "tester", age = 2)))
+  })
+
+  it("ignores unknown members when not strict", {
+    validator <- ArgumentsValidator$new(
+      person = list(
+        type       = "named_list",
+        required   = TRUE,
+        strict     = FALSE,
+        properties = list(
+          name = list(
+            type     = "string",
+            required = TRUE
+          )
+        )
+      )
+    )
+
+    validator$run(person = list(name = "tester"))
+    validator$run(person = list(name = "tester", age = 2))
+    succeed()
+  })
+
+  it("adds default value when deeply nested values are NULL/NA", {
+    cif_rules <- list(
+      required   = TRUE,
+      type       = "named_list",
+      properties = list(
+        index_trait = list(
+          required = TRUE,
+          type     = "string"
+        ),
+        relatives_trait = list(
+          required = FALSE,
+          type     = "string"
+        ),
+        relatives_kind = list(
+          required = FALSE,
+          type     = "string"
+        ),
+        stratify_columns = list(
+          type    = "list",
+          items   = list(type = "string"),
+          default = list()
+        ),
+        use_weighted = list(
+          type    = "logical",
+          default = TRUE
+        )
+      )
+    )
+
+    h2_rules <- list(
+      required   = TRUE,
+      type       = "named_list",
+      properties = list(
+        cif_pop = cif_rules
+      )
+    )
+
+    args <- list(
+      cif_pop = list(
+        index_trait = "SCZ"
+      )
+    )
+
+    validator      <- do.call(ArgumentsValidator$new, h2_rules$properties)
+    validated_args <- do.call(validator$run, args)
+
+    expect_true("use_weighted" %in% names(validated_args$cif_pop))
+    expect_true("stratify_columns" %in% names(validated_args$cif_pop))
+  })
+})
+
+describe("non-named lists arguments", {
+  validator <- ArgumentsValidator$new(
+    list(
+      required   = TRUE,
+      type       = "named_list",
+      properties = list(
+        id = list(
+          required = TRUE,
+          type     = "string"
+        ),
+        earliest_onset = list(
+          type    = "integer",
+          minimum = 1,
+          default = 1
+        ),
+        latest_onset = list(
+          type    = "integer",
+          minimum = 1
+        ),
+        relatives_kind = list(
+          required = TRUE,
+          type     = "string",
+          enum     = list("parents", "full_siblings")
+        )
+      )
+    ),
+    list(
+      required   = FALSE,
+      type       = "named_list",
+      properties = list(
+        id = list(
+          required = TRUE,
+          type     = "string"
+        ),
+        earliest_onset = list(
+          type    = "integer",
+          minimum = 1,
+          default = 1
+        ),
+        latest_onset = list(
+          type    = "integer",
+          minimum = 1
+        ),
+        relatives_kind = list(
+          required = TRUE,
+          type     = "string",
+          enum     = list("parents", "full_siblings")
+        )
+      )
+    ),
+    list(
+      type    = "list",
+      items   = list(type = "string"),
+      default = list()
+    )
+  )
+
+  it("handles all values given", {
+    d1_id      <- "SCZ"
+    d1_relkind <- "full_siblings"
+    d2_id      <- "CAD"
+    d2_relkind <- "parents"
+
+    args <- validator$run(
+      list(
+        id             = d1_id,
+        relatives_kind = d1_relkind
+      ),
+      list(
+        id             = d2_id,
+        relatives_kind = d2_relkind
+      ),
+      list("birth_date")
+    )
+
+    proband_trait   <- args[[1]]
+    relatives_trait <- args[[2]]
+    stratify_columns   <- args[[3]]
+
+    expect_equal(proband_trait$id, d1_id)
+    expect_equal(proband_trait$relatives_kind, d1_relkind)
+    expect_equal(relatives_trait$id, d2_id)
+    expect_equal(relatives_trait$relatives_kind, d2_relkind)
+  })
+
+  it("handles missing values in the middle", {
+    d1_id      <- "SCZ"
+    d1_relkind <- "full_siblings"
+    d2_id      <- "CAD"
+    d2_relkind <- "parents"
+
+    args <- validator$run(
+      list(
+        id             = d1_id,
+        relatives_kind = d1_relkind
+      ),
+      NA,
+      list("birth_date")
+    )
+
+    expect_true(is.list(args[[1]]))
+    expect_true(is.na(args[[2]]))
+    expect_true(is.list(args[[3]]))
+  })
+})
+
 describe("gen_pop_risk_validator", {
   gen_pop_risk_validator <- ArgumentsValidator$new(
     phenotype_icd_codes = list(
@@ -15,19 +211,19 @@ describe("gen_pop_risk_validator", {
         type = "string"
       )
     ),
-    born_at_min = list(
+    birth_date_min = list(
       type = "date"
     ),
-    born_at_max = list(
+    birth_date_max = list(
       type = "date"
     ),
     study_end_at = list(
       required = TRUE,
       type = "date"
     ),
-    gender = list(
+    sex = list(
       type = "string",
-      enum = epimight:::genders
+      enum = list("male", "female")
     ),
     diagnosis_kind = list(
       type = "list",
@@ -53,16 +249,16 @@ describe("gen_pop_risk_validator", {
       stop("Argument 'earliest_onset' was larger than 'latest_onset'")
     }
 
-    if (is.null(args$born_at_max)) return()
+    if (is.null(args$birth_date_max)) return()
 
-    if (args$study_end_at <= args$born_at_max) {
-      stop("Argument 'study_end_at' was earlier than 'born_at_max'")
+    if (args$study_end_at <= args$birth_date_max) {
+      stop("Argument 'study_end_at' was earlier than 'birth_date_max'")
     }
 
-    if (is.null(args$born_at_min)) return()
+    if (is.null(args$birth_date_min)) return()
 
-    if (args$born_at_min >= args$born_at_max) {
-      stop("Argument 'born_at_min' was same or later than 'born_at_max'")
+    if (args$birth_date_min >= args$birth_date_max) {
+      stop("Argument 'birth_date_min' was same or later than 'birth_date_max'")
     }
   })
 
@@ -73,37 +269,37 @@ describe("gen_pop_risk_validator", {
   it("Supplying correct values is successful", {
     gen_pop_risk_validator$run(
       phenotype_icd_codes = list("F20", "F30"),
-      born_at_min = as.Date("1980-12-01"),
-      born_at_max = as.Date("2020-12-01"),
+      birth_date_min = as.Date("1980-12-01"),
+      birth_date_max = as.Date("2020-12-01"),
       study_end_at = as.Date("2020-12-02"),
-      gender = "male"
+      sex = "male"
     )
 
     expect_no_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
         study_end_at = as.Date("2020-12-01"),
-        gender = "male"
+        sex = "male"
       )
     )
 
     expect_no_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_min = as.Date("1980-12-01"),
-        born_at_max = as.Date("2020-12-01"),
+        birth_date_min = as.Date("1980-12-01"),
+        birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-02"),
-        gender = "male"
+        sex = "male"
       )
     )
 
     expect_no_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_min = as.Date("1980-12-01"),
-        born_at_max = as.Date("2020-12-01"),
+        birth_date_min = as.Date("1980-12-01"),
+        birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-02"),
-        gender = "male",
+        sex = "male",
         earliest_onset = 2,
         latest_onset = 80
       )
@@ -147,7 +343,7 @@ describe("gen_pop_risk_validator", {
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
         study_end_at = as.Date("2020-12-01"),
-        gender = 120
+        sex = 120
       )
     )
   })
@@ -157,14 +353,14 @@ describe("gen_pop_risk_validator", {
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
         study_end_at = as.Date("2020-12-01"),
-        gender = "both"
+        sex = "both"
       )
     )
 
     expect_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_max = as.Date("2020-12-01"),
+        birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-01")
       )
     )
@@ -172,8 +368,8 @@ describe("gen_pop_risk_validator", {
     expect_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_min = as.Date("1980-12-01"),
-        born_at_max = as.Date("1980-12-01"),
+        birth_date_min = as.Date("1980-12-01"),
+        birth_date_max = as.Date("1980-12-01"),
         study_end_at = as.Date("2020-12-02")
       )
     )
@@ -181,10 +377,10 @@ describe("gen_pop_risk_validator", {
     expect_error(
       gen_pop_risk_validator$run(
         phenotype_icd_codes = list("F20", "F30"),
-        born_at_min = as.Date("1980-12-01"),
-        born_at_max = as.Date("2020-12-01"),
+        birth_date_min = as.Date("1980-12-01"),
+        birth_date_max = as.Date("2020-12-01"),
         study_end_at = as.Date("2020-12-02"),
-        gender = "male",
+        sex = "male",
         earliest_onset = 2,
         latest_onset = 1
       )
@@ -245,6 +441,8 @@ describe("heritability validator", {
       cohort1 = dummy_cohort,
       cohort2 = dummy_cohort
     )
+
+    succeed()
   })
 
   it("fails using invalid relationship kinds", {
@@ -301,8 +499,8 @@ describe("named list type", {
           required = TRUE,
           type = "date"
         ),
-        born_at_min = list(type = "date"),
-        born_at_max = list(type = "date")
+        birth_date_min = list(type = "date"),
+        birth_date_max = list(type = "date")
       )
     ),
     status = list(
@@ -314,7 +512,7 @@ describe("named list type", {
     expect_error(
       validator$run(
         population_filter = list(
-          born_at_min = as.Date("2020-12-02")
+          birth_date_min = as.Date("2020-12-02")
         )
       )
     )
@@ -325,7 +523,7 @@ describe("named list type", {
       validator$run(
         population_filter = list(
           study_end_at = 20,
-          born_at_min = as.Date("2020-12-02")
+          birth_date_min = as.Date("2020-12-02")
         )
       )
     )
@@ -349,17 +547,21 @@ describe("named list type", {
         study_end_at = as.Date("2020-12-02")
       )
     )
+
+    succeed()
   })
 
   it("succeeds when all properties are given", {
     validator$run(
       population_filter = list(
         study_end_at = as.Date("2020-12-02"),
-        born_at_min  = as.Date("1985-01-01"),
-        born_at_max  = as.Date("2010-01-01")
+        birth_date_min  = as.Date("1985-01-01"),
+        birth_date_max  = as.Date("2010-01-01")
       ),
       status = "dead"
     )
+
+    succeed()
   })
 })
 
@@ -401,12 +603,14 @@ describe("generic named list type", {
         excl = "CHD"
       )
     )
+
+    succeed()
   })
 })
 
 describe("list type minimum length", {
   validator <- ArgumentsValidator$new(
-    genders = list(
+    sex = list(
       required = TRUE,
       type = "list",
       minimum_length = 1,
@@ -419,46 +623,52 @@ describe("list type minimum length", {
 
   it("fails when too few elements are given", {
     expect_error(
-      validator$run(genders = list())
+      validator$run(sex = list())
     )
   })
 
   it("fails when too many elements are given", {
     expect_error(
-      validator$run(genders = list("male", "female", "male"))
+      validator$run(sex = list("male", "female", "male"))
     )
   })
 
   it("works as expected when same or more elements given", {
-    validator$run(genders = list("male"))
-    validator$run(genders = list("male", "female"))
+    validator$run(sex = list("male"))
+    validator$run(sex = list("male", "female"))
+
+    succeed()
   })
 })
 
 describe("date type", {
   validator <- ArgumentsValidator$new(
-    born_at = list(
+    birth_date = list(
       required = TRUE,
       type = "date"
     )
   )
 
   it("succeeds on Date type", {
-    validator$run(born_at = as.Date("2020-12-03"))
-    validator$run(born_at = as.Date("1800-03-28"))
+    validator$run(birth_date = as.Date("2020-12-03"))
+    validator$run(birth_date = as.Date("1800-03-28"))
+
+    succeed()
   })
 
   it("succeeds on strings with right format", {
-    validator$run(born_at = "2020-12-03")
-    validator$run(born_at = "1800-03-28")
+    validator$run(birth_date = "2020-12-03")
+    validator$run(birth_date = "1800-03-28")
+
+    succeed()
   })
 
   it("fails on incorrect formats", {
     expect_error(
-      validator$run(born_at = "a2020-12-03")
+      validator$run(birth_date = "a2020-12-03")
     )
     expect_error(
-      validator$run(born_at = "180003/28")
+      validator$run(birth_date = "180003/28")
     )
   })
 })
@@ -476,6 +686,8 @@ describe("integer enum", {
     validator$run(failure_status = 0)
     validator$run(failure_status = 1)
     validator$run(failure_status = 2)
+
+    succeed()
   })
 
   it("fails on unknown enums", {
@@ -517,6 +729,8 @@ describe("data.table integer enum", {
     validator$run(tte = data.table(failure_status = c(0, 1)))
     validator$run(tte = data.table(failure_status = c(0, 1, 2)))
     validator$run(tte = data.table(failure_status = c(0, 1, 2, 1, 0, 2)))
+
+    succeed()
   })
 
   it("fails on unknown enums", {

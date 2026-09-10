@@ -182,9 +182,138 @@ tte_args <- list(
   study_end_at = "2016-12-31"
 )
 
-paths <- tte_retriever$run("scz_FS", tte_args)
+paths <- tte_retriever$run("scz_PO", tte_args)
 
 results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
   as.data.table()
 
 print(results)
+
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      )
+    )
+  ),
+  relatives = list(
+    relationship_filters = list(
+      kind = "PO"
+    ),
+    individual_filters = list( #  <---- here are the added filters
+      gender = "female"        #
+    )                          #
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_PO", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      )
+    )
+  ),
+  relatives = list(
+    relationship_filters = list(
+      kind = "PO"
+    ),
+    diagnosis_filters = list(           # <--- here are the added diagnosis filters
+      scz = list(                       #
+        icd_codes_regexp = "^F20|^295"  # We use the same definition for schizophrenia as the samples
+      ),                                #
+      bpd = list(                       #
+        icd_codes_regexp = "^F31"       # But we also include bipolar disorder
+      )                                 #
+    )                                   #
+  ),
+  study_end_at = "2016-12-31"
+)
+
+paths <- tte_retriever$run("scz_PO", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      )
+    )
+  ),
+  relatives = list(
+    relationship_filters = list(
+      kind = "PO"
+    )
+  ),
+  study_end_at = "2016-12-31",
+  extra_columns = list(
+    "gender",
+    "born_at",
+    "father_id",
+    "mother_id",
+    "status",
+    "status_changed",
+    "birthplace_id",
+    "scz_diagnosed_at",
+    "scz_diagnosis_kind",
+    "scz_diagnosis_icd_edition",
+    "scz_diagnosis_icd_id",
+    "scz_record_patient_kind"
+  )
+)
+
+paths <- tte_retriever$run("scz_PO", tte_args)
+
+results <- read_csv(paths$data, show_col_types = FALSE, progress = FALSE) |>
+  as.data.table()
+
+print(results)
+
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      )
+    )
+  ),
+  relatives = list(
+    relationship_filters = list(
+      kind = "PO"
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
+
+tte_args <- list(
+  samples = list(
+    diagnosis_filters = list(
+      scz = list(
+        icd_codes_regexp = "^F20|^295"
+      )
+    ),
+    individual_filters = list(                # <--- here's the custom filter
+      custom = "dia.scz_icd_edition = 'icd8'" #
+    )                                         #
+  ),
+  relatives = list(
+    relationship_filters = list(
+      kind = "PO"
+    )
+  ),
+  study_end_at = "2016-12-31"
+)
