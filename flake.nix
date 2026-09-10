@@ -75,22 +75,19 @@
 
         wrappedR = devWrappedR;
       };
-      singularityImage = pkgs.singularity-tools.buildImage {
-        name      = "epimight-${version}";
-        contents  = [ pkgs.coreutils releaseWrappedR ];
-        diskSize  = 10 * 1024;
-        memSize   = 2048;
-        runScript = "${releaseWrappedR}/bin/Rscript $@";
-        runAsRoot = with pkgs; ''
-          #!${stdenv.shell}
-          ${dockerTools.shadowSetup}
-        '';
-      };
       dockerImage = pkgs.dockerTools.buildLayeredImage {
-        name     = "epimight";
-        tag      = version;
-        contents = [ pkgs.coreutils releaseWrappedR ];
-        config   = {
+        name = "biopsyk/epimight";
+        tag  = version;
+
+        contents = [
+          pkgs.dockerTools.usrBinEnv
+          pkgs.dockerTools.binSh
+          pkgs.coreutils
+          pkgs.bashInteractive
+          releaseWrappedR
+        ];
+
+        config = {
           Entrypoint = [ "${releaseWrappedR}/bin/Rscript" ];
         };
       };
