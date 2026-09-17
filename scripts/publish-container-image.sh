@@ -14,12 +14,11 @@ echo ">> Publishing docker image ${version}"
 echo "-- Building"
 nix build .#dockerImage
 
-echo "-- Importing"
-image_id=$(docker import ./result | sed 's/^sha256://')
+echo "-- Loading image"
+docker load < ./result
 
-echo "-- Tagging"
-docker image tag "${image_id}" "biopsyk/epimight:${version}"
-docker image tag "${image_id}" "biopsyk/epimight:latest"
+echo "-- Tagging latest"
+docker image tag "biopsyk/epimight:${version}" "biopsyk/epimight:latest"
 
 echo "-- Pushing"
 docker image push "biopsyk/epimight:${version}"
