@@ -1,3 +1,9 @@
+# epimight 2.0.1
+
+## Added
+
+- `postgresql` dependency in container images
+
 # epimight 2.0.0
 
 With this release the following items has changes that are not backwards-compatible:

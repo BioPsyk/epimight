@@ -84,6 +84,7 @@
           pkgs.dockerTools.binSh
           pkgs.coreutils
           pkgs.bashInteractive
+          pkgs.postgresql
           releaseWrappedR
         ];
 
