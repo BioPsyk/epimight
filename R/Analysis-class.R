@@ -25,7 +25,7 @@ Analysis <- R6::R6Class( #nolint
         ),
         estimate_column = list(required = TRUE, type = "string"),
         se_column       = list(required = TRUE, type = "string"),
-        stratify_columns   = list(
+        group_columns   = list(
           type    = "list",
           items   = list(required = TRUE, type = "string"),
           default = list()
@@ -45,13 +45,13 @@ Analysis <- R6::R6Class( #nolint
           type     = "numeric"
         )
 
-        if (!("stratify_columns" %in% rules && is.list(rules$stratify_columns))) {
+        if (!("group_columns" %in% rules && is.list(rules$group_columns))) {
           private$meta_validator$check_type("estimates", rule, args$estimates)
 
           return(args)
         }
 
-        for (gcol in rules$stratify_columns) {
+        for (gcol in rules$group_columns) {
           rule$columns[[args$se_column]] <- list(
             required = TRUE,
             type     = "any"
@@ -92,37 +92,40 @@ Analysis <- R6::R6Class( #nolint
     #' @return Meta analysis result
     run_meta = function(...) {
       args             <- private$meta_validator$run(...)
-      stratify_symbols <- rlang::syms(args$stratify_columns)
+      group_symbols <- rlang::syms(args$group_columns)
 
       args$estimates |>
-        filter_all(
-          all_vars(!is.infinite(.) & !is.na(.))
-        ) |>
         rename(
           estimate = !!as.name(args$estimate_column),
           se       = !!as.name(args$se_column)
         ) |>
-        mutate(
-          fixed_se = 1 / (se ^ 2),
-          rand_se  = 1 / ((se ^ 2) + var(estimate))
+        filter(
+          !is.infinite(estimate),
+          !is.na(estimate),
+          !is.infinite(se),
+          !is.na(se)
         ) |>
-        group_by(!!!stratify_symbols) |>
+        mutate(
+          fixed_se  = 1 / (se ^ 2),
+          random_se = 1 / ((se ^ 2) + var(estimate))
+        ) |>
+        group_by(!!!group_symbols) |>
         summarise(
-          fixed_se_sum = sum(fixed_se),
-          fixed_meta   = sum(estimate * fixed_se) / fixed_se_sum,
-          rand_se_sum  = sum(rand_se),
-          rand_meta    = sum(estimate * rand_se) / rand_se_sum
+          fixed_se_sum  = sum(fixed_se),
+          fixed_meta    = sum(estimate * fixed_se) / fixed_se_sum,
+          random_se_sum = sum(random_se),
+          random_meta   = sum(estimate * random_se) / random_se_sum
         ) |>
         mutate(
-          fixed_se  = sqrt(1 / fixed_se_sum),
-          fixed_l95 = fixed_meta - 1.96 * fixed_se,
-          fixed_u95 = fixed_meta + 1.96 * fixed_se,
-          rand_se   = sqrt(1 / rand_se_sum),
-          rand_l95  = rand_meta - 1.96 * rand_se,
-          rand_u95  = rand_meta + 1.96 * rand_se
+          fixed_se   = sqrt(1 / fixed_se_sum),
+          fixed_l95  = fixed_meta - 1.96 * fixed_se,
+          fixed_u95  = fixed_meta + 1.96 * fixed_se,
+          random_se  = sqrt(1 / random_se_sum),
+          random_l95 = random_meta - 1.96 * random_se,
+          random_u95 = random_meta + 1.96 * random_se
         ) |>
-        select(-fixed_se_sum, -rand_se_sum) |>
-        relocate(rand_meta, .before = rand_se) |>
+        select(-fixed_se_sum, -random_se_sum) |>
+        relocate(random_meta, .before = random_se) |>
         as.data.table()
     }
   )

@@ -328,6 +328,31 @@ describe("run_cif", {
     expect_dataframe_not_equal(cif_pop$results, cif_cross$results)
     expect_dataframe_not_equal(cif_fh$results, cif_cross$results)
   })
+
+  it("produces different results when meta-analyzing", {
+    pipeline$clear_results
+
+    cif_random_meta <- pipeline$run_cif(
+      index_trait      = "SCZ",
+      stratify_columns = list("birth_year"),
+      meta_analyze     = "random"
+    )
+
+    cif_fixed_meta <- pipeline$run_cif(
+      index_trait      = "SCZ",
+      stratify_columns = list("birth_year"),
+      meta_analyze     = "fixed"
+    )
+
+    cif <- pipeline$run_cif(
+      index_trait      = "SCZ",
+      stratify_columns = list("birth_year")
+    )
+
+    expect_dataframe_not_equal(cif$results, cif_random_meta$results)
+    expect_dataframe_not_equal(cif$results, cif_fixed_meta$results)
+    expect_dataframe_not_equal(cif_random_meta$results, cif_fixed_meta$results)
+  })
 })
 
 describe("run_h2", {
@@ -409,6 +434,74 @@ describe("run_h2", {
     )
 
     expect_error(do.call(pipeline$run_h2, args))
+  })
+
+  it("doesn't allow you to use meta-analyzed cifs as input to h2", {
+    expect_error(
+      pipeline$run_h2(
+        cif_pop = list(
+          index_trait      = "CAD",
+          stratify_columns = list("birth_year"),
+          meta_analyze     = "random"
+        ),
+        cif_fh = list(
+          index_trait      = "CAD",
+          relatives_trait  = "CAD",
+          relatives_kind   = "parents",
+          stratify_columns = list("birth_year"),
+          meta_analyze     = "random"
+        ),
+        relatedness  = 0.5
+      )
+    )
+  })
+
+  it("produces different results when meta_analyze is provided", {
+    h2 <- pipeline$run_h2(
+      cif_pop = list(
+        index_trait = "CAD"
+      ),
+      cif_fh = list(
+        index_trait     = "CAD",
+        relatives_trait = "CAD",
+        relatives_kind  = "parents"
+      ),
+      relatedness = 0.5
+    )
+
+    h2_random_meta <- pipeline$run_h2(
+      cif_pop = list(
+        index_trait      = "CAD",
+        stratify_columns = list("birth_year")
+      ),
+      cif_fh = list(
+        index_trait      = "CAD",
+        relatives_trait  = "CAD",
+        relatives_kind   = "parents",
+        stratify_columns = list("birth_year")
+      ),
+      relatedness  = 0.5,
+      meta_analyze = "random"
+    )
+
+    h2_fixed_meta <- pipeline$run_h2(
+      cif_pop = list(
+        index_trait      = "CAD",
+        stratify_columns = list("birth_year")
+      ),
+      cif_fh = list(
+        index_trait      = "CAD",
+        relatives_trait  = "CAD",
+        relatives_kind   = "parents",
+        stratify_columns = list("birth_year")
+      ),
+      relatedness  = 0.5,
+      meta_analyze = "fixed"
+    )
+
+    expect_dataframe_not_equal(h2$results, h2_random_meta$results)
+    expect_dataframe_not_equal(h2$results, h2_fixed_meta$results)
+    expect_dataframe_not_equal(h2_random_meta$results, h2_fixed_meta$results)
   })
 })
 
@@ -515,6 +608,49 @@ describe("run_rg", {
 
     expect_gt(nrow(rg$results), 1)
   })
+
+  it("produces multiple rows when using stratification", {
+    pipeline$clear_results()
+
+    rg <- pipeline$run_rg(
+      h2_t1 = list(
+        cif_pop = list(
+          index_trait      = "SCZ",
+          stratify_columns = list("birth_year")
+        ),
+        cif_fh = list(
+          index_trait      = "SCZ",
+          relatives_trait  = "SCZ",
+          relatives_kind   = "half_siblings",
+          stratify_columns = list("birth_year")
+        ),
+        relatedness  = 0.25,
+        meta_analyze = "fixed"
+      ),
+      h2_t2 = list(
+        cif_pop = list(
+          index_trait      = "CAD",
+          stratify_columns = list("birth_year")
+        ),
+        cif_fh = list(
+          index_trait      = "CAD",
+          relatives_trait  = "CAD",
+          relatives_kind   = "half_siblings",
+          stratify_columns = list("birth_year")
+        ),
+        relatedness = 0.25
+      ),
+      cif_cross = list(
+        index_trait      = "SCZ",
+        relatives_trait  = "CAD",
+        relatives_kind   = "parents",
+        stratify_columns = list("birth_year")
+      ),
+      relatedness = 0.5
+    )
+
+    expect_gt(nrow(rg$results), 1)
+  })
 })
 
 describe("run_default_rg", {
@@ -525,12 +661,14 @@ describe("run_default_rg", {
       heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25
+        relatedness    = 0.25,
+        meta_analyze   = "fixed"
       ),
       heritability2 = list(
         trait          = "CAD",
         relatives_kind = "parents",
-        relatedness    = 0.5
+        relatedness    = 0.5,
+        meta_analyze   = "fixed"
       )
     )
 
@@ -544,7 +682,8 @@ describe("run_default_rg", {
           relatives_trait = "SCZ",
           relatives_kind  = "half_siblings"
         ),
-        relatedness = 0.25
+        relatedness = 0.25,
+        meta_analyze = "fixed"
       ),
       h2_t2 = list(
         cif_pop = list(
@@ -555,7 +694,8 @@ describe("run_default_rg", {
           relatives_trait = "CAD",
           relatives_kind  = "parents"
         ),
-        relatedness = 0.5
+        relatedness  = 0.5,
+        meta_analyze = "fixed"
       ),
       cif_cross = list(
         index_trait     = "SCZ",
@@ -575,12 +715,14 @@ describe("run_default_rg", {
       heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25
+        relatedness    = 0.25,
+        meta_analyze   = "random"
       ),
       heritability2 = list(
         trait          = "CAD",
         relatives_kind = "parents",
-        relatedness    = 0.5
+        relatedness    = 0.5,
+        meta_analyze   = "random"
       ),
       use_weighted_cif = FALSE
     )
@@ -589,12 +731,14 @@ describe("run_default_rg", {
       heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25
+        relatedness    = 0.25,
+        meta_analyze   = "random"
       ),
       heritability2 = list(
         trait          = "CAD",
         relatives_kind = "parents",
-        relatedness    = 0.5
+        relatedness    = 0.5,
+        meta_analyze   = "random"
       ),
       use_weighted_cif = TRUE
     )
@@ -609,48 +753,18 @@ describe("run_default_rg", {
       heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25
+        relatedness    = 0.25,
+        meta_analyze   = "random"
       ),
       heritability2 = list(
         trait          = "CAD",
         relatives_kind = "parents",
-        relatedness    = 0.5
+        relatedness    = 0.5,
+        meta_analyze   = "random"
       ),
       stratify_columns = list("birth_year")
     )
 
     expect_gt(nrow(rg$results), 1)
-  })
-})
-
-describe("run_meta", {
-  it("outputs less rows than input result", {
-    pipeline$clear_results()
-
-    out <- pipeline$run_default_rg(
-      heritability1 = list(
-        trait          = "SCZ",
-        relatives_kind = "half_siblings",
-        relatedness    = 0.25
-      ),
-      heritability2 = list(
-        trait          = "CAD",
-        relatives_kind = "parents",
-        relatedness    = 0.5
-      ),
-      stratify_columns = list("birth_year")
-    )
-
-    rg_meta <- do.call(pipeline$run_meta, out)
-
-    expect_gt(nrow(out$results), nrow(rg_meta))
-
-    h2_meta <- do.call(pipeline$run_meta, out$intermediate$h2_t1)
-
-    expect_gt(nrow(out$intermediate$h2_t1$results), nrow(h2_meta))
-
-    cif_meta <- do.call(pipeline$run_meta, out$intermediate$cif_cross)
-
-    expect_gt(nrow(out$intermediate$cif_cross$results), nrow(cif_meta))
   })
 })
