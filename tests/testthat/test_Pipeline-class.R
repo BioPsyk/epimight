@@ -8,13 +8,13 @@ source("../utils.R")
 # Preparation
 #=================================================================================
 
-pool_tte <- read_csv(
+pipeline_tte <- read_csv(
   "../data/pipeline-tte.csv",
   show_col_type = FALSE,
   col_types=cols(person_id = col_character()),
 ) |> as.data.table()
 
-pipeline <- Pipeline$new(pool = pool_tte)
+pipeline <- Pipeline$new(pool = pipeline_tte)
 
 #=================================================================================
 # Tests
@@ -145,6 +145,31 @@ describe("get_tte", {
     expect_true("relatives_n" %in% colnames(tte))
     expect_true("relatives_n_trait" %in% colnames(tte))
     expect_true(!("weight" %in% colnames(tte)))
+  })
+
+  it("returns cross trait tte when different index and relatives trait is supplied", {
+    tte_pool <- copy(pipeline_tte) |>
+      filter(
+        trait %in% c("SCZ", "CAD"),
+        relatives_kind == "half_siblings"
+      ) |>
+      mutate(
+        trait_status      = ifelse(trait == "SCZ", 1, 0),
+        relatives_n       = ifelse(trait == "CAD", 2, 0),
+        relatives_n_trait = ifelse(trait == "CAD", 1, 0)
+      )
+
+    test_pipeline <- Pipeline$new(pool = tte_pool)
+
+    result <- test_pipeline$get_tte(
+      index_trait     = "SCZ",
+      relatives_trait = "CAD",
+      relatives_kind  = "half_siblings"
+    )
+
+    expect_true(all(result$trait_status == 1))
+    expect_true(all(result$relatives_n == 2))
+    expect_true(all(result$relatives_n_trait == 1))
   })
 })
 
@@ -278,6 +303,30 @@ describe("run_cif", {
     ))
 
     expect_dataframe_not_equal(cif$results, weighted_cif$results)
+  })
+
+  it("produces different results for pop, fh and cross", {
+    pipeline$clear_results
+
+    cif_pop <- pipeline$run_cif(
+      index_trait = "SCZ"
+    )
+
+    cif_fh <- pipeline$run_cif(
+      index_trait     = "SCZ",
+      relatives_trait = "SCZ",
+      relatives_kind  = "half_siblings"
+    )
+
+    cif_cross <- pipeline$run_cif(
+      index_trait     = "SCZ",
+      relatives_trait = "CAD",
+      relatives_kind  = "half_siblings"
+    )
+
+    expect_dataframe_not_equal(cif_pop$results, cif_fh$results)
+    expect_dataframe_not_equal(cif_pop$results, cif_cross$results)
+    expect_dataframe_not_equal(cif_fh$results, cif_cross$results)
   })
 })
 
