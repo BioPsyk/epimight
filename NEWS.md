@@ -1,3 +1,10 @@
+# epimight 2.1.0
+
+## Added
+
+- `meta_analyze` argument to all Pipeline analysis functions
+- `Pipeline$run_default_rg` now meta-analyzes `h2` before passing it into `rg` calculation
+
 # epimight 2.0.1
 
 ## Added

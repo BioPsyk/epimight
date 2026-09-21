@@ -69,6 +69,8 @@ devtools::load_all(".")
 source("./tests/utils.R")
 #+END_SRC
 
+#+RESULTS:
+
 #+BEGIN_SRC R :exports none :tangle no
 tte <- read_csv(
   "./tests/data/pipeline-tte.csv",
@@ -329,12 +331,14 @@ out <- pipeline$run_default_rg(
   heritability1 = list(
     trait          = "SCZ",
     relatives_kind = "parents",
-    relatedness    = 0.5
+    relatedness    = 0.5,
+    meta_analyze   = "fixed"
   ),
   heritability2 = list(
     trait          = "CAD",
     relatives_kind = "half_siblings",
-    relatedness    = 0.25
+    relatedness    = 0.25,
+    meta_analyze   = "fixed"
   ),
   stratify_columns = list("birth_year")
 )
@@ -352,11 +356,10 @@ It will automatically use:
 
 Both interfaces has the same output format, a single named list with the following members:
 
-| Name         | Description                                       |
-|--------------+---------------------------------------------------|
-| metadata     | Metadata of the analysis performed                |
-| results      | All genetic correlations as a single ~data.table~ |
-| intermediate | All intermediate results as separate outputs      |
+| Name     | Description                                       |
+|----------+---------------------------------------------------|
+| metadata | Metadata of the analysis performed                |
+| results  | All genetic correlations as a single ~data.table~ |
 
 *** Results
 
@@ -367,59 +370,18 @@ out$results |> mutate_if(is.numeric, round, 4) |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| birth_year |       rg |     se |     l95 |     u95 |
-|------------+----------+--------+---------+---------|
-|       2014 | -29.5778 | 0.1531 | -0.8102 | -0.2099 |
-|       2006 |   4.6949 | 0.3528 | -0.3105 |  1.0724 |
-|       2016 | -11.5213 | 0.1651 |  -0.532 |  0.1151 |
-|       2017 |   1.5243 |  0.166 | -0.1277 |  0.5232 |
-|       2010 |   2.0901 | 0.3456 | -0.4207 |  0.9341 |
-|       2018 |  -2.8076 | 0.1395 | -0.4702 |  0.0766 |
-|       2020 |   3.5483 | 0.1384 |  0.1933 |  0.7358 |
-|       2021 |  24.3897 | 0.1238 |   0.204 |  0.6895 |
-|       1988 |   0.9777 | 0.3724 | -0.6334 |  0.8265 |
-|       1953 |   2.2823 | 0.4544 | -0.3866 |  1.3948 |
-
-*** Intermediate
-
-As shown in the "Genetic correlation arguments" diagram, the intermediate results used to calculate the
-genetic correlation are:
-
-| Name         | Description                                      |
-|--------------+--------------------------------------------------|
-| ~cif_t1_pop~ | CIF for trait 1 in target cohort                 |
-| ~cif_t2_pop~ | CIF for trait 2 in target cohort                 |
-| ~cif_cross~  | CIF for index trait 1 in family history cohort 2 |
-| ~h2_t1~      | Heritability of trait 1                          |
-| ~h2_t2~      | Heritability of trait 2                          |
-
-You can access these intermediate results using ~out$intermediate[[name]]$results~, like this:
-
-#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-out$intermediate$h2_t1$results |> mutate_if(is.numeric, round, 4) |> tail(5)
-#+END_SRC
-
-#+RESULTS:
-| index_trait | age | birth_year |     h2 |     se |     l95 |    u95 |
-|-------------+-----+------------+--------+--------+---------+--------|
-| SCZ         |   2 |       2019 | 0.0456 |  0.177 | -0.3012 | 0.3925 |
-| SCZ         |   3 |       2020 | 0.1315 | 0.1581 | -0.1783 | 0.4412 |
-| SCZ         |   5 |       2020 | 0.1536 | 0.1716 | -0.1826 | 0.4899 |
-| SCZ         |   6 |       2020 | 0.1309 | 0.0577 |  0.0177 | 0.2441 |
-| SCZ         |   5 |       2021 | 0.0183 | 0.0503 | -0.0804 |  0.117 |
-
-#+BEGIN_SRC R :exports both :results value :colnames yes :tangle no
-out$intermediate$cif_cross$results |> mutate_if(is.numeric, round, 4) |> tail(5)
-#+END_SRC
-
-#+RESULTS:
-| index_trait | relatives_trait | relatives_kind | birth_year | age |    cif |     se |     l95 |    u95 | var |   cases |
-|-------------+-----------------+----------------+------------+-----+--------+--------+---------+--------+-----+---------|
-| SCZ         | CAD             | half_siblings  |       2023 |   3 |        |        |         |        |     | 18.9667 |
-| SCZ         | CAD             | half_siblings  |       2024 |   2 |        |        |         |        |     | 15.2667 |
-| SCZ         | CAD             | half_siblings  |       2025 |   0 |      0 |      0 |       0 |      0 |   0 |  2.0667 |
-| SCZ         | CAD             | half_siblings  |       2025 |   1 | 0.0092 | 0.0064 | -0.0033 | 0.0217 |   0 |  25.219 |
-| SCZ         | CAD             | half_siblings  |       2026 |   0 |      0 |      0 |       0 |      0 |   0 | 15.6667 |
+| birth_year |      rg |     se |     l95 |     u95 |
+|------------+---------+--------+---------+---------|
+|       2014 |  -2.662 | 0.1531 | -0.8102 | -0.2099 |
+|       2015 | -0.1593 | 0.1578 | -0.3422 |  0.2764 |
+|       2016 | -1.1445 | 0.1651 |  -0.532 |  0.1151 |
+|       2017 |  0.8447 |  0.166 | -0.1277 |  0.5232 |
+|       2018 | -1.0711 | 0.1395 | -0.4702 |  0.0766 |
+|       2019 | -1.9388 | 0.1304 | -0.6264 | -0.1152 |
+|       2020 |  2.0139 | 0.1384 |  0.1933 |  0.7358 |
+|       2021 |  2.3877 | 0.1238 |   0.204 |  0.6895 |
+|       2022 | -1.6358 | 0.1196 | -0.5899 | -0.1212 |
+|       2025 |  0.9451 | 0.1161 |  0.1181 |  0.5731 |
 
 *** Metadata
 
@@ -496,25 +458,37 @@ message(rjson::toJSON(out$metadata$analysis_arguments, indent = 2))
 
 ** Meta-analyzing the results
 
-When using stratification, we can meta-analyze the results simply by passing the results into the ~run_meta~ function:
+When using stratification, we can meta-analyze the results simply by passing the argument ~meta_analyze~:
 
 #+BEGIN_SRC R :exports code :results output
-meta <- pipeline$run_meta(
-  metadata = out$metadata,
-  results  = out$results
+meta <- pipeline$run_default_rg(
+  heritability1 = list(
+    trait          = "SCZ",
+    relatives_kind = "parents",
+    relatedness    = 0.5,
+    meta_analyze   = "fixed"
+  ),
+  heritability2 = list(
+    trait          = "CAD",
+    relatives_kind = "half_siblings",
+    relatedness    = 0.25,
+    meta_analyze   = "fixed"
+  ),
+  stratify_columns = list("birth_year"),
+  meta_analyze     = "fixed"
 )
 #+END_SRC
 
 #+RESULTS:
 
 #+BEGIN_SRC R :exports code :results value :colnames yes
-meta |> mutate_if(is.numeric, round, 4) |> print()
+meta$results |> mutate_if(is.numeric, round, 4) |> print()
 #+END_SRC
 
 #+RESULTS:
-| fixed_meta | fixed_se | fixed_l95 | fixed_u95 | rand_meta | rand_se | rand_l95 | rand_u95 |
-|------------+----------+-----------+-----------+-----------+---------+----------+----------|
-|    -2.1972 |   0.0347 |   -2.2652 |   -2.1292 |   -4.3634 |  2.6943 |  -9.6442 |   0.9174 |
+|      rg |     se |     l95 |     u95 |
+|---------+--------+---------+---------|
+| -0.0729 | 0.0268 | -0.1254 | -0.0205 |
 
 ** Results cache
 

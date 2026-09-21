@@ -19,13 +19,6 @@ Pipeline <- R6::R6Class( #nolint
       h2  = list(),
       rg  = list()
     ),
-    max_age_by_stratification = function(results, stratify_columns) {
-      results |>
-        group_by(!!!rlang::syms(stratify_columns)) |>
-        arrange(desc(age)) |>
-        filter(row_number() == 1) |>
-        as.data.table()
-    },
     add_cif_prefix = function(cif, prefix, stratify_columns) {
       cif |>
         select(!!!stratify_columns, age, cif, cases) |>
@@ -38,7 +31,12 @@ Pipeline <- R6::R6Class( #nolint
     }
   ),
   public = list(
-    validation_rules = list(),
+    validation_rules = list(
+      meta_analyze = list(
+        type    = "string",
+        enum    = list("random", "fixed")
+      )
+    ),
     #' Creates a pipeline instance ready to be used to run analyses.
     #'
     #' @seealso [run_default_rg()] For quickly running a full genetic correlation.
@@ -113,7 +111,8 @@ Pipeline <- R6::R6Class( #nolint
           use_weighted = list(
             type    = "logical",
             default = TRUE
-          )
+          ),
+          meta_analyze = self$validation_rules$meta_analyze
         )
       )
 
@@ -127,7 +126,8 @@ Pipeline <- R6::R6Class( #nolint
             required = TRUE,
             type     = "numeric",
             minimum  = 0
-          )
+          ),
+          meta_analyze = self$validation_rules$meta_analyze
         )
       )
 
@@ -142,7 +142,8 @@ Pipeline <- R6::R6Class( #nolint
             required = TRUE,
             type     = "numeric",
             minimum  = 0
-          )
+          ),
+          meta_analyze = self$validation_rules$meta_analyze
         )
       )
       self$validation_rules$rg$properties$cif_cross$relatives_trait$required <- TRUE
@@ -154,6 +155,13 @@ Pipeline <- R6::R6Class( #nolint
         cif  = CumulativeIncidenceAnalysis$new(),
         rg   = GeneticCorrelationAnalysis$new()
       )
+    },
+    max_age_by_stratification = function(results, stratify_columns) {
+      results |>
+        group_by(!!!rlang::syms(stratify_columns)) |>
+        arrange(desc(age)) |>
+        filter(row_number() == 1) |>
+        as.data.table()
     },
     #' Removes all results from the cache.
     clear_results = function() {
@@ -271,7 +279,7 @@ Pipeline <- R6::R6Class( #nolint
     #' @param relative_kind Label of the kind of relative to retrieve time-to-event data for.
     #' @param stratify_columns List of columns to stratify the results on.
     #' @param use_weighted Boolean on whether to calculate the weight column used in weighted CIF calculations.
-    #' @returns A named list with metadata, results and intermediate results.
+    #' @returns A named list with metadata and results.
     run_cif = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$cif$properties)
       args      <- validator$run(...)
@@ -284,10 +292,31 @@ Pipeline <- R6::R6Class( #nolint
       cached_cif <- self$get_results("cif", args)
 
       if (!is.null(cached_cif)) {
-        return(list(
-          metadata = metadata,
-          results  = cached_cif
-        ))
+        return(list(metadata = metadata, results = cached_cif))
+      }
+
+      if ("meta_analyze" %in% names(args)) {
+        if (length(args$stratify_columns) == 0) stop("Can't use meta_analyze without stratify_columns")
+
+        sub_args              <- copy(args)
+        sub_args$meta_analyze <- NULL
+
+        group_columns <- list("index_trait", "relatives_trait", "relatives_kind", "age")
+
+        cif      <- do.call(self$run_cif, sub_args)
+        cif_meta <- private$analyses$core$run_meta(
+          estimates       = cif$results,
+          estimate_column = "cif",
+          se_column       = "se",
+          group_columns   = group_columns
+        ) |>
+          rename_with(~ str_remove(., sprintf("^%s_", args$meta_analyze))) |>
+          select(!!!group_columns, meta, se, l95, u95) |>
+          rename(cif = meta)
+
+        self$add_results("cif", cif_meta, args)
+
+        return(list(metadata = metadata, results = cif_meta))
       }
 
       tte <- do.call(self$get_tte, args)
@@ -317,38 +346,31 @@ Pipeline <- R6::R6Class( #nolint
 
       self$add_results("cif", cif, args)
 
-      list(
-        metadata = metadata,
-        results  = cif
-      )
+      list(metadata = metadata, results = cif)
     },
     #' Produces heritability for the given trait and relative kind.
     #'
     #' @param cif_pop Analysis arguments for population cumulative incidence. See run_cif for details.
     #' @param cif_fh Analysis arguments for family history cumulative incidence. See run_cif for details.
     #' @param relatedness Relatedness coefficient to use in h2 calculation.
-    #' @returns A named list with metadata, results and intermediate results.
+    #' @returns A named list with metadata and results.
     run_h2 = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
       validator$add_post_validation(function(args, rules) {
         if ("relatives_trait" %in% names(args$cif_pop)) {
           stop("Using `relatives_trait` in `cif_pop` is not allowed")
-        }
-
-        if ("relatives_kind" %in% names(args$cif_pop)) {
+        } else if ("relatives_kind" %in% names(args$cif_pop)) {
           stop("Using `relatives_kind` in `cif_pop` is not allowed")
-        }
-
-        if (args$cif_pop$index_trait != args$cif_fh$index_trait) {
-          stop("Using different `index_traits` in `cif_pop` and `cif_fh` is not allowed")
-        }
-
-        if (args$cif_fh$index_trait != args$cif_fh$relatives_trait) {
-          stop("Using different `index_traits` and `relatives_trait` in `cif_fh` is not allowed")
-        }
-
-        if (!identical(args$cif_pop$stratify_columns, args$cif_fh$stratify_columns)) {
+        } else if (args$cif_pop$index_trait != args$cif_fh$index_trait) {
+          stop("Using different `index_trait` in `cif_pop` and `cif_fh` is not allowed")
+        } else if (args$cif_fh$index_trait != args$cif_fh$relatives_trait) {
+          stop("Using different `index_trait` and `relatives_trait` in `cif_fh` is not allowed")
+        } else if (!identical(args$cif_pop$stratify_columns, args$cif_fh$stratify_columns)) {
           stop("Using different `stratify_columns` in `cif_pop` and `cif_fh` is not allowed")
+        } else if ("meta_analyze" %in% names(args$cif_pop)) {
+          stop("Using meta-analyzed `cif_pop` as input to h2 is not allowed")
+        } else if ("meta_analyze" %in% names(args$cif_fh)) {
+          stop("Using meta-analyzed `cif_fh` as input to h2 is not allowed")
         }
 
         args
@@ -361,28 +383,47 @@ Pipeline <- R6::R6Class( #nolint
         analysis_arguments = args,
         analysis_time      = format(Sys.time(), "%Y-%m-%dT%H:%M")
       )
-
       cached_h2 <- self$get_results("h2", args)
 
-      cif_pop <- do.call(self$run_cif, args$cif_pop)
-      cif_fh  <- do.call(self$run_cif, args$cif_fh)
-
       if (!is.null(cached_h2)) {
-        return(list(
-          metadata = metadata,
-          results  = cached_h2,
-          intermediate = list(
-            cif_pop = cif_pop,
-            cif_fh  = cif_fh
-          )
-        ))
+        return(list(metadata = metadata, results = cached_h2))
+      }
+
+      if ("meta_analyze" %in% names(args)) {
+        sub_args              <- copy(args)
+        sub_args$meta_analyze <- NULL
+
+        h2      <- do.call(self$run_h2, sub_args)
+        h2_meta <- private$analyses$core$run_meta(
+          estimates       = h2$results,
+          estimate_column = "h2",
+          se_column       = "se",
+          group_columns   = list("index_trait", "age")
+        ) |>
+          rename_with(~ str_remove(., sprintf("^%s_", args$meta_analyze))) |>
+          select(index_trait, age, meta, se, l95, u95) |>
+          rename(h2 = meta)
+
+        self$add_results("h2", h2_meta, args)
+
+        return(list(metadata = metadata, results = h2_meta))
       }
 
       stratify_columns <- args$cif_pop$stratify_columns
       stratify_symbols <- rlang::syms(stratify_columns)
 
-      cif <- cif_pop$results |>
-        inner_join(cif_fh$results, by = join_by(age, !!!stratify_columns)) |>
+      cif_pop <- do.call(self$run_cif, args$cif_pop)
+      cif_fh  <- do.call(self$run_cif, args$cif_fh)
+
+      if ("meta_analyze" %in% names(args$cif_pop)) {
+        cif <- cif_pop$results |>
+          inner_join(cif_fh$results, by = join_by(age))
+      } else {
+        cif <- cif_pop$results |>
+          inner_join(cif_fh$results, by = join_by(age, !!!stratify_columns))
+      }
+
+      cif <- cif |>
         rename(
           pop_cif   = cif.x,
           pop_cases = cases.x,
@@ -402,14 +443,7 @@ Pipeline <- R6::R6Class( #nolint
 
       self$add_results("h2", h2, args)
 
-      list(
-        metadata     = metadata,
-        results      = h2,
-        intermediate = list(
-          cif_pop = cif_pop,
-          cif_fh  = cif_fh
-        )
-      )
+      list(metadata = metadata, results = h2)
     },
     #' Produces genetic correlations for the two given traits.
     #'
@@ -417,54 +451,94 @@ Pipeline <- R6::R6Class( #nolint
     #' @param h2_t1 Analysis arguments for trait 1 heritability. See run_h2 for details.
     #' @param h2_t2 Analysis arguments for trait 2 heritability. See run_h2 for details.
     #' @param relatedness Relatedness coefficient to use in rg calculation.
-    #' @returns A named list with metadata, results and intermediate results.
+    #' @returns A named list with metadata and results.
     run_rg = function(...) {
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$rg$properties)
 
       validator$add_post_validation(function(args, rules) {
         if (!identical(args$h2_t1$cif_pop$stratify_columns, args$h2_t2$cif_pop$stratify_columns)) {
           stop("Using different `stratify_columns` in `h2_t1` and `h2_t2` is not allowed")
-        }
-
-        if (!identical(args$cif_cross$stratify_columns, args$h2_t2$cif_pop$stratify_columns)) {
+        } else if (!identical(args$cif_cross$stratify_columns, args$h2_t2$cif_pop$stratify_columns)) {
           stop("Using different `stratify_columns` in `cif_cross`, `h2_t1` and `h2_t2` is not allowed")
+        } else if ("meta_analyze" %in% names(args$cif_cross)) {
+          stop("Using meta-analyzed `cif_cross` as input to rg is not supported")
         }
 
         args
       })
 
-      args      <- validator$run(...)
-      metadata  <- list(
+      args     <- validator$run(...)
+      metadata <- list(
         epimight_version   = as.character(packageVersion(methods::getPackageName())),
         analysis_name      = "rg",
         analysis_arguments = args,
         analysis_time      = format(Sys.time(), "%Y-%m-%dT%H:%M")
       )
+
       cached_rg <- self$get_results("rg", args)
 
-      cif_t1_pop <- do.call(self$run_cif, args$h2_t1$cif_pop)
-      cif_t2_pop <- do.call(self$run_cif, args$h2_t2$cif_pop)
-      h2_t1      <- do.call(self$run_h2, args$h2_t1)
-      h2_t2      <- do.call(self$run_h2, args$h2_t1)
-      cif_cross  <- do.call(self$run_cif, args$cif_cross)
-
       if (!is.null(cached_rg)) {
-        return(list(
-          metadata = metadata,
-          results  = cached_rg,
-          intermediate = list(
-            cif_t1_pop = cif_t1_pop,
-            cif_t2_pop = cif_t2_pop,
-            h2_t1      = h2_t1,
-            h2_t2      = h2_t2,
-            cif_cross  = cif_cross
-          )
-        ))
+        return(list(metadata = metadata, results = cached_rg))
+      }
+
+      if ("meta_analyze" %in% names(args)) {
+        sub_args              <- copy(args)
+        sub_args$meta_analyze <- NULL
+
+        rg      <- do.call(self$run_rg, sub_args)
+        rg_meta <- private$analyses$core$run_meta(
+          estimates       = rg$results,
+          estimate_column = "rg",
+          se_column       = "se"
+        ) |>
+          rename_with(~ str_remove(., sprintf("^%s_", args$meta_analyze))) |>
+          select(meta, se, l95, u95) |>
+          rename(rg = meta)
+
+        self$add_results("rg", rg_meta, args)
+
+        return(list(metadata = metadata, results = rg_meta))
       }
 
       stratify_columns <- args$cif_cross$stratify_columns
       join_columns     <- c(list("age"), stratify_columns)
       join_symbols     <- rlang::syms(join_columns)
+
+      cif_t1_pop <- do.call(self$run_cif, args$h2_t1$cif_pop)
+      cif_t2_pop <- do.call(self$run_cif, args$h2_t2$cif_pop)
+      h2_t1      <- do.call(self$run_h2, args$h2_t1)
+      h2_t2      <- do.call(self$run_h2, args$h2_t2)
+      cif_cross  <- do.call(self$run_cif, args$cif_cross)
+
+      h2_t1_meta <- "meta_analyze" %in% names(args$h2_t1)
+      h2_t2_meta <- "meta_analyze" %in% names(args$h2_t2)
+
+      if (h2_t1_meta || h2_t2_meta) {
+        stratify_combinations <- cif_cross$results |>
+          group_by(!!!join_symbols) |>
+          select(!!!join_columns) |>
+          ungroup()
+
+        if (h2_t1_meta) {
+          h2_t1$results <- right_join(
+            h2_t1$results,
+            stratify_combinations,
+            by = join_by(age)
+          ) |>
+            filter(!is.na(index_trait)) |>
+            select(index_trait, !!!join_symbols, h2, se, l95, u95)
+        }
+
+        if (h2_t2_meta) {
+          h2_t2$results <- right_join(
+            h2_t2$results,
+            stratify_combinations,
+            by = join_by(age)
+          ) |>
+            filter(!is.na(index_trait)) |>
+            select(index_trait, !!!join_symbols, h2, se, l95, u95)
+        }
+      }
 
       combined <- private$add_cif_prefix(cif_t1_pop$results, "t1_pop", stratify_columns) |>
         inner_join(
@@ -483,31 +557,20 @@ Pipeline <- R6::R6Class( #nolint
           private$add_h2_prefix(h2_t2$results, "t2", stratify_columns),
           by = join_by(!!!join_columns)
         ) |>
-        private$max_age_by_stratification(stratify_columns)
+        self$max_age_by_stratification(stratify_columns)
 
       if (nrow(combined) == 0) stop("After joining all cif and h2 results no data was left")
 
       rg <- private$analyses$rg$run(
         estimates   = combined,
         relatedness = args$relatedness
-      ) |>
-        select(!!!stratify_columns, rg, se, l95, u95)
+      ) |> select(!!!stratify_columns, rg, se, l95, u95)
 
       if (nrow(rg) == 0) stop("No genetic correlation results produced")
 
       self$add_results("rg", rg, args)
 
-      list(
-        metadata     = metadata,
-        results      = rg,
-        intermediate = list(
-          cif_t1_pop = cif_t1_pop,
-          cif_t2_pop = cif_t2_pop,
-          h2_t1      = h2_t1,
-          h2_t2      = h2_t2,
-          cif_cross  = cif_cross
-        )
-      )
+      list(metadata = metadata, results = rg)
     },
     #' Produces genetic correlations for the two given traits using sane defaults.
     #'
@@ -515,9 +578,9 @@ Pipeline <- R6::R6Class( #nolint
     #' @param heritability2 Analysis arguments for heritability of trait 2.
     #' @param stratify_columns List of columns to stratify the results on.
     #' @param use_weighted_cif Boolean that controls whether weighted CIF is used or not (defaults to TRUE).
-    #' @returns A named list with metadata, results and intermediate results.
+    #' @returns A named list with metadata and results.
     run_default_rg = function(...) {
-      heritability_rules <- list(
+      h2_rules <- list(
         required = TRUE,
         type = "named_list",
         properties = list(
@@ -533,13 +596,14 @@ Pipeline <- R6::R6Class( #nolint
             required = TRUE,
             type     = "numeric",
             minimum  = 0
-          )
+          ),
+          meta_analyze = self$validation_rules$meta_analyze
         )
       )
 
       validator <- ArgumentsValidator$new(
-        heritability1 = heritability_rules,
-        heritability2 = heritability_rules,
+        heritability1 = h2_rules,
+        heritability2 = h2_rules,
         stratify_columns = list(
           type    = "list",
           items   = list(type = "string"),
@@ -548,8 +612,23 @@ Pipeline <- R6::R6Class( #nolint
         use_weighted_cif = list(
           type    = "logical",
           default = TRUE
-        )
+        ),
+        meta_analyze = self$validation_rules$meta_analyze
       )
+
+      validator$add_post_validation(function(args, rules) {
+        if (length(args$stratify_columns) == 0) return(args)
+
+        if (!("meta_analyze" %in% names(args$heritability1))) {
+          stop("When using `stratify_columns`, you must provide `heritability1$meta_analyze` argument")
+        }
+
+        if (!("meta_analyze" %in% names(args$heritability2))) {
+          stop("When using `stratify_columns`, you must provide `heritability2$meta_analyze` argument")
+        }
+
+        args
+      })
 
       args <- validator$run(...)
 
@@ -567,7 +646,8 @@ Pipeline <- R6::R6Class( #nolint
             stratify_columns = args$stratify_columns,
             use_weighted     = args$use_weighted_cif
           ),
-          relatedness = args$heritability1$relatedness
+          relatedness  = args$heritability1$relatedness,
+          meta_analyze = args$heritability1$meta_analyze
         ),
         h2_t2 = list(
           cif_pop = list(
@@ -582,7 +662,8 @@ Pipeline <- R6::R6Class( #nolint
             stratify_columns = args$stratify_columns,
             use_weighted     = args$use_weighted_cif
           ),
-          relatedness = args$heritability2$relatedness
+          relatedness  = args$heritability2$relatedness,
+          meta_analyze = args$heritability2$meta_analyze
         ),
         cif_cross = list(
           index_trait      = args$heritability1$trait,
@@ -591,63 +672,11 @@ Pipeline <- R6::R6Class( #nolint
           stratify_columns = args$stratify_columns,
           use_weighted     = args$use_weighted_cif
         ),
-        relatedness = args$heritability2$relatedness
+        relatedness  = args$heritability2$relatedness,
+        meta_analyze = args$meta_analyze
       )
 
       do.call(self$run_rg, rg_args)
-    },
-    #' Meta analyzes stratified analysis (supports rg, h2 and cif) results.
-    #'
-    #' @param metadata Metadata from analysis that produced the given results.
-    #' @param results Data.table with the analysis results to meta analyze.
-    #' @returns A data.table with the meta analyzed results.
-    run_meta = function(...) {
-      validator <- ArgumentsValidator$new(
-        metadata = list(
-          type       = "named_list",
-          required   = TRUE,
-          strict     = FALSE,
-          properties = list(
-            analysis_name = list(
-              type     = "string",
-              required = TRUE
-            )
-          )
-        ),
-        results = list(
-          type     = "data.table",
-          required = TRUE,
-          columns  = list(
-            se = list(
-              type     = "numeric",
-              required = TRUE
-            )
-          )
-        )
-      )
-
-      args <- validator$run(...)
-
-      if (args$metadata$analysis_name == "cif") {
-        estimate_column  <- "cif"
-        stratify_columns <- list("index_trait", "relatives_trait", "relatives_kind", "age")
-
-      } else if (args$metadata$analysis_name == "h2") {
-        estimate_column  <- "h2"
-        stratify_columns <- list("index_trait")
-      } else if (args$metadata$analysis_name == "rg") {
-        estimate_column  <- "rg"
-        stratify_columns <- list()
-      } else {
-        stop(paste0("Unknown metadata$analysis_name: ", args$metadata$analysis_name))
-      }
-
-      private$analyses$core$run_meta(
-        estimates        = args$results,
-        estimate_column  = estimate_column,
-        se_column        = "se",
-        stratify_columns = stratify_columns
-      )
     }
   )
 )
