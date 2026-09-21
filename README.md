@@ -31,9 +31,9 @@ Create a directory to work in and perform the following steps inside that direct
 You should see the following output in the console:
 
 ```
-   fixed_meta fixed_se fixed_l95 fixed_u95 rand_meta rand_se rand_l95 rand_u95
-        <num>    <num>     <num>     <num>     <num>   <num>    <num>    <num>
-1:    -2.1972   0.0347   -2.2652   -2.1292   -4.3634  2.6943  -9.6442   0.9174
+|      rg |     se |     l95 |     u95 |
+|---------+--------+---------+---------|
+| -0.0729 | 0.0268 | -0.1254 | -0.0205 |
 ```
 
 This guide explains how the pipeline works and what each line of code in `run-epimight.R` does:
