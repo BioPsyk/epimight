@@ -331,16 +331,15 @@ out <- pipeline$run_default_rg(
   heritability1 = list(
     trait          = "SCZ",
     relatives_kind = "parents",
-    relatedness    = 0.5,
-    meta_analyze   = "fixed"
+    relatedness    = 0.5
   ),
   heritability2 = list(
     trait          = "CAD",
     relatives_kind = "half_siblings",
-    relatedness    = 0.25,
-    meta_analyze   = "fixed"
+    relatedness    = 0.25
   ),
-  stratify_columns = list("birth_year")
+  stratify_columns = list("birth_year"),
+  meta_analyze     = "fixed"
 )
 #+END_SRC
 
@@ -455,40 +454,6 @@ message(rjson::toJSON(out$metadata$analysis_arguments, indent = 2))
   "relatedness":  0.25
 }
 #+end_example
-
-** Meta-analyzing the results
-
-When using stratification, we can meta-analyze the results simply by passing the argument ~meta_analyze~:
-
-#+BEGIN_SRC R :exports code :results output
-meta <- pipeline$run_default_rg(
-  heritability1 = list(
-    trait          = "SCZ",
-    relatives_kind = "parents",
-    relatedness    = 0.5,
-    meta_analyze   = "fixed"
-  ),
-  heritability2 = list(
-    trait          = "CAD",
-    relatives_kind = "half_siblings",
-    relatedness    = 0.25,
-    meta_analyze   = "fixed"
-  ),
-  stratify_columns = list("birth_year"),
-  meta_analyze     = "fixed"
-)
-#+END_SRC
-
-#+RESULTS:
-
-#+BEGIN_SRC R :exports code :results value :colnames yes
-meta$results |> mutate_if(is.numeric, round, 4) |> print()
-#+END_SRC
-
-#+RESULTS:
-|      rg |     se |     l95 |     u95 |
-|---------+--------+---------+---------|
-| -0.0729 | 0.0268 | -0.1254 | -0.0205 |
 
 ** Results cache
 

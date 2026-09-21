@@ -596,8 +596,7 @@ Pipeline <- R6::R6Class( #nolint
             required = TRUE,
             type     = "numeric",
             minimum  = 0
-          ),
-          meta_analyze = self$validation_rules$meta_analyze
+          )
         )
       )
 
@@ -616,20 +615,6 @@ Pipeline <- R6::R6Class( #nolint
         meta_analyze = self$validation_rules$meta_analyze
       )
 
-      validator$add_post_validation(function(args, rules) {
-        if (length(args$stratify_columns) == 0) return(args)
-
-        if (!("meta_analyze" %in% names(args$heritability1))) {
-          stop("When using `stratify_columns`, you must provide `heritability1$meta_analyze` argument")
-        }
-
-        if (!("meta_analyze" %in% names(args$heritability2))) {
-          stop("When using `stratify_columns`, you must provide `heritability2$meta_analyze` argument")
-        }
-
-        args
-      })
-
       args <- validator$run(...)
 
       rg_args <- list(
@@ -646,8 +631,7 @@ Pipeline <- R6::R6Class( #nolint
             stratify_columns = args$stratify_columns,
             use_weighted     = args$use_weighted_cif
           ),
-          relatedness  = args$heritability1$relatedness,
-          meta_analyze = args$heritability1$meta_analyze
+          relatedness  = args$heritability1$relatedness
         ),
         h2_t2 = list(
           cif_pop = list(
@@ -662,8 +646,7 @@ Pipeline <- R6::R6Class( #nolint
             stratify_columns = args$stratify_columns,
             use_weighted     = args$use_weighted_cif
           ),
-          relatedness  = args$heritability2$relatedness,
-          meta_analyze = args$heritability2$meta_analyze
+          relatedness  = args$heritability2$relatedness
         ),
         cif_cross = list(
           index_trait      = args$heritability1$trait,
@@ -672,9 +655,14 @@ Pipeline <- R6::R6Class( #nolint
           stratify_columns = args$stratify_columns,
           use_weighted     = args$use_weighted_cif
         ),
-        relatedness  = args$heritability2$relatedness,
-        meta_analyze = args$meta_analyze
+        relatedness  = args$heritability2$relatedness
       )
+
+      if ("meta_analyze" %in% names(args)) {
+        rg_args$h2_t1$meta_analyze <- args$meta_analyze
+        rg_args$h2_t2$meta_analyze <- args$meta_analyze
+        rg_args$meta_analyze       <- args$meta_analyze
+      }
 
       do.call(self$run_rg, rg_args)
     }

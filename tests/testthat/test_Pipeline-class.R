@@ -624,8 +624,7 @@ describe("run_rg", {
           relatives_kind   = "half_siblings",
           stratify_columns = list("birth_year")
         ),
-        relatedness  = 0.25,
-        meta_analyze = "fixed"
+        relatedness  = 0.25
       ),
       h2_t2 = list(
         cif_pop = list(
@@ -651,6 +650,49 @@ describe("run_rg", {
 
     expect_gt(nrow(rg$results), 1)
   })
+
+  it("produces single row when using meta_analyze", {
+    pipeline$clear_results()
+
+    rg <- pipeline$run_rg(
+      h2_t1 = list(
+        cif_pop = list(
+          index_trait      = "SCZ",
+          stratify_columns = list("birth_year")
+        ),
+        cif_fh = list(
+          index_trait      = "SCZ",
+          relatives_trait  = "SCZ",
+          relatives_kind   = "half_siblings",
+          stratify_columns = list("birth_year")
+        ),
+        relatedness  = 0.25
+      ),
+      h2_t2 = list(
+        cif_pop = list(
+          index_trait      = "CAD",
+          stratify_columns = list("birth_year")
+        ),
+        cif_fh = list(
+          index_trait      = "CAD",
+          relatives_trait  = "CAD",
+          relatives_kind   = "half_siblings",
+          stratify_columns = list("birth_year")
+        ),
+        relatedness = 0.25
+      ),
+      cif_cross = list(
+        index_trait      = "SCZ",
+        relatives_trait  = "CAD",
+        relatives_kind   = "parents",
+        stratify_columns = list("birth_year")
+      ),
+      relatedness  = 0.5,
+      meta_analyze = "fixed"
+    )
+
+    expect_equal(nrow(rg$results), 1)
+  })
 })
 
 describe("run_default_rg", {
@@ -661,14 +703,12 @@ describe("run_default_rg", {
       heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25,
-        meta_analyze   = "fixed"
+        relatedness    = 0.25
       ),
       heritability2 = list(
         trait          = "CAD",
         relatives_kind = "parents",
-        relatedness    = 0.5,
-        meta_analyze   = "fixed"
+        relatedness    = 0.5
       )
     )
 
@@ -682,8 +722,7 @@ describe("run_default_rg", {
           relatives_trait = "SCZ",
           relatives_kind  = "half_siblings"
         ),
-        relatedness = 0.25,
-        meta_analyze = "fixed"
+        relatedness = 0.25
       ),
       h2_t2 = list(
         cif_pop = list(
@@ -694,15 +733,14 @@ describe("run_default_rg", {
           relatives_trait = "CAD",
           relatives_kind  = "parents"
         ),
-        relatedness  = 0.5,
-        meta_analyze = "fixed"
+        relatedness  = 0.5
       ),
       cif_cross = list(
         index_trait     = "SCZ",
         relatives_trait = "CAD",
         relatives_kind  = "parents"
       ),
-      relatedness = 0.5
+      relatedness  = 0.5
     )
 
     expect_dataframe_equal(rg_simple$results, rg_advanced$results)
@@ -715,14 +753,12 @@ describe("run_default_rg", {
       heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25,
-        meta_analyze   = "random"
+        relatedness    = 0.25
       ),
       heritability2 = list(
         trait          = "CAD",
         relatives_kind = "parents",
-        relatedness    = 0.5,
-        meta_analyze   = "random"
+        relatedness    = 0.5
       ),
       use_weighted_cif = FALSE
     )
@@ -731,14 +767,12 @@ describe("run_default_rg", {
       heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25,
-        meta_analyze   = "random"
+        relatedness    = 0.25
       ),
       heritability2 = list(
         trait          = "CAD",
         relatives_kind = "parents",
-        relatedness    = 0.5,
-        meta_analyze   = "random"
+        relatedness    = 0.5
       ),
       use_weighted_cif = TRUE
     )
@@ -753,18 +787,37 @@ describe("run_default_rg", {
       heritability1 = list(
         trait          = "SCZ",
         relatives_kind = "half_siblings",
-        relatedness    = 0.25,
-        meta_analyze   = "random"
+        relatedness    = 0.25
       ),
       heritability2 = list(
         trait          = "CAD",
         relatives_kind = "parents",
-        relatedness    = 0.5,
-        meta_analyze   = "random"
+        relatedness    = 0.5
       ),
       stratify_columns = list("birth_year")
     )
 
     expect_gt(nrow(rg$results), 1)
+  })
+
+  it("produces single row when using meta-analysis", {
+    pipeline$clear_results()
+
+    rg <- pipeline$run_default_rg(
+      heritability1 = list(
+        trait          = "SCZ",
+        relatives_kind = "half_siblings",
+        relatedness    = 0.25
+      ),
+      heritability2 = list(
+        trait          = "CAD",
+        relatives_kind = "parents",
+        relatedness    = 0.5
+      ),
+      stratify_columns = list("birth_year"),
+      meta_analyze     = "fixed"
+    )
+
+    expect_equal(nrow(rg$results), 1)
   })
 })

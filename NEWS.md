@@ -1,3 +1,10 @@
+# epimight 2.1.1
+
+## Changed
+
+- `Pipeline$run_default_rg` passed `meta_analyze` to h2 and rg
+- `Pipeline$run_default_rg` doesn't require `meta_analyze` to be given when `stratify_columns` are given
+
 # epimight 2.1.0
 
 ## Added
