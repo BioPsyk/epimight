@@ -564,7 +564,7 @@ Pipeline <- R6::R6Class( #nolint
       rg <- private$analyses$rg$run(
         estimates   = combined,
         relatedness = args$relatedness
-      ) |> select(!!!stratify_columns, rg, se, l95, u95)
+      ) |> select(!!!stratify_columns, rg, se = rg_se, l95 = rg_l95, u95 = rg_u95)
 
       if (nrow(rg) == 0) stop("No genetic correlation results produced")
 

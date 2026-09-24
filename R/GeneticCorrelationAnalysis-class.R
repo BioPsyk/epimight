@@ -30,7 +30,11 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
     #' @param h2_t1 heritability of trait 1.
     #' @param h2_t2 heritability of trait 2.
     #' @param rc Relationship coefficient.
-    #' @returns Data.table with results
+    #' @returns Data.table with results. `rhh`, `se`, `l95` and `u95` are on the
+    #'   rhh (liability covariance) scale; `rg`, `rg_se`, `rg_l95` and `rg_u95`
+    #'   are on the genetic correlation scale, i.e. divided by
+    #'   `sqrt(h2_t1 * h2_t2)`. The heritabilities are treated as known, so
+    #'   `rg_se` ignores their sampling error.
     calculate_rg = function(id, kc, krc, kf, ac, arc, af, h2_t1, h2_t2, rc) {
       tc  <- qnorm(kc, lower.tail = FALSE)
       yc  <- dnorm(tc)
@@ -61,6 +65,7 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
         l95    = l95,
         u95    = u95,
         rg     = rg,
+        rg_se  = se / h2,
         rg_l95 = l95 / h2,
         rg_u95 = u95 / h2
       )

@@ -693,6 +693,22 @@ describe("run_rg", {
 
     expect_equal(nrow(rg$results), 1)
   })
+
+  it("returns se/l95/u95 on the rg scale", {
+    pipeline$clear_results()
+
+    args <- copy(rg_args)
+    args$cif_cross$stratify_columns     <- list("birth_year")
+    args$h2_t1$cif_pop$stratify_columns <- list("birth_year")
+    args$h2_t1$cif_fh$stratify_columns  <- list("birth_year")
+    args$h2_t2$cif_pop$stratify_columns <- list("birth_year")
+    args$h2_t2$cif_fh$stratify_columns  <- list("birth_year")
+
+    rg <- do.call(pipeline$run_rg, args)$results
+
+    expect_equal(rg$l95, rg$rg - 1.96 * rg$se)
+    expect_equal(rg$u95, rg$rg + 1.96 * rg$se)
+  })
 })
 
 describe("run_default_rg", {
