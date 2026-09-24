@@ -369,18 +369,9 @@ out$results |> mutate_if(is.numeric, round, 4) |> tail(10)
 #+END_SRC
 
 #+RESULTS:
-| birth_year |      rg |     se |     l95 |     u95 |
-|------------+---------+--------+---------+---------|
-|       2014 |  -2.662 | 0.1531 | -0.8102 | -0.2099 |
-|       2015 | -0.1593 | 0.1578 | -0.3422 |  0.2764 |
-|       2016 | -1.1445 | 0.1651 |  -0.532 |  0.1151 |
-|       2017 |  0.8447 |  0.166 | -0.1277 |  0.5232 |
-|       2018 | -1.0711 | 0.1395 | -0.4702 |  0.0766 |
-|       2019 | -1.9388 | 0.1304 | -0.6264 | -0.1152 |
-|       2020 |  2.0139 | 0.1384 |  0.1933 |  0.7358 |
-|       2021 |  2.3877 | 0.1238 |   0.204 |  0.6895 |
-|       2022 | -1.6358 | 0.1196 | -0.5899 | -0.1212 |
-|       2025 |  0.9451 | 0.1161 |  0.1181 |  0.5731 |
+|     rg |  se |     l95 |    u95 |
+|--------+-----+---------+--------|
+| 0.0096 | 0.1 | -0.1864 | 0.2056 |
 
 *** Metadata
 
@@ -392,7 +383,7 @@ message(out$metadata$analysis_name)
 #+END_SRC
 
 #+RESULTS:
-: 1.1.0
+: 2.1.2
 : rg
 
 It also contains the expanded arguments used to produce the results:
@@ -421,7 +412,8 @@ message(rjson::toJSON(out$metadata$analysis_arguments, indent = 2))
       ],
       "use_weighted":      true
     },
-    "relatedness":    0.5
+    "relatedness":    0.5,
+    "meta_analyze":"fixed"
   },
   "h2_t2":{
     "cif_pop":{
@@ -440,7 +432,8 @@ message(rjson::toJSON(out$metadata$analysis_arguments, indent = 2))
       ],
       "use_weighted":      true
     },
-    "relatedness":    0.25
+    "relatedness":    0.25,
+    "meta_analyze":"fixed"
   },
   "cif_cross":{
     "index_trait":"SCZ",
@@ -451,10 +444,10 @@ message(rjson::toJSON(out$metadata$analysis_arguments, indent = 2))
     ],
     "use_weighted":    true
   },
-  "relatedness":  0.25
+  "relatedness":  0.25,
+  "meta_analyze":"fixed"
 }
 #+end_example
-
 ** Results cache
 
 When the pipeline is run, under the hood it produces these intermediate analysis results,
@@ -515,6 +508,8 @@ advanced_cif_cross <- pipeline$run_cif(
   stratify_columns = list("birth_year")
 )
 #+END_SRC
+
+#+RESULTS:
 
 The next function is the one producing heritability, called ~run_h2~:
 
@@ -593,5 +588,4 @@ with the following members:
 | Name         | Description                                        |
 |--------------+----------------------------------------------------|
 | results      | Analysis results as a single ~data.table~          |
-| intermediate | All intermediate results as separate ~data.tables~ |
 | args         | Arguments supplied to the interface                |

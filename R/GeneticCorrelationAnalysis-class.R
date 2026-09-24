@@ -46,23 +46,24 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
       rg  <- rhh / h2
 
       # se estimation
-      wg  <- kf ^ 2 / yf ^ 2 * (1 - kf) / af
-      vvg <- (1 / i - rc * rhh * (i - tf)) ^ 2 # there is a + in Wray and a - in Falconer
-      wr  <- krc ^ 2 / yrc ^ 2 * (1 - krc) / arc + kc ^ 2 / yc ^ 2 * (1 - kc) / ac
-      vvr <- (1 / i) ^ 2
-      se  <- 1 / rc * sqrt(vvg * wg + vvr * wr)
-      l95 <- rhh - 1.96 * se
-      u95 <- rhh + 1.96 * se
+      wg      <- kf ^ 2 / yf ^ 2 * (1 - kf) / af
+      vvg     <- (1 / i - rc * rhh * (i - tf)) ^ 2 # there is a + in Wray and a - in Falconer
+      wr      <- krc ^ 2 / yrc ^ 2 * (1 - krc) / arc + kc ^ 2 / yc ^ 2 * (1 - kc) / ac
+      vvr     <- (1 / i) ^ 2
+      rhh_se  <- 1 / rc * sqrt(vvg * wg + vvr * wr)
+      rhh_l95 <- rhh - 1.96 * rhh_se
+      rhh_u95 <- rhh + 1.96 * rhh_se
 
       data.table(
-        id     = id,
-        rhh    = rhh,
-        se     = se,
-        l95    = l95,
-        u95    = u95,
-        rg     = rg,
-        rg_l95 = l95 / h2,
-        rg_u95 = u95 / h2
+        id      = id,
+        rhh     = rhh,
+        rhh_se  = rhh_se,
+        rhh_l95 = rhh_l95,
+        rhh_u95 = rhh_u95,
+        rg      = rg,
+        rg_se   = rhh_se / h2,
+        rg_l95  = rhh_l95 / h2,
+        rg_u95  = rhh_u95 / h2
       )
     },
     #' @description

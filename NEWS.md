@@ -1,3 +1,13 @@
+# epimight 2.1.2
+
+## Changed
+
+- Renamed output columns of `GeneticCorrelationAnalysis$calculate_rg`:
+  - `se`  -> `rhh_se`
+  - `l95` -> `rhh_l95`
+  - `u95` -> `rhh_u95`
+- Added new output column `rg_se` of `GeneticCorrelationAnalysis$calculate_rg`
+
 # epimight 2.1.1
 
 ## Changed
