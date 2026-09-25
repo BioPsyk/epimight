@@ -123,6 +123,40 @@ describe("run", {
     expect_null(results)
   })
 
+  it("preserves weighted estimates, missing values and stratum order", {
+    toy <- data.table(
+      person_id    = sprintf("toy%02d", seq_len(12L)),
+      trait_status = as.integer(c(1, 0, 2, 1, 0, 1, 2, 0, 1, 0, 0, 0)),
+      trait_age    = as.integer(c(0, 0, 2, 2, 4, 1, 1, 3, 3, 0, 2, 4)),
+      weight       = c(0.5, 1, 0.25, 0.75, 1, 0.2, 0.8, 1, 0.6, 1, 1, 1),
+      born_at_year = as.integer(c(rep(2000, 5), rep(2001, 4), rep(2002, 3))),
+      cohort       = c(rep("a", 5), rep("b", 4), rep("c", 3))
+    )
+    expected <- data.table(
+      age          = c(0L, 2L, 1L, 3L),
+      cif          = c(0, 0.14285714285714285, NA, 0.076923076923076927),
+      se           = c(0, 0.18704390591656492, NA, 0.11017151908298968),
+      l95          = c(0, -0.22374217626702264, NA, -0.13900913260165007),
+      u95          = c(0, 0.50945646198130834, NA, 0.2928552864478039),
+      var          = c(0, 0.034985422740524789, NA, 0.01213776361705356),
+      cases        = c(0.5, 1.25, 0.2, 0.8),
+      born_at_year = c(2000L, 2000L, 2001L, 2001L),
+      cohort       = c("a", "a", "b", "b")
+    )
+
+    actual <- analysis$run(
+      tte = toy, stratify_columns = list("born_at_year", "cohort")
+    )
+
+    expect_identical(as.list(actual), as.list(expected))
+    expect_identical(class(actual), class(expected))
+    expect_null(attr(actual, "sorted"))
+    expect_error(
+      analysis$run(tte = rbind(toy[1:2], toy[1:2])),
+      "2 individuals appeared more than once"
+    )
+  })
+
   it("produces no NA results", {
     original <- analysis$run(tte = pipeline_tte |> select(-weight)) |>
       filter(

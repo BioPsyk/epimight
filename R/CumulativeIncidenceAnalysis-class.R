@@ -69,18 +69,18 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
     run_weighted_single = function(tte) {
       trait_age_max <- max(tte$trait_age)
 
-      tte |>
-        mutate(
-          weight_event_1 = ifelse(trait_status == 1, weight, 0.0),
-          weight_event_n = ifelse(trait_status != 0, weight, 0.0),
-        ) |>
-        group_by(trait_age) |>
-        summarise(
+      # Grouping preserves row order within each age and thus the original sums.
+      by_age <- tte[
+        ,
+        .(
           weight_all     = sum(weight),
-          weight_event_1 = sum(weight_event_1),
-          weight_event_n = sum(weight_event_n)
-        ) |>
-        ungroup() |>
+          weight_event_1 = sum(ifelse(trait_status == 1, weight, 0.0)),
+          weight_event_n = sum(ifelse(trait_status != 0, weight, 0.0))
+        ),
+        by = trait_age
+      ]
+
+      by_age |>
         # Make sure we have a row for `trait_age` from 0 up to `trait_age_max`
         right_join(
           data.table(
@@ -260,7 +260,11 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
 
       args <- validator$run(...)
 
-      self$assert_unique_individuals_tte(args$tte)
+      # The detailed check counts duplicated IDs for its error message. Most
+      # TTEs are unique, so avoid grouping every person in that common case.
+      if (anyDuplicated(args$tte$person_id) != 0L) {
+        self$assert_unique_individuals_tte(args$tte)
+      }
 
       if (!exists("stratify_columns", where = args) || length(args$stratify_columns) == 0) {
         return(
