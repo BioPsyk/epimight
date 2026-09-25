@@ -18,11 +18,22 @@ iterations  <- args[2]
 cache_dir   <- args[3]
 output_path <- args[4]
 
-tte <- read_csv(
-  "../data/pipeline-tte.csv",
-  show_col_type = FALSE,
-  col_types = cols(person_id = col_character()),
-) |>
+dataset_path <- paste0("../../tmp/benchmark_tte_", samples, ".csv")
+
+if (!file.exists(dataset_path)) {
+  message("Benchmark TTE was not found, generating")
+  tte <- generate_pipeline_tte(samples)
+  write_csv(tte, dataset_path)
+  message("TTE generated")
+} else {
+  tte <- read_csv(
+    dataset_path,
+    show_col_type = FALSE,
+    col_types = cols(person_id = col_character())
+  ) |> as.data.table()
+}
+
+tte <- tte |>
   mutate(
     weight = ifelse(relatives_n_trait > 0.0, relatives_n_trait / relatives_n, 0.0)
   ) |>
@@ -31,8 +42,6 @@ tte <- read_csv(
     relatives_kind == "parents"
   ) |>
   as.data.table()
-
-samples <- tte |> nrow()
 
 analysis <- CumulativeIncidenceAnalysis$new()
 

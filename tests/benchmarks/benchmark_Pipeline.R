@@ -18,13 +18,20 @@ iterations  <- args[2]
 cache_dir   <- args[3]
 output_path <- args[4]
 
-tte <- read_csv(
-  "../data/pipeline-tte.csv",
-  show_col_type = FALSE,
-  col_types = cols(person_id = col_character()),
-) |> as.data.table()
+dataset_path <- paste0("../../tmp/benchmark_tte_", samples, ".csv")
 
-samples <- tte |> filter(trait == "SCZ", relatives_kind == "parents") |> nrow()
+if (!file.exists(dataset_path)) {
+  message("Benchmark TTE was not found, generating")
+  tte <- generate_pipeline_tte(samples)
+  write_csv(tte, dataset_path)
+  message("TTE generated")
+} else {
+  tte <- read_csv(
+    dataset_path,
+    show_col_type = FALSE,
+    col_types = cols(person_id = col_character())
+  ) |> as.data.table()
+}
 
 pipeline <- Pipeline$new(pool = tte)
 
@@ -34,33 +41,33 @@ pipeline <- Pipeline$new(pool = tte)
 
 benchmarks <- list(
   "CIF, H2, RG" = function() {
-    results <- pipeline$run(
+    out <- pipeline$run_default_rg(
       heritability1 = list(
-        index_trait    = "SCZ",
+        trait          = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
       heritability2 = list(
-        index_trait    = "CAD",
+        trait          = "CAD",
         relatives_kind = "half_siblings",
         relatedness    = 0.25
       ),
       use_weighted_cif = FALSE
     )
 
-    if (nrow(results$cif) == 0) {
+    if (nrow(out$results) == 0) {
       stop("No results returned")
     }
   },
   "CIF, H2, RG (1 strat)" = function() {
-    results <- pipeline$run(
+    out <- pipeline$run_default_rg(
       heritability1 = list(
-        index_trait    = "SCZ",
+        trait          = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
       heritability2 = list(
-        index_trait    = "CAD",
+        trait          = "CAD",
         relatives_kind = "half_siblings",
         relatedness    = 0.25
       ),
@@ -68,38 +75,38 @@ benchmarks <- list(
       use_weighted_cif = FALSE
     )
 
-    if (nrow(results$cif) == 0) {
+    if (nrow(out$results) == 0) {
       stop("No results returned")
     }
   },
   "weighted CIF, H2, RG" = function() {
-    results <- pipeline$run(
+    out <- pipeline$run_default_rg(
       heritability1 = list(
-        index_trait    = "SCZ",
+        trait          = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
       heritability2 = list(
-        index_trait    = "CAD",
+        trait          = "CAD",
         relatives_kind = "half_siblings",
         relatedness    = 0.25
       ),
       use_weighted_cif = TRUE
     )
 
-    if (nrow(results$cif) == 0) {
+    if (nrow(out$results) == 0) {
       stop("No results returned")
     }
   },
   "weighted CIF, H2, RG (1 strat)" = function() {
-    results <- pipeline$run(
+    out <- pipeline$run_default_rg(
       heritability1 = list(
-        index_trait    = "SCZ",
+        trait          = "SCZ",
         relatives_kind = "parents",
         relatedness    = 0.5
       ),
       heritability2 = list(
-        index_trait    = "CAD",
+        trait          = "CAD",
         relatives_kind = "half_siblings",
         relatedness    = 0.25
       ),
@@ -107,11 +114,11 @@ benchmarks <- list(
       use_weighted_cif = TRUE
     )
 
-    if (nrow(results$cif) == 0) {
+    if (nrow(out$results) == 0) {
       stop("No results returned")
     }
   }
 )
 
-results <- run_benchmark(samples, iterations, benchmarks)
-plot_benchmark_results("Benchmark: Pipeline", samples, iterations, results, output_path)
+out <- run_benchmark(samples, iterations, benchmarks)
+plot_benchmark_results("Benchmark: Pipeline", samples, iterations, out, output_path)

@@ -22,7 +22,7 @@ trait_1_probability <- function(trait_status, relatives_n) {
   return(prob)
 }
 
-tte_random_relatives_n_trait <- function(tte, probs_func) {
+tte_random_relatives_n_trait <- function(tte) {
   tte |>
     rowwise() |>
     mutate(
@@ -30,7 +30,7 @@ tte_random_relatives_n_trait <- function(tte, probs_func) {
         0:relatives_n,
         1,
         replace = TRUE,
-        prob = probs_func(trait_status, relatives_n)
+        prob = trait_1_probability(trait_status, relatives_n)
       )
     )
 }
@@ -126,10 +126,10 @@ tte_random_probands <- function(n_count, period_start, period_end) {
   return(survival_data)
 }
 
-generate_analysis_tte <- function(n_count, trait, trait_mean, trait_sd, relkind) {
+generate_analysis_tte <- function(n_count, trait, trait_prob, age_mean, age_sd, relkind) {
   tte_random_probands(n_count) |>
-    tte_add_random_trait(trait, trait_mean, trait_sd) |>
-    tte_add_random_relatives_n_trait("relatives_n_trait") |>
+    tte_random_trait(trait, trait_prob, age_mean, age_sd) |>
+    tte_random_relatives_n_trait() |>
     relocate(trait_age, .after = person_id) |>
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
@@ -139,11 +139,11 @@ generate_analysis_tte <- function(n_count, trait, trait_mean, trait_sd, relkind)
 }
 
 generate_pipeline_tte <- function(n_count) {
-  t1_fs_tte <- generate_analysis_tte(n_count, "SCZ", 20, 10, "half_siblings")
+  t1_fs_tte <- generate_analysis_tte(n_count, "SCZ", 0.1, 20, 10, "half_siblings")
 
   t2_fs_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
-  t2_fs_tte <- tte_add_random_trait(t2_fs_tte, "CAD", 19, 11)
-  t2_fs_tte <- tte_add_random_relatives_n_trait(t2_fs_tte, "relatives_n_trait") |>
+  t2_fs_tte <- tte_random_trait(t2_fs_tte, "CAD", 0.2, 50, 9)
+  t2_fs_tte <- tte_random_relatives_n_trait(t2_fs_tte) |>
     relocate(trait_age, .after = person_id) |>
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
@@ -152,8 +152,8 @@ generate_pipeline_tte <- function(n_count) {
     as.data.table()
 
   t1_p_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
-  t1_p_tte <- tte_add_random_trait(t1_p_tte, "SCZ", 20, 10)
-  t1_p_tte <- tte_add_random_relatives_n_trait(t1_p_tte, "relatives_n_trait") |>
+  t1_p_tte <- tte_random_trait(t1_p_tte, "SCZ", 0.1, 20, 10)
+  t1_p_tte <- tte_random_relatives_n_trait(t1_p_tte) |>
     relocate(trait_age, .after = person_id) |>
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
@@ -162,8 +162,8 @@ generate_pipeline_tte <- function(n_count) {
     as.data.table()
 
   t2_p_tte <- copy(t1_fs_tte |> select(-trait_age, -trait_status, -relatives_n_trait, -trait, -relatives_kind))
-  t2_p_tte <- tte_add_random_trait(t2_p_tte, "CAD", 19, 11)
-  t2_p_tte <- tte_add_random_relatives_n_trait(t2_p_tte, "relatives_n_trait") |>
+  t2_p_tte <- tte_random_trait(t2_p_tte, "CAD", 0.2, 50, 9)
+  t2_p_tte <- tte_random_relatives_n_trait(t2_p_tte) |>
     relocate(trait_age, .after = person_id) |>
     relocate(trait_status, .after = trait_age) |>
     relocate(relatives_n, .after = trait_status) |>
@@ -173,7 +173,8 @@ generate_pipeline_tte <- function(n_count) {
 
   tte <- rbindlist(list(t1_fs_tte, t2_fs_tte, t1_p_tte, t2_p_tte)) |> select(-birth_date, -death_year) |>
     arrange(person_id, trait, relatives_kind) |>
-    select(person_id, birth_year, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait)
+    select(person_id, birth_year, trait, trait_status, trait_age, relatives_kind, relatives_n, relatives_n_trait) |>
+    as.data.table()
 
   return(tte)
 }
