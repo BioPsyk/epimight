@@ -112,6 +112,25 @@ TTERetriever <- R6::R6Class( #nolint
       private$render_template("base.sql", data)
     },
     #' @description
+    #' Checks if psql can connect to the database or not.
+    #'
+    #' @returns TRUE when it could connect, FALSE otherwise.
+    can_connect = function() {
+      output <- system2(
+        "psql",
+        args = c(
+          "-h", self$hostname,
+          "ibp_registry"
+        ),
+        env = private$make_env(),
+        input = "\\c",
+        stdout = FALSE,
+        stderr = FALSE
+      )
+
+      output == 0
+    },
+    #' @description
     #' Executes the given query using the PostgreSQL client psql outside of R
     #' and saves the results as a CSV-file of the given output path, along with
     #' a SQL file with the run querry (named "{output path}.sql").

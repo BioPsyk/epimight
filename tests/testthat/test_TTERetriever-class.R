@@ -21,6 +21,10 @@ tte_retriever    <- TTERetriever$new("../../tmp", hostname, username, password)
 # Tests
 #=================================================================================
 
+if (!tte_retriever$can_connect()) {
+  skip("Cannot test TTERetriever without a ibp_registry test database")
+  return()
+}
 
 describe("run", {
   valid_args <- list(

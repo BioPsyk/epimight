@@ -48,15 +48,15 @@ describe("calculate_rg", {
   it("keeps se/l95/u95 on the rhh scale", {
     results <- calculate()
 
-    expect_equal(results$l95, results$rhh - 1.96 * results$se)
-    expect_equal(results$u95, results$rhh + 1.96 * results$se)
+    expect_equal(results$rhh_l95, results$rhh - 1.96 * results$rhh_se)
+    expect_equal(results$rhh_u95, results$rhh + 1.96 * results$rhh_se)
   })
 
   it("emits rg_se on the rg scale, consistent with rg_l95/rg_u95", {
     results <- calculate()
     h2      <- sqrt(estimates$h2_t1 * estimates$h2_t2)
 
-    expect_equal(results$rg_se, results$se / h2)
+    expect_equal(results$rg_se, results$rhh_se / h2)
     expect_equal(results$rg - 1.96 * results$rg_se, results$rg_l95)
     expect_equal(results$rg + 1.96 * results$rg_se, results$rg_u95)
   })
@@ -65,11 +65,11 @@ describe("calculate_rg", {
     with_h2 <- calculate()
     unit_h2 <- calculate(rep(1, nrow(estimates)), rep(1, nrow(estimates)))
 
-    expect_equal(with_h2$rhh,    unit_h2$rhh)
-    expect_equal(with_h2$se,     unit_h2$se)
-    expect_equal(unit_h2$rg,     unit_h2$rhh)
-    expect_equal(unit_h2$rg_se,  unit_h2$se)
-    expect_equal(unit_h2$rg_l95, unit_h2$l95)
-    expect_equal(unit_h2$rg_u95, unit_h2$u95)
+    expect_equal(with_h2$rhh, unit_h2$rhh)
+    expect_equal(with_h2$rhh_se, unit_h2$rhh_se)
+    expect_equal(unit_h2$rg, unit_h2$rhh)
+    expect_equal(unit_h2$rg_se, unit_h2$rhh_se)
+    expect_equal(unit_h2$rg_l95, unit_h2$rhh_l95)
+    expect_equal(unit_h2$rg_u95, unit_h2$rhh_u95)
   })
 })
