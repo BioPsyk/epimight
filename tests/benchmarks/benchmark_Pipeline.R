@@ -41,6 +41,8 @@ pipeline <- Pipeline$new(pool = tte)
 
 benchmarks <- list(
   "CIF, H2, RG" = function() {
+    pipeline$clear_results()
+
     out <- pipeline$run_default_rg(
       heritability1 = list(
         trait          = "SCZ",
@@ -60,6 +62,8 @@ benchmarks <- list(
     }
   },
   "CIF, H2, RG (1 strat)" = function() {
+    pipeline$clear_results()
+
     out <- pipeline$run_default_rg(
       heritability1 = list(
         trait          = "SCZ",
@@ -80,6 +84,8 @@ benchmarks <- list(
     }
   },
   "weighted CIF, H2, RG" = function() {
+    pipeline$clear_results()
+
     out <- pipeline$run_default_rg(
       heritability1 = list(
         trait          = "SCZ",
@@ -99,6 +105,8 @@ benchmarks <- list(
     }
   },
   "weighted CIF, H2, RG (1 strat)" = function() {
+    pipeline$clear_results()
+
     out <- pipeline$run_default_rg(
       heritability1 = list(
         trait          = "SCZ",

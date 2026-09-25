@@ -1,3 +1,10 @@
+# epimight 2.1.3
+
+## Changed
+
+- Improved performance of CIF calculations
+  Brings down total pipeline time (1M individuals, 1 strat) from ~27 seconds to ~12 seconds
+
 # epimight 2.1.2
 
 ## Changed

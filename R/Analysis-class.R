@@ -76,14 +76,8 @@ Analysis <- R6::R6Class( #nolint
     #'
     #' @param tte TTE data to check.
     assert_unique_individuals_tte = function(tte) {
-      plicates <- tte |>
-        group_by(person_id) |>
-        summarise(amount = n()) |>
-        filter(amount > 1) |>
-        nrow()
-
-      if (plicates > 0) {
-        stop(paste0(plicates, " individuals appeared more than once in the given TTE dataset"))
+      if (anyDuplicated(tte$person_id)) {
+        stop("Found individuals that appeared more than once in the given TTE dataset")
       }
     },
     #' @description
