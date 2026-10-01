@@ -1,3 +1,15 @@
+# epimight (development)
+
+## Fixed
+
+- The Falconer standard errors of `h2` and `rg` used the weighted case count of a weighted
+  cohort as if it were a count of independent cases, which inflated the SE whenever membership
+  weights are below 1 (about 1.27x on the kr term for parent-offspring, 1.47x for first cousins
+  in simulation). `CumulativeIncidenceAnalysis` now also reports `cases_eff`, the weighted case
+  count scaled to Kish's effective sample size `(sum w)^2 / sum w^2`, and the h2 and rg
+  calculators receive it in place of `cases`. Point estimates are unchanged; `cases` is still
+  reported. (#27)
+
 # epimight 2.1.3
 
 ## Changed

@@ -23,8 +23,9 @@ HeritabilityAnalysis <- R6::R6Class( #nolint
     #' @param id Id of row, when providing stratified results.
     #' @param k1 lifetime prevalence general population
     #' @param kr lifetime prevalence in the relatives of the affected ones
-    #' @param a1 number of cases used to calculate K1
-    #' @param ar number of cases used to calculate Kr
+    #' @param a1 effective number of cases behind K1 (equals the case count for an unweighted cohort)
+    #' @param ar effective number of cases behind Kr: the weighted case count scaled by
+    #'   sum(w) / sum(w^2), so that Kr^2 (1 - Kr) / ar is the binomial variance of the weighted CIF
     #' @param rc relationship coefficient.
     #' @returns Data.table with results
     calculate_h2 = function(id, k1, kr, a1, ar, rc) {

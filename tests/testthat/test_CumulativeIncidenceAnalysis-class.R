@@ -339,4 +339,36 @@ describe("run", {
     expect_gt(test_result$statistic, 0.99)
     expect_lt(test_result$p.value, 0.05)
   })
+
+  it("reports cases_eff equal to cases when every weight is 1", {
+    unweighted <- analysis$run(tte = pipeline_tte |> select(-weight))
+    weighted   <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0))
+
+    expect_equal(unweighted$cases_eff, unweighted$cases)
+    expect_equal(weighted$cases_eff, weighted$cases)
+  })
+
+  it("scales cases_eff to the effective sample size for fractional weights", {
+    # Halving every weight leaves the weighted CIF unchanged but halves the
+    # weighted case count. The effective count must come back to the weight-1
+    # count, so that the Falconer SE does not inflate by sqrt(2) for a cohort
+    # that carries exactly the same information. Both runs use the weighted
+    # path; the unweighted (cuminc) path is not row-identical to it.
+    ones   <- analysis$run(tte = pipeline_tte |> mutate(weight = 1.0))
+    halved <- analysis$run(tte = pipeline_tte |> mutate(weight = 0.5))
+
+    expect_equal(halved$cif, ones$cif)
+    expect_equal(halved$cases, ones$cases / 2)
+    expect_equal(halved$cases_eff, ones$cases)
+  })
+
+  it("gives cases_eff = cases * sum(w) / sum(w^2) for mixed weights", {
+    tte <- pipeline_tte |> mutate(weight = ifelse(row_number() %% 2 == 0, 0.5, 1.0))
+    scale <- sum(tte$weight) / sum(tte$weight ^ 2)
+
+    results <- analysis$run(tte = tte)
+
+    expect_equal(results$cases_eff, results$cases * scale)
+    expect_gt(scale, 1)
+  })
 })

@@ -21,7 +21,9 @@ Pipeline <- R6::R6Class( #nolint
     ),
     add_cif_prefix = function(cif, prefix, stratify_columns) {
       cif |>
-        select(!!!stratify_columns, age, cif, cases) |>
+        # The calculators take the effective case count (see
+        # CumulativeIncidenceAnalysis$run_weighted_single).
+        select(!!!stratify_columns, age, cif, cases = cases_eff) |>
         rename_with(~ paste0(prefix, "_", .), .cols = c(cif, cases))
     },
     add_h2_prefix = function(h2, prefix, stratify_columns) {
@@ -426,9 +428,9 @@ Pipeline <- R6::R6Class( #nolint
       cif <- cif |>
         rename(
           pop_cif   = cif.x,
-          pop_cases = cases.x,
+          pop_cases = cases_eff.x,
           fh_cif    = cif.y,
-          fh_cases  = cases.y
+          fh_cases  = cases_eff.y
         ) |>
         select(age, !!!stratify_symbols, pop_cif, pop_cases, fh_cif, fh_cases)
 

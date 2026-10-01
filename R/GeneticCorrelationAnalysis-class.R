@@ -24,9 +24,10 @@ GeneticCorrelationAnalysis <- R6::R6Class( #nolint
     #' @param Kc lifetime prevalence trait 1 in the general population.
     #' @param Krc lifetime prevalence of trait 1 on those whose parents have CAD.
     #' @param kf lifetime prevalence trait 2 in the general population.
-    #' @param Ac number of cases used to calculate Kc.
-    #' @param Arc number of cases used to calculate Krc.
-    #' @param Af number of cases used to calculate Kf.
+    #' @param Ac effective number of cases behind Kc.
+    #' @param Arc effective number of cases behind Krc: the weighted case count scaled by
+    #'   sum(w) / sum(w^2) (see `CumulativeIncidenceAnalysis$run_weighted_single`).
+    #' @param Af effective number of cases behind Kf.
     #' @param h2_t1 heritability of trait 1.
     #' @param h2_t2 heritability of trait 2.
     #' @param rc Relationship coefficient.

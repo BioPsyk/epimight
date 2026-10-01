@@ -69,6 +69,15 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
     run_weighted_single = function(tte) {
       trait_age_max <- max(tte$trait_age)
 
+      # A weighted proportion over this cohort has the sampling variance of
+      # (sum w)^2 / sum w^2 independent observations (Kish's effective size),
+      # not of sum w. `cases` is the weighted case count, worth sum w trials;
+      # `cases_eff` rescales it so that K^2 (1 - K) / cases_eff is the right
+      # binomial variance for the weighted CIF. Both are 1:1 when every
+      # weight is 1.
+      weight_sum    <- sum(tte$weight)
+      weight_sq_sum <- sum(tte$weight ^ 2)
+
       tte[
         ,
         .(
@@ -124,12 +133,13 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
           weight_event_1 > 0.0
         ) |>
         mutate(
-          cif   = ifelse(trait_age == 0, 0, lag(cif_acc)),
-          cases = cumsum(weight_event_1),
-          var   = ifelse(trait_age == 0, 0, lag(var))
+          cif       = ifelse(trait_age == 0, 0, lag(cif_acc)),
+          cases     = cumsum(weight_event_1),
+          cases_eff = cases * weight_sum / weight_sq_sum,
+          var       = ifelse(trait_age == 0, 0, lag(var))
         ) |>
         rename(age = trait_age) |>
-        select(age, cif, cases, var) |>
+        select(age, cif, cases, cases_eff, var) |>
         mutate(
           se  = sqrt(var),
           l95 = cif - qnorm(0.975) * sqrt(var),
@@ -137,6 +147,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         ) |>
         relocate(var, .after = u95) |>
         relocate(cases, .after = var) |>
+        relocate(cases_eff, .after = cases) |>
         as.data.table()
     },
     #' @description
@@ -210,6 +221,11 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
             ifelse(is.na(cases_amount), 0, cases_amount)
           )
         )
+      ][
+        ,
+        # Unweighted: every observation has weight 1, so the effective count
+        # equals the count.
+        cases_eff := cases
       ]
 
       results
