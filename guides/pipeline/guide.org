@@ -511,6 +511,14 @@ advanced_cif_cross <- pipeline$run_cif(
 
 #+RESULTS:
 
+Each row of the result holds one age (per stratum) with the columns ~age~, ~cif~, ~se~, ~l95~, ~u95~,
+~var~, ~cases~ and ~cases_eff~, after the trait, relatives kind and stratification columns.
+~cases~ is the case count up to that age. With ~use_weighted~ it is the weighted case count, the sum
+of the weights of the cases. ~cases_eff~ scales ~cases~ by ~sum(w) / sum(w^2)~ over the cohort, so
+that it is the case count of Kish's effective sample size ~(sum w)^2 / sum w^2~. It equals ~cases~
+when every weight is 1 and on the unweighted path. ~run_h2~ and ~run_rg~ pass ~cases_eff~ to the
+heritability and genetic correlation calculators, which use it in their standard errors.
+
 The next function is the one producing heritability, called ~run_h2~:
 
 #+BEGIN_SRC R :exports code :results output :tangle no
