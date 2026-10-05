@@ -70,3 +70,43 @@ gateaux <- function(point, n, i, eps = 1e-5) {
   down[i] <- 1 - eps
   (point(up) - point(down)) / (2 * eps)
 }
+
+# Four generations with random mating (full and half sibs), external mothers shared by
+# half sibs, a pair of double first cousins and a pair of MZ twins. Ids are strings.
+toy_pedigree <- function(seed = 5) {
+  set.seed(seed)
+  founders <- data.table(person_id = c(paste0("f", 1:30), paste0("m", 1:30)), mother_id = NA_character_,
+                         father_id = NA_character_)
+  women <- paste0("f", 1:30)
+  men   <- paste0("m", 1:30)
+  generations <- list(founders)
+
+  for (g in 1:3) {
+    n    <- if (g == 1) 120 else 200
+    kids <- data.table(person_id = paste0("g", g, "_", seq_len(n)), mother_id = sample(women, n, TRUE),
+                       father_id = sample(men, n, TRUE))
+    generations[[g + 1]] <- kids
+    women <- kids$person_id[seq(1, n, 2)]
+    men   <- kids$person_id[seq(2, n, 2)]
+  }
+
+  specials <- data.table(
+    person_id = c("ext1", "ext2", "ext3", "sis1", "sis2", "bro1", "bro2", "dc1", "dc2", "tw1", "tw2"),
+    mother_id = c("xm1", "xm1", "xm2", "f1", "f1", "f2", "f2", "sis1", "sis2", "g1_1", "g1_1"),
+    father_id = c(NA, NA, "", "m1", "m1", "m2", "m2", "bro1", "bro2", "g1_2", "g1_2"),
+    twin      = c(NA, NA, NA, NA, NA, NA, NA, NA, NA, "tw2", "tw1")
+  )
+
+  rbind(rbindlist(generations), specials, fill = TRUE)
+}
+
+# Dense brute-force sandwich variance: every pair the engine reports up to `max_degree`
+# (or in `categories`), plus the diagonal, as one n x n kernel.
+brute_pair_variances <- function(graph, psi, max_degree, categories = NULL) {
+  pairs  <- pedigreegraph::relationship_pairs(graph, max_degree = max_degree, ids = FALSE, progress = FALSE)
+  if (!is.null(categories)) pairs <- pairs[pairs$code %in% categories, ]
+  kernel <- diag(nrow(psi))
+  kernel[cbind(pairs$first, pairs$second)] <- 1
+  kernel[cbind(pairs$second, pairs$first)] <- 1
+  diag(crossprod(psi, kernel %*% psi))
+}
