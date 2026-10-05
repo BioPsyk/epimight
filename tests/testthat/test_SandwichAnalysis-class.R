@@ -51,6 +51,19 @@ describe("pair_variances", {
                  rtol = 1e-10, atol = 1e-12)
   })
 
+  it("keeps a negative or nearly cancelled variance as computed", {
+    trio  <- sandwich_graph(data.table(person_id = c("mum", "dad", "kid"), mother_id = c(NA, NA, "mum"),
+                                       father_id = c(NA, NA, "dad")), c("mum", "dad", "kid"), 1L)
+    # Kid 1 and parents -a: V = 1 + 2 a^2 - 4 a, negative at a = 0.5 and near 0 at a = 1 - 1 / sqrt(2).
+    a     <- c(0.5, 1 - 1 / sqrt(2) + 1e-9)
+    psi   <- vapply(a, function(x) ifelse(trio$person_id == "kid", 1, -x), numeric(3))
+    exact <- 1 + 2 * a ^ 2 - 4 * a
+
+    expect_close(pair_variances(trio$graph, psi, 1L), exact, rtol = 1e-10, atol = 1e-12)
+    expect_close(brute_pair_variances(trio$graph, psi, 1L), exact, rtol = 1e-10, atol = 1e-12)
+    expect_lt(pair_variances(trio$graph, psi, 1L)[1], 0)
+  })
+
   it("gives each column the same variance whatever its batch mates", {
     wide  <- influence_columns(built$person_id, 32, seed = 7)
     whole <- pair_variances(built$graph, wide, 3L)

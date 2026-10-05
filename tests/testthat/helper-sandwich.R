@@ -129,3 +129,80 @@ toy_pool <- function(person_id, seed = 10) {
   })
   rbindlist(traits)
 }
+
+# A two-trait FS pool over the probands of `pedigree` (rows with a known father) in three
+# birth-year strata of unequal size, censored at ages 20, 17 and 14, with a familial
+# liability that raises both traits and the relatives' case counts.
+family_pool <- function(pedigree, seed = 11) {
+  set.seed(seed)
+  persons <- pedigree[!is.na(father_id), .(person_id)]
+  n       <- nrow(persons)
+  persons[, `:=`(
+    born_at_year = sample(2001:2003, n, TRUE, prob = c(0.5, 0.3, 0.2)),
+    relatives_n  = sample(1:4, n, TRUE),
+    familial     = runif(n)
+  )]
+  persons[, end := c(20L, 17L, 14L)[born_at_year - 2000L]]
+
+  rbindlist(lapply(c("trait1", "trait2"), function(trait) {
+    u      <- runif(n)
+    p1     <- 0.1 + 0.5 * persons$familial
+    status <- ifelse(u < p1, 1L, ifelse(u < p1 + 0.12, 2L, 0L))
+    persons[, .(
+      person_id, trait, born_at_year, relatives_kind = "FS", relatives_n,
+      relatives_n_trait = as.integer(rbinom(n, relatives_n, 0.1 + 0.7 * familial)),
+      trait_status = status,
+      trait_age = as.numeric(ifelse(status == 0L, end, vapply(end, function(e) sample.int(e, 1), integer(1))))
+    )]
+  }))
+}
+
+# Run-path arguments in the shape run_default_rg builds, for traits "trait1" and "trait2".
+sandwich_h2_args <- function(trait, meta = NULL) {
+  args <- list(
+    cif_pop     = list(index_trait = trait, stratify_columns = list("born_at_year")),
+    cif_fh      = list(index_trait = trait, relatives_trait = trait, relatives_kind = "FS",
+                       stratify_columns = list("born_at_year")),
+    relatedness = 0.5
+  )
+  args$meta_analyze <- meta
+  args
+}
+
+sandwich_rg_args <- function(meta_t1 = NULL, meta_t2 = NULL, meta = NULL) {
+  args <- list(
+    h2_t1       = sandwich_h2_args("trait1", meta_t1),
+    h2_t2       = sandwich_h2_args("trait2", meta_t2),
+    cif_cross   = list(index_trait = "trait1", relatives_trait = "trait2", relatives_kind = "FS",
+                       stratify_columns = list("born_at_year")),
+    relatedness = 0.5
+  )
+  args$meta_analyze <- meta
+  args
+}
+
+pipeline_private <- function(pipeline) pipeline$.__enclos_env__$private
+
+# The five cohorts of `args` keyed like the term tables, with a stratum column.
+plan_cohorts <- function(pipeline, args) {
+  private <- pipeline_private(pipeline)
+  cohorts <- list()
+
+  for (one in private$rg_cifs(args)) {
+    tte <- do.call(pipeline$get_tte, one)
+    tte[, stratum := private$stratum_key(tte, one$stratify_columns)]
+    if (!("weight" %in% names(tte))) tte[, weight := 1]
+    cohorts[[private$cache_key("cif", one)]] <- tte
+  }
+
+  cohorts
+}
+
+# Influence vectors of a plan's outputs, one row per id of `ids`.
+plan_influence <- function(pipeline, args, plan, ids) {
+  by_stratum <- lapply(plan_cohorts(pipeline, args), function(tte) {
+    rows <- chmatch(tte$person_id, ids)
+    split(tte[, .(row = rows, stratum, trait_age, trait_status, weight)], by = "stratum", keep.by = FALSE)
+  })
+  assemble_influence(plan$terms, by_stratum, length(ids))
+}
