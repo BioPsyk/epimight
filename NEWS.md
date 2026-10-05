@@ -1,3 +1,14 @@
+# epimight (development)
+
+## Added
+
+- Pedigree-pair sandwich standard errors for h2 and rg. Given a `pedigree` (`person_id`, `mother_id`,
+  `father_id`, optional `twin`), `Pipeline$new()` makes `run_h2` and `run_rg`, with or without `meta_analyze`,
+  add `sandwich_se`, `sandwich_l95` and `sandwich_u95` at the headline row: each stratum's last h2 age, the
+  meta table's last age, and every rg row. The SE sums each estimate's influence over related pairs up to
+  `max_degree` (default 3), so it accounts for related probands and for one person entering several cohorts.
+  Points and native SEs are unchanged. Needs the optional `pedigreegraph` package, which is not on CRAN.
+
 # epimight 2.1.4
 
 ## Added
