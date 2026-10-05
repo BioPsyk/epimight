@@ -668,8 +668,11 @@ the number of ~passes~ over the pedigree.
 
 ** Performance
 
-The SE needs one pass over the pedigree per batch of up to 32 headline rows. Each pass holds
-about 16 bytes per pedigree row and row of output; ~options(epimight.sandwich_batch_bytes = ...)~
+The SE needs one pass over the pedigree per batch of up to 32 headline rows of the call you
+make. The h2 and rg calls the pipeline makes internally skip the SE; calling one of them yourself
+later adds it to the cached result. A pass costs about as much whatever its number of rows, so
+most of the added time is one or two traversals of the pedigree. Each pass holds about 16 bytes
+per pedigree row and row of output; ~options(epimight.sandwich_batch_bytes = ...)~
 (default 2 GiB) caps that and sets the batch size. The pedigree is trimmed to the probands and
 their ancestors up to ~max_degree - 1~ generations up before the first pass.
 
