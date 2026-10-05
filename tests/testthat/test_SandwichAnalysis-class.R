@@ -146,3 +146,73 @@ describe("sandwich_batch_size", {
     expect_equal(sandwich_batch_size(1e9, 2^31), 1)
   })
 })
+
+describe("Pipeline with a pedigree", {
+  golden   <- test_path("..", "data", "sandwich-golden")
+  pool     <- fread(file.path(golden, "pool.csv"), colClasses = list(character = "person_id"))
+  pedigree <- fread(file.path(golden, "pedigree.csv"), colClasses = "character", na.strings = "")
+  python   <- fread(file.path(golden, "se.csv"))
+  pipeline <- Pipeline$new(pool = pool, pedigree = pedigree)
+  h2_args  <- function(trait) {
+    list(
+      cif_pop     = list(index_trait = trait, stratify_columns = list("born_at_year")),
+      cif_fh      = list(index_trait = trait, relatives_trait = trait, relatives_kind = "FS",
+                         stratify_columns = list("born_at_year")),
+      relatedness = 0.5
+    )
+  }
+  headline <- function(results) results[!is.na(sandwich_se)][order(born_at_year)]
+  expect_golden <- function(results, name, estimate) {
+    expected <- python[quantity == name][order(born_at_year)]
+    expect_equal(results$born_at_year, expected$born_at_year)
+    expect_equal(results[[estimate]], expected$point, tolerance = 1e-10)
+    expect_equal(results$sandwich_se, expected$se, tolerance = 1e-8)
+  }
+
+  it("matches the Python sandwich on per-stratum h2", {
+    for (k in 1:2) {
+      results <- headline(do.call(pipeline$run_h2, h2_args(paste0("trait", k)))$results)
+      expect_golden(results, paste0("h2_", k), "h2")
+    }
+  })
+
+  it("adds sandwich columns at each stratum's last age only", {
+    results <- do.call(pipeline$run_h2, h2_args("trait1"))$results
+    last    <- results[, .(age = max(age)), by = born_at_year]
+
+    expect_equal(results[!is.na(sandwich_se), .(born_at_year, age)][order(born_at_year)], last[order(born_at_year)])
+    expect_equal(results$sandwich_l95, results$h2 - 1.96 * results$sandwich_se)
+    expect_equal(results$sandwich_u95, results$h2 + 1.96 * results$sandwich_se)
+  })
+
+  it("reports the batch size and pass count, also on a cache hit", {
+    fresh  <- Pipeline$new(pool = pool, pedigree = pedigree)
+    first  <- do.call(fresh$run_h2, h2_args("trait2"))
+    cached <- do.call(fresh$run_h2, h2_args("trait2"))
+
+    expect_equal(first$metadata$sandwich, list(batch_size = 32, passes = 1L))
+    expect_equal(cached$metadata$sandwich, first$metadata$sandwich)
+  })
+
+  it("leaves results unchanged without a pedigree", {
+    plain <- Pipeline$new(pool = pool)
+    with  <- do.call(pipeline$run_h2, h2_args("trait1"))$results
+    alone <- do.call(plain$run_h2, h2_args("trait1"))
+
+    expect_equal(alone$results, with[, !c("sandwich_se", "sandwich_l95", "sandwich_u95")])
+    expect_null(alone$metadata$sandwich)
+  })
+
+  it("refuses a pedigree that misses probands", {
+    expect_error(Pipeline$new(pool = pool, pedigree = pedigree[-(1:3)]), "3 proband `person_id` values are missing")
+  })
+
+  it("matches the Python sandwich on per-stratum rg", {
+    rg <- pipeline$run_rg(
+      h2_t1 = h2_args("trait1"), h2_t2 = h2_args("trait2"), relatedness = 0.5,
+      cif_cross = list(index_trait = "trait1", relatives_trait = "trait2", relatives_kind = "FS",
+                       stratify_columns = list("born_at_year"))
+    )
+    expect_golden(headline(rg$results), "rg", "rg")
+  })
+})

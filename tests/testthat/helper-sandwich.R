@@ -110,3 +110,22 @@ brute_pair_variances <- function(graph, psi, max_degree, categories = NULL) {
   kernel[cbind(pairs$second, pairs$first)] <- 1
   diag(crossprod(psi, kernel %*% psi))
 }
+
+# A two-trait pool over `person_id` with FS family history and two birth-year strata.
+toy_pool <- function(person_id, seed = 10) {
+  set.seed(seed)
+  n       <- length(person_id)
+  persons <- data.table(person_id = person_id, born_at_year = rep_len(c(2001L, 2002L), n),
+                        relatives_n = sample(1:4, n, TRUE))
+  traits <- lapply(c("trait1", "trait2"), function(trait) {
+    u      <- runif(n)
+    status <- ifelse(u < 0.3, 1L, ifelse(u < 0.42, 2L, 0L))
+    persons[, .(
+      person_id, trait, born_at_year, relatives_kind = "FS", relatives_n,
+      relatives_n_trait = as.integer(rbinom(n, relatives_n, 0.35 + 0.2 * (status == 1L))),
+      trait_status = status,
+      trait_age = as.numeric(ifelse(status == 0L, 20L, sample(1:20, n, TRUE)))
+    )]
+  })
+  rbindlist(traits)
+}

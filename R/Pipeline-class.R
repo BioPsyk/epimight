@@ -12,13 +12,23 @@
 Pipeline <- R6::R6Class( #nolint
   "Pipeline",
   private = list(
-    pool     = NULL,
-    analyses = NULL,
-    results  = list(
+    pool          = NULL,
+    analyses      = NULL,
+    sandwich      = NULL,
+    sandwich_runs = list(),
+    results       = list(
       cif = list(),
       h2  = list(),
       rg  = list()
     ),
+    cache_key = function(type, args) {
+      rules     <- self$validation_rules[[type]]
+      validator <- do.call(ArgumentsValidator$new, rules$properties)
+      args      <- do.call(validator$run, args)
+      args      <- args[order(names(args))]
+
+      rjson::toJSON(args)
+    },
     add_cif_prefix = function(cif, prefix, stratify_columns) {
       cif |>
         select(!!!stratify_columns, age, cif, cases) |>
@@ -28,6 +38,159 @@ Pipeline <- R6::R6Class( #nolint
       h2 |>
         select(!!!stratify_columns, age, h2) |>
         rename_with(~ paste0(prefix, "_", .), .cols = c(h2))
+    },
+    rg_estimates = function(args) {
+      stratify_columns <- args$cif_cross$stratify_columns
+      join_columns     <- c(list("age"), stratify_columns)
+      join_symbols     <- rlang::syms(join_columns)
+
+      cif_t1_pop <- do.call(self$run_cif, args$h2_t1$cif_pop)
+      cif_t2_pop <- do.call(self$run_cif, args$h2_t2$cif_pop)
+      h2_t1      <- do.call(self$run_h2, args$h2_t1)
+      h2_t2      <- do.call(self$run_h2, args$h2_t2)
+      cif_cross  <- do.call(self$run_cif, args$cif_cross)
+
+      h2_t1_meta <- "meta_analyze" %in% names(args$h2_t1)
+      h2_t2_meta <- "meta_analyze" %in% names(args$h2_t2)
+
+      if (h2_t1_meta || h2_t2_meta) {
+        stratify_combinations <- cif_cross$results |>
+          group_by(!!!join_symbols) |>
+          select(!!!join_columns) |>
+          ungroup()
+
+        if (h2_t1_meta) {
+          h2_t1$results <- right_join(
+            h2_t1$results,
+            stratify_combinations,
+            by = join_by(age)
+          ) |>
+            filter(!is.na(index_trait)) |>
+            select(index_trait, !!!join_symbols, h2, se, l95, u95)
+        }
+
+        if (h2_t2_meta) {
+          h2_t2$results <- right_join(
+            h2_t2$results,
+            stratify_combinations,
+            by = join_by(age)
+          ) |>
+            filter(!is.na(index_trait)) |>
+            select(index_trait, !!!join_symbols, h2, se, l95, u95)
+        }
+      }
+
+      combined <- private$add_cif_prefix(cif_t1_pop$results, "t1_pop", stratify_columns) |>
+        inner_join(
+          private$add_cif_prefix(cif_cross$results, "cross", stratify_columns),
+          by = join_by(!!!join_columns)
+        ) |>
+        inner_join(
+          private$add_cif_prefix(cif_t2_pop$results, "t2_pop", stratify_columns),
+          by = join_by(!!!join_columns)
+        ) |>
+        inner_join(
+          private$add_h2_prefix(h2_t1$results, "t1", stratify_columns),
+          by = join_by(!!!join_columns)
+        ) |>
+        inner_join(
+          private$add_h2_prefix(h2_t2$results, "t2", stratify_columns),
+          by = join_by(!!!join_columns)
+        ) |>
+        self$max_age_by_stratification(stratify_columns)
+
+      if (nrow(combined) == 0) stop("After joining all cif and h2 results no data was left")
+
+      private$analyses$rg$run(
+        estimates   = combined,
+        relatedness = args$relatedness
+      )
+    },
+    stratum_key = function(table, stratify_columns) {
+      columns <- unlist(stratify_columns)
+
+      if (length(columns) == 0) return(rep(".", nrow(table)))
+
+      do.call(paste, c(unname(as.list(as.data.frame(table)[columns])), sep = "\r"))
+    },
+    cif_by_stratum = function(cif_args) {
+      cif <- as.data.table(do.call(self$run_cif, cif_args)$results)
+
+      data.table(stratum = private$stratum_key(cif, cif_args$stratify_columns), age = cif$age, cif = cif$cif)
+    },
+    # One h2 unit (see `h2_terms`) per row of `at`: `output`, `stratum`, `age`.
+    h2_units = function(args, at) {
+      units <- copy(at)
+
+      units[private$cif_by_stratum(args$cif_pop), k_pop := i.cif, on = .(stratum, age)]
+      units[private$cif_by_stratum(args$cif_fh), k_fh := i.cif, on = .(stratum, age)]
+      units[, `:=`(pop = private$cache_key("cif", args$cif_pop), fh = private$cache_key("cif", args$cif_fh))]
+    },
+    # The term table of every row of `estimates` (from `rg_estimates`), named `output`.
+    rg_terms = function(args, estimates, output) {
+      units <- data.table(
+        output  = output,
+        stratum = private$stratum_key(estimates, args$cif_cross$stratify_columns),
+        age     = estimates$age,
+        pop1    = private$cache_key("cif", args$h2_t1$cif_pop),
+        cross   = private$cache_key("cif", args$cif_cross),
+        pop2    = private$cache_key("cif", args$h2_t2$cif_pop),
+        k_pop1  = estimates$t1_pop_cif,
+        k_cross = estimates$cross_cif,
+        k_pop2  = estimates$t2_pop_cif,
+        h2_t1   = estimates$t1_h2,
+        h2_t2   = estimates$t2_h2
+      )
+      units[, `:=`(h2_t1_output = paste0("t1|", stratum, "|", age), h2_t2_output = paste0("t2|", stratum, "|", age))]
+
+      h2 <- rbind(
+        h2_terms(private$h2_units(args$h2_t1, units[, .(output = h2_t1_output, stratum, age)]), args$h2_t1$relatedness),
+        h2_terms(private$h2_units(args$h2_t2, units[, .(output = h2_t2_output, stratum, age)]), args$h2_t2$relatedness)
+      )
+
+      rg_terms(units, h2, args$relatedness)
+    },
+    sandwich_fit = function(terms, cif_args) {
+      cohorts <- list()
+
+      for (one in cif_args) {
+        key <- private$cache_key("cif", one)
+
+        if (!is.null(cohorts[[key]]) || !(key %chin% terms$cohort)) next
+
+        tte <- do.call(self$get_tte, one)
+        tte[, stratum := private$stratum_key(tte, one$stratify_columns)]
+        cohorts[[key]] <- tte
+      }
+
+      private$sandwich$run(terms, cohorts)
+    },
+    # Adds the sandwich columns to `results`, whose rows carry the outputs `output` (NA for none).
+    with_sandwich = function(results, output, fit, estimate) {
+      variance <- fit$variance$variance[match(output, fit$variance$output)]
+      negative <- !is.na(variance) & variance < 0
+
+      if (any(negative)) {
+        warning(sum(negative), " sandwich variance(s) came out negative and are reported as NA")
+      }
+
+      se      <- sqrt(ifelse(negative, NA_real_, variance))
+      point   <- results[[estimate]]
+      results <- as.data.table(results)
+
+      set(results, j = "sandwich_se", value = se)
+      set(results, j = "sandwich_l95", value = point - 1.96 * se)
+      set(results, j = "sandwich_u95", value = point + 1.96 * se)
+
+      results
+    },
+    with_sandwich_metadata = function(metadata, type, args) {
+      metadata$sandwich <- private$sandwich_runs[[type]][[private$cache_key(type, args)]]
+
+      metadata
+    },
+    record_sandwich_run = function(type, args, fit) {
+      private$sandwich_runs[[type]][[private$cache_key(type, args)]] <- fit[c("batch_size", "passes")]
     }
   ),
   public = list(
@@ -42,6 +205,11 @@ Pipeline <- R6::R6Class( #nolint
     #' @seealso [run_default_rg()] For quickly running a full genetic correlation.
     #'
     #' @param pool The pool that contains time-to-event data for all traits and kinds of relatives you want to analyze.
+    #' @param pedigree Optional data.table with string columns `person_id`, `mother_id`, `father_id` and an
+    #'   optional `twin` (the co-twin's id), with `NA` for an unknown parent. Every `person_id` of the pool needs
+    #'   a row. With a pedigree, h2 and rg results gain pedigree-pair sandwich SEs (`sandwich_se`,
+    #'   `sandwich_l95`, `sandwich_u95`) at their headline age; this needs the `pedigreegraph` package.
+    #' @param max_degree Highest kinship degree of the related pairs the sandwich SEs sum over (default 3).
     initialize = function(...) {
       validator <- ArgumentsValidator$new(
         pool = list(
@@ -81,11 +249,38 @@ Pipeline <- R6::R6Class( #nolint
               required = TRUE
             )
           )
+        ),
+        pedigree = list(
+          required = FALSE,
+          type     = "data.table",
+          columns  = list(
+            person_id = list(type = "string", required = TRUE),
+            mother_id = list(type = "string", required = TRUE),
+            father_id = list(type = "string", required = TRUE),
+            twin      = list(type = "string")
+          )
+        ),
+        max_degree = list(
+          type    = "integer",
+          minimum = 1,
+          default = 3L
         )
       )
 
       args         <- validator$run(...)
       private$pool <- args$pool
+
+      if (!is.null(args$pedigree)) {
+        if (!requireNamespace("pedigreegraph", quietly = TRUE)) {
+          stop("Sandwich standard errors need the `pedigreegraph` package; install it or leave out `pedigree`")
+        }
+
+        private$sandwich <- SandwichAnalysis$new(
+          pedigree   = args$pedigree,
+          probands   = unique(private$pool$person_id),
+          max_degree = as.integer(args$max_degree)
+        )
+      }
 
       self$validation_rules$cif <- list(
         required   = TRUE,
@@ -165,7 +360,8 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' Removes all results from the cache.
     clear_results = function() {
-      private$results <- list(cif = list(), h2 = list(), rg = list())
+      private$results       <- list(cif = list(), h2 = list(), rg = list())
+      private$sandwich_runs <- list()
     },
     #' Adds the given analysis results to the cache.
     #'
@@ -178,13 +374,7 @@ Pipeline <- R6::R6Class( #nolint
       if (!is.list(args)) stop("Given `args` was not a named list")
       if (!(type %in% names(self$validation_rules))) stop("Given `type` \"", type, "\" was unknown")
 
-      rules     <- self$validation_rules[[type]]
-      validator <- do.call(ArgumentsValidator$new, rules$properties)
-      args      <- do.call(validator$run, args)
-      args      <- args[order(names(args))]
-      key       <- rjson::toJSON(args)
-
-      private$results[[type]][[key]] <- results
+      private$results[[type]][[private$cache_key(type, args)]] <- results
     },
     #' Gets the analysis results produced by the given analysis arguments from the cache.
     #'
@@ -196,13 +386,7 @@ Pipeline <- R6::R6Class( #nolint
       if (!is.list(args)) stop("Given `args` was not a named list")
       if (!(type %in% names(self$validation_rules))) stop("Given `type` \"", type, "\" was unknown")
 
-      rules     <- self$validation_rules[[type]]
-      validator <- do.call(ArgumentsValidator$new, rules$properties)
-      args      <- do.call(validator$run, args)
-      args      <- args[order(names(args))]
-      key       <- rjson::toJSON(args)
-
-      private$results[[type]][[key]]
+      private$results[[type]][[private$cache_key(type, args)]]
     },
     #' Gets time-to-event data from the pool using the given analysis arguments.
     #'
@@ -386,7 +570,7 @@ Pipeline <- R6::R6Class( #nolint
       cached_h2 <- self$get_results("h2", args)
 
       if (!is.null(cached_h2)) {
-        return(list(metadata = metadata, results = cached_h2))
+        return(list(metadata = private$with_sandwich_metadata(metadata, "h2", args), results = cached_h2))
       }
 
       if ("meta_analyze" %in% names(args)) {
@@ -441,9 +625,25 @@ Pipeline <- R6::R6Class( #nolint
 
       if (is.null(h2)) stop(paste0("No valid results found when producing h2 for trait ", args$cif_pop$index_trait))
 
+      if (!is.null(private$sandwich)) {
+        stratum  <- private$stratum_key(h2, stratify_columns)
+        headline <- which(h2$age == stats::ave(h2$age, stratum, FUN = max))
+        output   <- rep(NA_character_, nrow(h2))
+
+        output[headline] <- paste0("h2|", stratum[headline])
+
+        units <- private$h2_units(
+          args, data.table(output = output[headline], stratum = stratum[headline], age = h2$age[headline])
+        )
+        fit <- private$sandwich_fit(h2_terms(units, args$relatedness), list(args$cif_pop, args$cif_fh))
+        h2  <- private$with_sandwich(h2, output, fit, "h2")
+
+        private$record_sandwich_run("h2", args, fit)
+      }
+
       self$add_results("h2", h2, args)
 
-      list(metadata = metadata, results = h2)
+      list(metadata = private$with_sandwich_metadata(metadata, "h2", args), results = h2)
     },
     #' Produces genetic correlations for the two given traits.
     #'
@@ -478,7 +678,7 @@ Pipeline <- R6::R6Class( #nolint
       cached_rg <- self$get_results("rg", args)
 
       if (!is.null(cached_rg)) {
-        return(list(metadata = metadata, results = cached_rg))
+        return(list(metadata = private$with_sandwich_metadata(metadata, "rg", args), results = cached_rg))
       }
 
       if ("meta_analyze" %in% names(args)) {
@@ -501,76 +701,27 @@ Pipeline <- R6::R6Class( #nolint
       }
 
       stratify_columns <- args$cif_cross$stratify_columns
-      join_columns     <- c(list("age"), stratify_columns)
-      join_symbols     <- rlang::syms(join_columns)
-
-      cif_t1_pop <- do.call(self$run_cif, args$h2_t1$cif_pop)
-      cif_t2_pop <- do.call(self$run_cif, args$h2_t2$cif_pop)
-      h2_t1      <- do.call(self$run_h2, args$h2_t1)
-      h2_t2      <- do.call(self$run_h2, args$h2_t2)
-      cif_cross  <- do.call(self$run_cif, args$cif_cross)
-
-      h2_t1_meta <- "meta_analyze" %in% names(args$h2_t1)
-      h2_t2_meta <- "meta_analyze" %in% names(args$h2_t2)
-
-      if (h2_t1_meta || h2_t2_meta) {
-        stratify_combinations <- cif_cross$results |>
-          group_by(!!!join_symbols) |>
-          select(!!!join_columns) |>
-          ungroup()
-
-        if (h2_t1_meta) {
-          h2_t1$results <- right_join(
-            h2_t1$results,
-            stratify_combinations,
-            by = join_by(age)
-          ) |>
-            filter(!is.na(index_trait)) |>
-            select(index_trait, !!!join_symbols, h2, se, l95, u95)
-        }
-
-        if (h2_t2_meta) {
-          h2_t2$results <- right_join(
-            h2_t2$results,
-            stratify_combinations,
-            by = join_by(age)
-          ) |>
-            filter(!is.na(index_trait)) |>
-            select(index_trait, !!!join_symbols, h2, se, l95, u95)
-        }
-      }
-
-      combined <- private$add_cif_prefix(cif_t1_pop$results, "t1_pop", stratify_columns) |>
-        inner_join(
-          private$add_cif_prefix(cif_cross$results, "cross", stratify_columns),
-          by = join_by(!!!join_columns)
-        ) |>
-        inner_join(
-          private$add_cif_prefix(cif_t2_pop$results, "t2_pop", stratify_columns),
-          by = join_by(!!!join_columns)
-        ) |>
-        inner_join(
-          private$add_h2_prefix(h2_t1$results, "t1", stratify_columns),
-          by = join_by(!!!join_columns)
-        ) |>
-        inner_join(
-          private$add_h2_prefix(h2_t2$results, "t2", stratify_columns),
-          by = join_by(!!!join_columns)
-        ) |>
-        self$max_age_by_stratification(stratify_columns)
-
-      if (nrow(combined) == 0) stop("After joining all cif and h2 results no data was left")
-
-      rg <- private$analyses$rg$run(
-        estimates   = combined,
-        relatedness = args$relatedness
-      ) |> select(!!!stratify_columns, rg, se = rg_se, l95 = rg_l95, u95 = rg_u95)
+      estimates        <- private$rg_estimates(args)
+      rg               <- estimates |> select(!!!stratify_columns, rg, se = rg_se, l95 = rg_l95, u95 = rg_u95)
 
       if (nrow(rg) == 0) stop("No genetic correlation results produced")
 
+      h2_meta <- "meta_analyze" %in% c(names(args$h2_t1), names(args$h2_t2))
+
+      if (!is.null(private$sandwich) && !h2_meta) {
+        output <- paste0("rg|", private$stratum_key(estimates, stratify_columns))
+        fit    <- private$sandwich_fit(
+          private$rg_terms(args, estimates, output),
+          list(args$h2_t1$cif_pop, args$h2_t1$cif_fh, args$h2_t2$cif_pop, args$h2_t2$cif_fh, args$cif_cross)
+        )
+        rg <- private$with_sandwich(rg, output, fit, "rg")
+
+        private$record_sandwich_run("rg", args, fit)
+      }
+
       self$add_results("rg", rg, args)
 
-      list(metadata = metadata, results = rg)
+      list(metadata = private$with_sandwich_metadata(metadata, "rg", args), results = rg)
     },
     #' Produces genetic correlations for the two given traits using sane defaults.
     #'

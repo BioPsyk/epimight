@@ -98,3 +98,98 @@ pair_variances <- function(graph, psi, max_degree, budget = 2^31, categories = N
 
   unname(colSums(psi ^ 2) + 2 * unlist(cross[1, paste0("cross.first.", columns, ":second.", columns)]))
 }
+
+#' @title Pedigree-pair sandwich variances of h2 and rg estimates.
+#' @description
+#' Turns a term table (see `h2_terms`) into one complete influence vector per output and
+#' sums each over the pedigree pairs up to `max_degree`, with a uniform kernel. The graph is
+#' built on first use from the pedigree trimmed to the probands' ancestors.
+#' @docType class
+#' @import R6
+#' @import data.table
+#' @export
+SandwichAnalysis <- R6::R6Class( #nolint
+  "SandwichAnalysis",
+  inherit = Analysis,
+  private = list(
+    pedigree   = NULL,
+    probands   = NULL,
+    max_degree = NULL,
+    built      = NULL
+  ),
+  public = list(
+    #' @description
+    #' Checks that every proband has a pedigree row.
+    #'
+    #' @param pedigree Data.table with `person_id`, `mother_id`, `father_id` and an optional
+    #'   `twin`, all strings.
+    #' @param probands Every `person_id` an analysis can read.
+    #' @param max_degree Highest kinship degree in the pair set.
+    initialize = function(pedigree, probands, max_degree) {
+      super$initialize()
+
+      if (anyDuplicated(pedigree$person_id)) stop("The pedigree has duplicated `person_id` values")
+
+      absent <- probands[!(probands %chin% pedigree$person_id)]
+
+      if (length(absent) > 0) {
+        stop(length(absent), " proband `person_id` values are missing from the pedigree, e.g. \"", absent[1], "\"")
+      }
+
+      private$pedigree   <- pedigree
+      private$probands   <- probands
+      private$max_degree <- max_degree
+    },
+    #' @description
+    #' The trimmed pedigree graph and the `person_id` on each of its rows.
+    graph = function() {
+      if (is.null(private$built)) {
+        private$built <- sandwich_graph(private$pedigree, private$probands, private$max_degree)
+      }
+
+      private$built
+    },
+    #' @description
+    #' Sandwich variance of every output of a term table.
+    #'
+    #' Outputs with a non-finite coefficient or CIF get `NA`. The outputs are assembled and
+    #' summed in batches sized by `getOption("epimight.sandwich_batch_bytes", 2^31)`.
+    #'
+    #' @param terms Term table with columns `output`, `cohort`, `stratum`, `age`, `k`, `coef`.
+    #' @param cohorts Named list over the term table's cohort keys of the cohorts' TTE
+    #'   data.tables with a `stratum` column, as `Pipeline$get_tte` returns them.
+    #' @returns A list with `variance` (a data.table of `output` and `variance`), `batch_size`
+    #'   and `passes`.
+    run = function(terms, cohorts) {
+      built  <- self$graph()
+      n_rows <- built$graph$n
+      budget <- getOption("epimight.sandwich_batch_bytes", 2^31)
+      size   <- sandwich_batch_size(n_rows, budget)
+
+      by_stratum <- lapply(cohorts, function(tte) {
+        split(
+          data.table(
+            row          = chmatch(tte$person_id, built$person_id),
+            stratum      = tte$stratum,
+            trait_age    = tte$trait_age,
+            trait_status = tte$trait_status,
+            weight       = if ("weight" %in% names(tte)) tte$weight else 1
+          ),
+          by = "stratum", keep.by = FALSE
+        )
+      })
+
+      variance <- terms[, .(variance = NA_real_, finite = all(is.finite(coef) & is.finite(k))), by = output]
+      outputs  <- variance[finite == TRUE, output]
+      batches  <- split(outputs, ceiling(seq_along(outputs) / size))
+
+      for (batch in batches) {
+        psi    <- assemble_influence(terms[output %chin% batch], by_stratum, n_rows)
+        values <- pair_variances(built$graph, psi, private$max_degree, budget)
+        variance[.(colnames(psi)), on = "output", variance := values]
+      }
+
+      list(variance = variance[, .(output, variance)], batch_size = size, passes = length(batches))
+    }
+  )
+)
