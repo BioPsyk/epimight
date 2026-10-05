@@ -181,3 +181,22 @@ describe("meta_shares", {
     expect_true(is.na(meta_shares(0.3, 0.05, 1, "random")))
   })
 })
+
+describe("chain_jacobian", {
+  it("returns an empty rows-by-inputs matrix for zero rows", {
+    grad <- h2_gradient(numeric(0), numeric(0), 0.5)
+
+    expect_equal(dim(grad), c(0L, 2L))
+    expect_equal(colnames(grad), c("pop", "fh"))
+  })
+
+  it("stays finite and accurate for an h2 below the step", {
+    h1   <- c(5e-7, 0.3)
+    grad <- rg_gradient(c(0.1, 0.1), c(0.15, 0.15), c(0.12, 0.12), h1, c(0.4, 0.4), 0.5)
+    rg   <- rg_calc$calculate_rg(1, 0.1, 0.15, 0.12, 1, 1, 1, h1, 0.4, 0.5)$rg
+
+    # rg = rhh / sqrt(h2_t1 * h2_t2), so d rg / d h2_t1 = -rg / (2 * h2_t1).
+    expect_true(all(is.finite(grad)))
+    expect_equal(grad[, "h2_t1"], -rg / (2 * h1), tolerance = 1e-6)
+  })
+})

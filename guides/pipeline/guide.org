@@ -632,7 +632,7 @@ Every ~person_id~ of the pool needs a row; ~Pipeline$new~ stops and reports how 
 missing. A parent does not need a row of their own: children who share a parent id are
 still siblings. These are the columns ~TTERetriever~ emits.
 
-~max_degree~ (default 3) sets how distant the related pairs are that the SE accounts for:
+~max_degree~ (1 to 5, default 3) sets how distant the related pairs are that the SE accounts for:
 3 covers parents, siblings, half siblings, grandparents, aunts and uncles, great-grandparents,
 half aunts and uncles, great-aunts and great-uncles, and first cousins.
 

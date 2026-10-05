@@ -100,7 +100,8 @@ aj_influence <- function(age_at, status, weight, at) {
 #'
 #' `f` takes a named list of equal-length numeric vectors and returns one value per row.
 #' Rows are independent, so every row's partial in one input comes from a single pair of
-#' calls.
+#' calls. For an input below `1000 * step` the step is a thousandth of the input, so it never
+#' crosses zero (a CIF or h2 below 1e-6 would otherwise give `NaN`) and stays small against it.
 #'
 #' @param f Function of a named list of numeric vectors.
 #' @param inputs Named list of numeric vectors, one value per row.
@@ -109,12 +110,16 @@ aj_influence <- function(age_at, status, weight, at) {
 #' @keywords internal
 chain_jacobian <- function(f, inputs, step = 1e-6) {
   rows <- length(inputs[[1]])
+
+  if (rows == 0) return(matrix(numeric(0), nrow = 0, ncol = length(inputs), dimnames = list(NULL, names(inputs))))
+
   grad <- vapply(names(inputs), function(name) {
-    up            <- inputs
-    down          <- inputs
-    up[[name]]    <- up[[name]] + step
-    down[[name]]  <- down[[name]] - step
-    (f(up) - f(down)) / (2 * step)
+    h            <- pmin(step, abs(inputs[[name]]) * 1e-3)
+    up           <- inputs
+    down         <- inputs
+    up[[name]]   <- up[[name]] + h
+    down[[name]] <- down[[name]] - h
+    (f(up) - f(down)) / (2 * h)
   }, numeric(rows))
 
   matrix(grad, nrow = rows, dimnames = list(NULL, names(inputs)))

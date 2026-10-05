@@ -139,10 +139,13 @@ SandwichAnalysis <- R6::R6Class( #nolint
       private$max_degree <- max_degree
     },
     #' @description
-    #' The trimmed pedigree graph and the `person_id` on each of its rows.
+    #' The trimmed pedigree graph and the `person_id` on each of its rows. The pedigree and
+    #' proband ids are only needed to build it, so they are dropped once it exists.
     graph = function() {
       if (is.null(private$built)) {
-        private$built <- sandwich_graph(private$pedigree, private$probands, private$max_degree)
+        private$built    <- sandwich_graph(private$pedigree, private$probands, private$max_degree)
+        private$pedigree <- NULL
+        private$probands <- NULL
       }
 
       private$built

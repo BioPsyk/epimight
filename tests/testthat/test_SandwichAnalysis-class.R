@@ -238,6 +238,34 @@ describe("Pipeline with a pedigree", {
     expect_null(alone$metadata$sandwich)
   })
 
+  it("returns an empty h2 table, as without a pedigree, when every h2 is dropped", {
+    # Relatives' history mostly on unaffected probands puts the family-history CIF below the
+    # population's, so every h2 is negative and dropped.
+    set.seed(13)
+    flat <- copy(pool)[, relatives_n_trait := as.integer(
+      ifelse(runif(.N) < ifelse(trait_status == 1L, 0.02, 0.9), relatives_n, 0L)
+    )]
+    alone <- do.call(Pipeline$new(pool = flat)$run_h2, h2_args("trait1"))$results
+    with  <- do.call(Pipeline$new(pool = flat, pedigree = pedigree)$run_h2, h2_args("trait1"))$results
+
+    expect_equal(nrow(alone), 0)
+    expect_equal(nrow(with), 0)
+    expect_true(all(c("sandwich_se", "sandwich_l95", "sandwich_u95") %in% names(with)))
+  })
+
+  it("refuses a max_degree the pair engine cannot reach", {
+    expect_error(Pipeline$new(pool = pool, pedigree = pedigree, max_degree = 6L), "larger than maximum")
+  })
+
+  it("drops the pedigree once the graph is built", {
+    analysis <- SandwichAnalysis$new(pedigree, pedigree$person_id, 3L)
+    analysis$graph()
+
+    expect_null(analysis$.__enclos_env__$private$pedigree)
+    expect_null(analysis$.__enclos_env__$private$probands)
+    expect_s3_class(analysis$graph()$graph, "pedigree_graph")
+  })
+
   it("refuses a pedigree that misses probands", {
     expect_error(Pipeline$new(pool = pool, pedigree = pedigree[-(1:3)]), "3 proband `person_id` values are missing")
   })

@@ -293,7 +293,7 @@ Pipeline <- R6::R6Class( #nolint
     #'   optional `twin` (the co-twin's id), with `NA` for an unknown parent. Every `person_id` of the pool needs
     #'   a row. With a pedigree, h2 and rg results gain pedigree-pair sandwich SEs (`sandwich_se`,
     #'   `sandwich_l95`, `sandwich_u95`) at their headline age; this needs the `pedigreegraph` package.
-    #' @param max_degree Highest kinship degree of the related pairs the sandwich SEs sum over (default 3).
+    #' @param max_degree Highest kinship degree of the related pairs the sandwich SEs sum over, 1 to 5 (default 3).
     initialize = function(...) {
       validator <- ArgumentsValidator$new(
         pool = list(
@@ -347,6 +347,7 @@ Pipeline <- R6::R6Class( #nolint
         max_degree = list(
           type    = "integer",
           minimum = 1,
+          maximum = 5,
           default = 3L
         )
       )
