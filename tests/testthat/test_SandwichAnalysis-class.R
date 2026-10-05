@@ -213,6 +213,20 @@ describe("Pipeline with a pedigree", {
     expect_equal(cached$metadata$sandwich, first$metadata$sandwich)
   })
 
+  it("handles an empty string as a stratum label", {
+    labelled <- copy(pool)[, region := ifelse(born_at_year == 2001L, "", "north")]
+    by_label <- function(column) {
+      args <- h2_args("trait1")
+      args$cif_pop$stratify_columns <- list(column)
+      args$cif_fh$stratify_columns  <- list(column)
+      results <- do.call(Pipeline$new(pool = labelled, pedigree = pedigree)$run_h2, args)$results
+      results[!is.na(sandwich_se)][order(h2)]$sandwich_se
+    }
+
+    expect_equal(by_label("region"), by_label("born_at_year"))
+    expect_length(by_label("region"), 2)
+  })
+
   it("adds the columns to top-level calls only, in one pass", {
     fresh <- Pipeline$new(pool = pool, pedigree = pedigree)
     rg    <- fresh$run_rg(

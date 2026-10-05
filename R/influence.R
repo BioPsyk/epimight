@@ -279,7 +279,9 @@ assemble_influence <- function(terms, cohorts, n_rows, tolerance = 1e-10) {
   for (part in split(terms, by = c("cohort", "stratum"), sorted = TRUE)) {
     cohort  <- part$cohort[1]
     stratum <- part$stratum[1]
-    tte     <- cohorts[[cohort]][[stratum]]
+    # By position: `[[""]]` never matches a name, and "" is a valid stratum label.
+    strata  <- cohorts[[cohort]]
+    tte     <- strata[match(stratum, names(strata))][[1]]
 
     if (is.null(tte)) stop("No cohort rows for \"", cohort, "\" in stratum \"", stratum, "\"")
 
