@@ -7,6 +7,12 @@
 #' @name influence
 NULL
 
+# Column names the term tables use inside data.table expressions.
+utils::globalVariables(c(
+  ".", "age", "coef", "cohort", "cross", "fh", "from", "h2_t1_output", "h2_t2_output", "i.coef", "k",
+  "k_cross", "k_fh", "k_pop", "k_pop1", "k_pop2", "output", "pop", "pop1", "pop2", "stratum", "to"
+))
+
 # Weighted sums of `w` per 1-based index `i`, as a length `n` vector.
 bincount <- function(i, w, n) {
   out  <- numeric(n)

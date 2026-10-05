@@ -81,7 +81,7 @@ sandwich_batch_size <- function(n_rows, budget) {
 #' @keywords internal
 pair_variances <- function(graph, psi, max_degree, budget = 2^31, categories = NULL) {
   columns  <- paste0("v", seq_len(ncol(psi)))
-  values   <- setNames(lapply(seq_len(ncol(psi)), function(q) psi[, q]), columns)
+  values   <- stats::setNames(lapply(seq_len(ncol(psi)), function(q) psi[, q]), columns)
   products <- lapply(columns, function(v) paste0(c("first.", "second."), v))
 
   moments <- pedigreegraph::relationship_moments(
@@ -107,7 +107,7 @@ pair_variances <- function(graph, psi, max_degree, budget = 2^31, categories = N
 #' @docType class
 #' @import R6
 #' @import data.table
-#' @export
+#' @keywords internal
 SandwichAnalysis <- R6::R6Class( #nolint
   "SandwichAnalysis",
   inherit = Analysis,
