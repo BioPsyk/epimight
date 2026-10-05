@@ -362,13 +362,39 @@ describe("run", {
     expect_equal(halved$cases_eff, ones$cases)
   })
 
-  it("gives cases_eff = cases * sum(w) / sum(w^2) for mixed weights", {
-    tte <- pipeline_tte |> mutate(weight = ifelse(row_number() %% 2 == 0, 0.5, 1.0))
-    scale <- sum(tte$weight) / sum(tte$weight ^ 2)
+  it("gives cases_eff whose binomial variance matches the resampled variance for mixed weights", {
+    withr::local_seed(2)
 
-    results <- analysis$run(tte = tte)
+    n      <- 2000
+    k      <- 0.3
+    weight <- ifelse(seq_len(n) <= n / 10, 1.0, 0.1)
 
-    expect_equal(results$cases_eff, results$cases * scale)
-    expect_gt(scale, 1)
+    replicates <- lapply(seq_len(300), function(i) {
+      trait_status <- rbinom(n, 1, k)
+      last <- analysis$run(
+        tte = data.table(
+          person_id    = as.character(seq_len(n)),
+          trait_status = trait_status,
+          trait_age    = ifelse(trait_status == 1, sample(1:5, n, replace = TRUE), 10),
+          weight       = weight
+        )
+      ) |>
+        slice_max(age)
+
+      # `cif` lags `cases` by one event age, so the prevalence comes from `cases`.
+      prevalence <- last$cases / sum(weight)
+
+      data.table(
+        prevalence  = prevalence,
+        var_eff     = prevalence ^ 2 * (1 - prevalence) / last$cases_eff,
+        var_nominal = prevalence ^ 2 * (1 - prevalence) / last$cases
+      )
+    }) |>
+      rbindlist()
+
+    empirical <- var(replicates$prevalence)
+
+    expect_equal(mean(replicates$var_eff) / empirical, 1, tolerance = 0.25)
+    expect_gt(mean(replicates$var_nominal) / empirical, 1.3)
   })
 })

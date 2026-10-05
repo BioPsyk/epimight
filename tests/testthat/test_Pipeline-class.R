@@ -503,6 +503,46 @@ describe("run_h2", {
     expect_dataframe_not_equal(h2$results, h2_fixed_meta$results)
     expect_dataframe_not_equal(h2_random_meta$results, h2_fixed_meta$results)
   })
+
+  it("passes the effective case count of a weighted cif to the h2 SE", {
+    pipeline$clear_results()
+
+    args <- list(
+      cif_pop = list(
+        index_trait = "SCZ"
+      ),
+      cif_fh = list(
+        index_trait     = "SCZ",
+        relatives_trait = "SCZ",
+        relatives_kind  = "half_siblings"
+      ),
+      relatedness = 0.25
+    )
+
+    h2     <- do.call(pipeline$run_h2, args)$results
+    cif_fh <- do.call(pipeline$run_cif, args$cif_fh)$results
+    cif    <- do.call(pipeline$run_cif, args$cif_pop)$results |>
+      inner_join(cif_fh, by = join_by(age))
+
+    expect_true(any(cif_fh$cases_eff > cif_fh$cases))
+
+    h2_from <- function(pop_cases, fh_cases) {
+      HeritabilityAnalysis$new()$run(
+        cif = cif |>
+          select(age, pop_cif = cif.x, pop_cases = {{ pop_cases }}, fh_cif = cif.y, fh_cases = {{ fh_cases }}) |>
+          as.data.table(),
+        relatedness = args$relatedness
+      ) |>
+        inner_join(h2, by = join_by(age))
+    }
+
+    expected <- h2_from(cases_eff.x, cases_eff.y)
+    nominal  <- h2_from(cases.x, cases.y)
+
+    expect_equal(nrow(expected), nrow(h2))
+    expect_equal(expected$se.y, expected$se.x)
+    expect_true(all(nominal$se.y < nominal$se.x))
+  })
 })
 
 describe("run_rg", {
@@ -708,6 +748,34 @@ describe("run_rg", {
 
     expect_equal(rg$l95, rg$rg - 1.96 * rg$se)
     expect_equal(rg$u95, rg$rg + 1.96 * rg$se)
+  })
+
+  it("passes the effective case count of a weighted cif to the rg SE", {
+    pipeline$clear_results()
+
+    rg        <- do.call(pipeline$run_rg, rg_args)$results
+    cif_cross <- do.call(pipeline$run_cif, rg_args$cif_cross)$results
+    combined  <- do.call(pipeline$run_cif, rg_args$h2_t1$cif_pop)$results |>
+      select(age, t1_pop_cif = cif, t1_pop_cases = cases_eff) |>
+      inner_join(select(cif_cross, age, cross_cif = cif, cross_cases = cases_eff, cross_nominal = cases), by = "age") |>
+      inner_join(
+        do.call(pipeline$run_cif, rg_args$h2_t2$cif_pop)$results |>
+          select(age, t2_pop_cif = cif, t2_pop_cases = cases_eff),
+        by = "age"
+      ) |>
+      inner_join(select(do.call(pipeline$run_h2, rg_args$h2_t1)$results, age, t1_h2 = h2), by = "age") |>
+      inner_join(select(do.call(pipeline$run_h2, rg_args$h2_t2)$results, age, t2_h2 = h2), by = "age") |>
+      slice_max(age) |>
+      as.data.table()
+
+    expect_gt(combined$cross_cases, combined$cross_nominal)
+
+    rg_from <- function(estimates) {
+      GeneticCorrelationAnalysis$new()$run(estimates = estimates, relatedness = rg_args$relatedness)
+    }
+
+    expect_equal(rg$se, rg_from(combined)$rg_se)
+    expect_gt(rg_from(mutate(combined, cross_cases = cross_nominal))$rg_se, rg$se)
   })
 })
 
