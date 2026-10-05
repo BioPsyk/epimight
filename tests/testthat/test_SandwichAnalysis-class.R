@@ -119,19 +119,25 @@ describe("pair_variances", {
 
 describe("sandwich_graph", {
   it("keeps every proband pair when trimmed to max_degree - 1 ancestor generations", {
-    youngest <- pedigree[startsWith(person_id, "g3_"), person_id]
-    trimmed  <- sandwich_graph(pedigree, youngest, 3L)
-    full     <- sandwich_graph(pedigree, youngest, 3L, trim = FALSE)
     set.seed(9)
-    values   <- setNames(rnorm(length(youngest)), youngest)
-    on_rows  <- function(person_id) matrix(ifelse(person_id %chin% youngest, values[person_id], 0))
+    youngest <- pedigree[startsWith(person_id, "g3_"), person_id]
+    spread   <- c(youngest, sample(pedigree[startsWith(person_id, "g2_"), person_id], 60),
+                  sample(pedigree[startsWith(person_id, "g1_"), person_id], 20))
 
-    expect_lt(trimmed$graph$n, full$graph$n)
-    expect_equal(
-      pair_variances(trimmed$graph, on_rows(trimmed$person_id), 3L),
-      pair_variances(full$graph, on_rows(full$person_id), 3L),
-      tolerance = 1e-12
-    )
+    for (case in list(list(probands = youngest, degree = 3L), list(probands = spread, degree = 3L),
+                      list(probands = spread, degree = 2L))) {
+      trimmed <- sandwich_graph(pedigree, case$probands, case$degree)
+      full    <- sandwich_graph(pedigree, case$probands, case$degree, trim = FALSE)
+      values  <- setNames(rnorm(length(case$probands)), case$probands)
+      on_rows <- function(person_id) matrix(ifelse(person_id %chin% case$probands, values[person_id], 0))
+
+      expect_lt(trimmed$graph$n, full$graph$n)
+      expect_equal(
+        pair_variances(trimmed$graph, on_rows(trimmed$person_id), case$degree),
+        pair_variances(full$graph, on_rows(full$person_id), case$degree),
+        tolerance = 1e-12
+      )
+    }
   })
 
   it("keeps external parents, so their children stay half sibs", {
@@ -205,6 +211,22 @@ describe("Pipeline with a pedigree", {
 
     expect_equal(first$metadata$sandwich, list(batch_size = 32, passes = 1L))
     expect_equal(cached$metadata$sandwich, first$metadata$sandwich)
+  })
+
+  it("adds the columns to top-level calls only, in one pass", {
+    fresh <- Pipeline$new(pool = pool, pedigree = pedigree)
+    rg    <- fresh$run_rg(
+      h2_t1 = h2_args("trait1"), h2_t2 = h2_args("trait2"), relatedness = 0.5,
+      cif_cross = list(index_trait = "trait1", relatives_trait = "trait2", relatives_kind = "FS",
+                       stratify_columns = list("born_at_year"))
+    )
+    nested <- fresh$get_results("h2", h2_args("trait1"))
+    asked  <- do.call(fresh$run_h2, h2_args("trait1"))
+
+    expect_equal(rg$metadata$sandwich$passes, 1L)
+    expect_false("sandwich_se" %in% names(nested))
+    expect_true("sandwich_se" %in% names(asked$results))
+    expect_true("sandwich_se" %in% names(fresh$get_results("h2", h2_args("trait1"))))
   })
 
   it("leaves results unchanged without a pedigree", {

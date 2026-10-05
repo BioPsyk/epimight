@@ -16,6 +16,7 @@ Pipeline <- R6::R6Class( #nolint
     analyses      = NULL,
     sandwich      = NULL,
     sandwich_runs = list(),
+    nested        = FALSE,
     results       = list(
       cif = list(),
       h2  = list(),
@@ -124,6 +125,11 @@ Pipeline <- R6::R6Class( #nolint
 
       units[private$cif_by_stratum(args$cif_pop), k_pop := i.cif, on = .(stratum, age)]
       units[private$cif_by_stratum(args$cif_fh), k_fh := i.cif, on = .(stratum, age)]
+
+      if (anyNA(units$k_pop) || anyNA(units$k_fh)) {
+        stop("Sandwich SE: no CIF row for an h2 value's stratum and age; the CIF and h2 tables disagree")
+      }
+
       units[, `:=`(pop = private$cache_key("cif", args$cif_pop), fh = private$cache_key("cif", args$cif_fh))]
     },
     # Influence terms of the h2 values behind `at` (`stratum`, `age`): each stratum's own h2 at that age,
@@ -207,12 +213,31 @@ Pipeline <- R6::R6Class( #nolint
 
       list(output = "rg|meta", terms = compose_terms(local$terms, shares[!is.na(coef)]))
     },
-    # Adds the sandwich columns of `plan` to `results` and records the run for the metadata.
-    add_sandwich = function(type, args, results, plan, cif_args, estimate) {
-      fit <- private$sandwich_fit(plan$terms, cif_args)
-      private$sandwich_runs[[type]][[private$cache_key(type, args)]] <- fit[c("batch_size", "passes")]
+    # With a pedigree, every top-level run_h2 or run_rg call returns through here: the sandwich columns go
+    # on the results it returns, cached or not, while the calls nested inside it skip them.
+    with_sandwich_columns = function(type, out) {
+      args <- out$metadata$analysis_arguments
+      key  <- private$cache_key(type, args)
 
-      private$with_sandwich(results, plan$output, fit, estimate)
+      if (!("sandwich_se" %in% names(out$results))) {
+        plan <- if (type == "h2") {
+          private$h2_plan(args, out$results)
+        } else if ("meta_analyze" %in% names(args)) {
+          private$meta_rg_plan(args)
+        } else {
+          private$rg_plan(args, private$rg_estimates(args))
+        }
+        cifs <- if (type == "h2") list(args$cif_pop, args$cif_fh) else private$rg_cifs(args)
+        fit  <- private$sandwich_fit(plan$terms, cifs)
+
+        out$results <- private$with_sandwich(out$results, plan$output, fit, type)
+        private$sandwich_runs[[type]][[key]] <- fit[c("batch_size", "passes")]
+        self$add_results(type, out$results, args)
+      }
+
+      out$metadata$sandwich <- private$sandwich_runs[[type]][[key]]
+
+      out
     },
     rg_cifs = function(args) {
       list(args$h2_t1$cif_pop, args$h2_t1$cif_fh, args$h2_t2$cif_pop, args$h2_t2$cif_fh, args$cif_cross)
@@ -250,11 +275,6 @@ Pipeline <- R6::R6Class( #nolint
       set(results, j = "sandwich_u95", value = point + 1.96 * se)
 
       results
-    },
-    with_sandwich_metadata = function(metadata, type, args) {
-      metadata$sandwich <- private$sandwich_runs[[type]][[private$cache_key(type, args)]]
-
-      metadata
     }
   ),
   public = list(
@@ -603,6 +623,13 @@ Pipeline <- R6::R6Class( #nolint
     #' @param relatedness Relatedness coefficient to use in h2 calculation.
     #' @returns A named list with metadata and results.
     run_h2 = function(...) {
+      if (!is.null(private$sandwich) && !private$nested) {
+        private$nested <- TRUE
+        on.exit(private$nested <- FALSE)
+
+        return(private$with_sandwich_columns("h2", self$run_h2(...)))
+      }
+
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
       validator$add_post_validation(function(args, rules) {
         if ("relatives_trait" %in% names(args$cif_pop)) {
@@ -634,7 +661,7 @@ Pipeline <- R6::R6Class( #nolint
       cached_h2 <- self$get_results("h2", args)
 
       if (!is.null(cached_h2)) {
-        return(list(metadata = private$with_sandwich_metadata(metadata, "h2", args), results = cached_h2))
+        return(list(metadata = metadata, results = cached_h2))
       }
 
       if ("meta_analyze" %in% names(args)) {
@@ -652,14 +679,9 @@ Pipeline <- R6::R6Class( #nolint
           select(index_trait, age, meta, se, l95, u95) |>
           rename(h2 = meta)
 
-        if (!is.null(private$sandwich)) {
-          plan    <- private$h2_plan(args, h2_meta)
-          h2_meta <- private$add_sandwich("h2", args, h2_meta, plan, list(args$cif_pop, args$cif_fh), "h2")
-        }
-
         self$add_results("h2", h2_meta, args)
 
-        return(list(metadata = private$with_sandwich_metadata(metadata, "h2", args), results = h2_meta))
+        return(list(metadata = metadata, results = h2_meta))
       }
 
       stratify_columns <- args$cif_pop$stratify_columns
@@ -694,13 +716,9 @@ Pipeline <- R6::R6Class( #nolint
 
       if (is.null(h2)) stop(paste0("No valid results found when producing h2 for trait ", args$cif_pop$index_trait))
 
-      if (!is.null(private$sandwich)) {
-        h2 <- private$add_sandwich("h2", args, h2, private$h2_plan(args, h2), list(args$cif_pop, args$cif_fh), "h2")
-      }
-
       self$add_results("h2", h2, args)
 
-      list(metadata = private$with_sandwich_metadata(metadata, "h2", args), results = h2)
+      list(metadata = metadata, results = h2)
     },
     #' Produces genetic correlations for the two given traits.
     #'
@@ -710,6 +728,13 @@ Pipeline <- R6::R6Class( #nolint
     #' @param relatedness Relatedness coefficient to use in rg calculation.
     #' @returns A named list with metadata and results.
     run_rg = function(...) {
+      if (!is.null(private$sandwich) && !private$nested) {
+        private$nested <- TRUE
+        on.exit(private$nested <- FALSE)
+
+        return(private$with_sandwich_columns("rg", self$run_rg(...)))
+      }
+
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$rg$properties)
 
       validator$add_post_validation(function(args, rules) {
@@ -735,7 +760,7 @@ Pipeline <- R6::R6Class( #nolint
       cached_rg <- self$get_results("rg", args)
 
       if (!is.null(cached_rg)) {
-        return(list(metadata = private$with_sandwich_metadata(metadata, "rg", args), results = cached_rg))
+        return(list(metadata = metadata, results = cached_rg))
       }
 
       if ("meta_analyze" %in% names(args)) {
@@ -752,13 +777,9 @@ Pipeline <- R6::R6Class( #nolint
           select(meta, se, l95, u95) |>
           rename(rg = meta)
 
-        if (!is.null(private$sandwich)) {
-          rg_meta <- private$add_sandwich("rg", args, rg_meta, private$meta_rg_plan(args), private$rg_cifs(args), "rg")
-        }
-
         self$add_results("rg", rg_meta, args)
 
-        return(list(metadata = private$with_sandwich_metadata(metadata, "rg", args), results = rg_meta))
+        return(list(metadata = metadata, results = rg_meta))
       }
 
       stratify_columns <- args$cif_cross$stratify_columns
@@ -767,13 +788,9 @@ Pipeline <- R6::R6Class( #nolint
 
       if (nrow(rg) == 0) stop("No genetic correlation results produced")
 
-      if (!is.null(private$sandwich)) {
-        rg <- private$add_sandwich("rg", args, rg, private$rg_plan(args, estimates), private$rg_cifs(args), "rg")
-      }
-
       self$add_results("rg", rg, args)
 
-      list(metadata = private$with_sandwich_metadata(metadata, "rg", args), results = rg)
+      list(metadata = metadata, results = rg)
     },
     #' Produces genetic correlations for the two given traits using sane defaults.
     #'

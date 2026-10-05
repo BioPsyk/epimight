@@ -75,11 +75,10 @@ sandwich_batch_size <- function(n_rows, budget) {
 #' @param graph A `pedigree_graph`.
 #' @param psi Graph rows by at most 32 outputs.
 #' @param max_degree Highest kinship degree in the pair set.
-#' @param budget Accumulator memory for the pass, in bytes.
 #' @param categories Pair categories in place of `max_degree`.
 #' @returns The variance of each column.
 #' @keywords internal
-pair_variances <- function(graph, psi, max_degree, budget = 2^31, categories = NULL) {
+pair_variances <- function(graph, psi, max_degree, categories = NULL) {
   columns  <- paste0("v", seq_len(ncol(psi)))
   values   <- stats::setNames(lapply(seq_len(ncol(psi)), function(q) psi[, q]), columns)
   products <- lapply(columns, function(v) paste0(c("first.", "second."), v))
@@ -91,7 +90,6 @@ pair_variances <- function(graph, psi, max_degree, budget = 2^31, categories = N
     values              = values,
     products            = products,
     symmetric           = "canonical",
-    memory_budget_bytes = budget,
     progress            = FALSE
   )
   cross <- as.data.frame(pedigreegraph::moments_sum(moments, "category"), stats = "cross")
@@ -185,7 +183,7 @@ SandwichAnalysis <- R6::R6Class( #nolint
 
       for (batch in batches) {
         psi    <- assemble_influence(terms[output %chin% batch], by_stratum, n_rows)
-        values <- pair_variances(built$graph, psi, private$max_degree, budget)
+        values <- pair_variances(built$graph, psi, private$max_degree)
         variance[.(colnames(psi)), on = "output", variance := values]
       }
 

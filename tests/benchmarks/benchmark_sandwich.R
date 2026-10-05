@@ -81,7 +81,7 @@ data <- readRDS(cache)
 
 namespace <- asNamespace("epimight")
 moments   <- get("pair_variances", namespace)
-pairlist  <- function(graph, psi, max_degree, budget = 2^31, categories = NULL) {
+pairlist  <- function(graph, psi, max_degree, categories = NULL) {
   pairs <- pedigreegraph::relationship_pairs(graph, max_degree = max_degree, ids = FALSE, progress = FALSE)
   cross <- colSums(psi[pairs$first, , drop = FALSE] * psi[pairs$second, , drop = FALSE])
   unname(colSums(psi ^ 2) + 2 * cross)
