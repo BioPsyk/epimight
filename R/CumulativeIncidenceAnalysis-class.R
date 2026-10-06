@@ -70,11 +70,13 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       trait_age_max <- max(tte$trait_age)
 
       # A weighted proportion over this cohort has the sampling variance of
-      # (sum w)^2 / sum w^2 independent observations (Kish's effective size),
-      # not of sum w. `cases` is the weighted case count, worth sum w trials;
-      # `cases_eff` rescales it so that K^2 (1 - K) / cases_eff is the right
-      # binomial variance for the weighted CIF. Both are 1:1 when every
-      # weight is 1.
+      # n_eff = (sum w)^2 / sum w^2 independent observations (Kish's effective
+      # size), not of sum w. `cases` is the weighted case count, measured
+      # against sum w trials; `cases_eff` puts it on the n_eff scale by
+      # multiplying by n_eff / sum w = sum w / sum w^2, so that
+      # K^2 (1 - K) / cases_eff is the binomial variance of the weighted CIF K
+      # (the `cif` column). Rescaling every weight leaves `cases_eff`
+      # unchanged, and it equals `cases` when every weight is 1.
       weight_sum    <- sum(tte$weight)
       weight_sq_sum <- sum(tte$weight ^ 2)
 
