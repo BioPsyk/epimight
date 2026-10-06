@@ -120,11 +120,7 @@ production_influence <- function() {
            dimnames = list(NULL, paste0(c("h2_fixed", "h2_random")[j], "/meta")))
   })
   rg <- Map(function(args, name) {
-    plan <- if (is.null(args$meta_analyze)) {
-      private$rg_plan(args, private$rg_estimates(args))
-    } else {
-      private$meta_rg_plan(args)
-    }
+    plan <- private$rg_plan(args)
     psi <- plan_influence(pipeline, base, plan, ids)
     colnames(psi) <- paste0(name, "/", colnames(psi))
     psi
@@ -178,12 +174,12 @@ describe("meta-analyzed sandwich influence", {
 describe("sandwich variances of many outputs", {
   args    <- sandwich_h2_args("trait1")
   local   <- as.data.table(do.call(pipeline$run_h2, args)$results)
-  many    <- private$h2_inputs(args, data.table(stratum = as.character(local$born_at_year), age = local$age), "h2")
+  many    <- private$h2_terms_at(args, data.table(stratum = as.character(local$born_at_year), age = local$age), "h2")
   both    <- rg_variants$both_random
   terms   <- rbind(
     many$terms,
-    private$rg_plan(both, private$rg_estimates(both))$terms,
-    private$meta_rg_plan(rg_variants$meta_fixed)$terms
+    private$rg_plan(both)$terms,
+    private$rg_plan(rg_variants$meta_fixed)$terms
   )
   outputs <- unique(terms$output)
   cohorts <- plan_cohorts(pipeline, base)
@@ -229,12 +225,14 @@ describe("sandwich variances of many outputs", {
   })
 })
 
-describe("with_sandwich", {
+describe("add_sandwich_columns", {
   it("reports a negative variance as NA with a warning", {
     fit <- list(variance = data.table(output = c("a", "b"), variance = c(0.0004, -1e-9)))
 
     expect_warning(
-      results <- private$with_sandwich(data.table(h2 = c(0.3, 0.4, 0.5)), c("a", "b", NA), fit, "h2"),
+      results <- private$add_sandwich_columns(
+        data.table(h2 = c(0.3, 0.4, 0.5)), c("a", "b", NA), fit$variance, "h2"
+      ),
       "1 sandwich variance"
     )
     expect_equal(results$sandwich_se, c(0.02, NA, NA))

@@ -17,6 +17,7 @@ utils::globalVariables(c(
 #' @docType class
 #' @import R6
 #' @import data.table
+#' @import dplyr
 #' @keywords internal
 SandwichAnalysis <- R6::R6Class( #nolint
   "SandwichAnalysis",
@@ -316,9 +317,9 @@ SandwichAnalysis <- R6::R6Class( #nolint
     h2_terms = function(units, rc) {
       grad <- self$calculate_h2_gradient(units$k_pop, units$k_fh, rc)
 
-      rbind(
-        units[, .(output, cohort = pop, stratum, age, k = k_pop, coef = grad[, "pop"])],
-        units[, .(output, cohort = fh, stratum, age, k = k_fh, coef = grad[, "fh"])]
+      bind_rows(
+        units |> transmute(output, cohort = pop, stratum, age, k = k_pop, coef = grad[, "pop"]),
+        units |> transmute(output, cohort = fh, stratum, age, k = k_fh, coef = grad[, "fh"])
       )
     },
     #' @description
@@ -329,11 +330,13 @@ SandwichAnalysis <- R6::R6Class( #nolint
     #'   output) and `coef`.
     #' @returns The term table of the `to` outputs, one row per output and CIF point.
     compose_terms = function(terms, weights) {
-      terms[
-        weights, on = .(output = from), allow.cartesian = TRUE, nomatch = NULL
-      ][
-        , .(k = k[1], coef = sum(coef * i.coef)), by = .(output = to, cohort, stratum, age)
-      ]
+      terms |>
+        inner_join(
+          weights, by = join_by(output == from), relationship = "many-to-many", suffix = c("", ".weight")
+        ) |>
+        group_by(output = to, cohort, stratum, age) |>
+        summarise(k = k[1], coef = sum(coef * coef.weight), .groups = "drop") |>
+        as.data.table()
     },
     #' @description
     #' Influence terms of per-stratum rg values.
@@ -354,19 +357,20 @@ SandwichAnalysis <- R6::R6Class( #nolint
         units$k_pop1, units$k_cross, units$k_pop2, units$h2_t1, units$h2_t2, rc
       )
 
-      direct <- rbind(
-        units[, .(output, cohort = pop1, stratum, age, k = k_pop1, coef = grad[, "pop1"])],
-        units[, .(output, cohort = cross, stratum, age, k = k_cross, coef = grad[, "cross"])],
-        units[, .(output, cohort = pop2, stratum, age, k = k_pop2, coef = grad[, "pop2"])]
+      direct <- bind_rows(
+        units |> transmute(output, cohort = pop1, stratum, age, k = k_pop1, coef = grad[, "pop1"]),
+        units |> transmute(output, cohort = cross, stratum, age, k = k_cross, coef = grad[, "cross"]),
+        units |> transmute(output, cohort = pop2, stratum, age, k = k_pop2, coef = grad[, "pop2"])
       )
-      through_h2 <- self$compose_terms(h2, rbind(
-        units[, .(from = h2_t1_output, to = output, coef = grad[, "h2_t1"])],
-        units[, .(from = h2_t2_output, to = output, coef = grad[, "h2_t2"])]
+      through_h2 <- self$compose_terms(h2, bind_rows(
+        units |> transmute(from = h2_t1_output, to = output, coef = grad[, "h2_t1"]),
+        units |> transmute(from = h2_t2_output, to = output, coef = grad[, "h2_t2"])
       ))
 
-      rbind(direct, through_h2)[
-        , .(k = k[1], coef = sum(coef)), by = .(output, cohort, stratum, age)
-      ]
+      bind_rows(direct, through_h2) |>
+        group_by(output, cohort, stratum, age) |>
+        summarise(k = k[1], coef = sum(coef), .groups = "drop") |>
+        as.data.table()
     },
     #' @description
     #' Complete influence vectors of the outputs of a term table, over pedigree rows.
@@ -391,7 +395,9 @@ SandwichAnalysis <- R6::R6Class( #nolint
 
         if (is.null(tte)) stop("No cohort rows for \"", cohort, "\" in stratum \"", stratum, "\"")
 
-        part <- part[, .(k = k[1], coef = sum(coef)), by = .(output, age)]
+        part <- part |>
+          group_by(output, age) |>
+          summarise(k = k[1], coef = sum(coef), .groups = "drop")
         ages <- sort(unique(part$age))
         infl <- self$calculate_cif_influence(tte$trait_age, tte$trait_status, tte$weight, ages)
         gap  <- abs(infl$cif[match(part$age, ages)] - part$k)
@@ -485,17 +491,25 @@ SandwichAnalysis <- R6::R6Class( #nolint
         )
       })
 
-      variance <- terms[, .(variance = NA_real_, finite = all(is.finite(coef) & is.finite(k))), by = output]
-      outputs  <- variance[finite == TRUE, output]
+      variance <- terms |>
+        group_by(output) |>
+        summarise(finite = all(is.finite(coef) & is.finite(k)), .groups = "drop") |>
+        mutate(variance = NA_real_)
+      outputs  <- variance$output[variance$finite]
       batches  <- split(outputs, ceiling(seq_along(outputs) / size))
 
       for (batch in batches) {
-        psi    <- self$assemble_influence(terms[output %chin% batch], by_stratum, n_rows)
+        psi    <- self$assemble_influence(terms |> filter(output %chin% batch), by_stratum, n_rows)
         values <- self$calculate_pair_variances(built$graph, psi, private$max_degree)
-        variance[.(colnames(psi)), on = "output", variance := values]
+
+        variance$variance[match(colnames(psi), variance$output)] <- values
       }
 
-      list(variance = variance[, .(output, variance)], batch_size = size, passes = length(batches))
+      list(
+        variance   = variance |> select(output, variance) |> as.data.table(),
+        batch_size = size,
+        passes     = length(batches)
+      )
     }
   )
 )

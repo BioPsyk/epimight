@@ -188,7 +188,9 @@ plan_cohorts <- function(pipeline, args) {
   private <- pipeline_private(pipeline)
   cohorts <- list()
 
-  for (one in private$rg_cifs(args)) {
+  cifs    <- list(args$h2_t1$cif_pop, args$h2_t1$cif_fh, args$h2_t2$cif_pop, args$h2_t2$cif_fh, args$cif_cross)
+
+  for (one in cifs) {
     tte <- do.call(pipeline$get_tte, one)
     tte[, stratum := private$stratum_key(tte, one$stratify_columns)]
     if (!("weight" %in% names(tte))) tte[, weight := 1]

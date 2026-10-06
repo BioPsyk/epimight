@@ -240,8 +240,16 @@ describe("Pipeline with a pedigree", {
     nested <- fresh$get_results("h2", h2_args("trait1"))
     asked  <- do.call(fresh$run_h2, h2_args("trait1"))
 
+    pooled <- Pipeline$new(pool = pool, pedigree = pedigree)
+    pooled$run_rg(
+      h2_t1 = c(h2_args("trait1"), meta_analyze = "fixed"), h2_t2 = h2_args("trait2"), relatedness = 0.5,
+      cif_cross = list(index_trait = "trait1", relatives_trait = "trait2", relatives_kind = "FS",
+                       stratify_columns = list("born_at_year"))
+    )
+
     expect_equal(rg$metadata$sandwich$passes, 1L)
     expect_false("sandwich_se" %in% names(nested))
+    expect_false("sandwich_se" %in% names(pooled$get_results("h2", h2_args("trait1"))))
     expect_true("sandwich_se" %in% names(asked$results))
     expect_true("sandwich_se" %in% names(fresh$get_results("h2", h2_args("trait1"))))
   })

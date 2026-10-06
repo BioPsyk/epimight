@@ -106,6 +106,10 @@ Pipeline <- R6::R6Class( #nolint
         relatedness = args$relatedness
       )
     },
+    # Sandwich SEs. A plan names the sandwich output behind each row of a results table (NA for
+    # rows without one), holds the term table of those outputs (see `SandwichAnalysis$h2_terms`)
+    # and lists the CIF arguments of the cohorts the terms read. Outputs are keyed by
+    # `output_key` and strata by `stratum_key`.
     stratum_key = function(table, stratify_columns) {
       columns <- unlist(stratify_columns)
 
@@ -113,54 +117,74 @@ Pipeline <- R6::R6Class( #nolint
 
       do.call(paste, c(unname(as.list(as.data.frame(table)[columns])), sep = "\r"))
     },
-    cif_by_stratum = function(cif_args) {
-      cif <- as.data.table(do.call(self$run_cif, cif_args)$results)
-
-      data.table(stratum = private$stratum_key(cif, cif_args$stratify_columns), age = cif$age, cif = cif$cif)
+    output_key = function(...) {
+      paste(..., sep = "|")
     },
-    # One h2 unit (see `SandwichAnalysis$h2_terms`) per row of `at`: `output`, `stratum`, `age`.
-    h2_units = function(args, at) {
-      units <- copy(at)
+    # The CIFs behind h2 values. `points` has `output`, `stratum` and `age`; the result adds the
+    # cohort keys `pop` and `fh` and their CIFs `k_pop` and `k_fh` at that stratum and age.
+    h2_units = function(args, points) {
+      cif_at <- function(cif_args) {
+        cif <- do.call(self$run_cif, cif_args)$results
 
-      units[private$cif_by_stratum(args$cif_pop), k_pop := i.cif, on = .(stratum, age)]
-      units[private$cif_by_stratum(args$cif_fh), k_fh := i.cif, on = .(stratum, age)]
+        data.table(
+          stratum = private$stratum_key(cif, cif_args$stratify_columns),
+          age     = cif$age,
+          cif     = cif$cif
+        )
+      }
+
+      units <- points |>
+        select(output, stratum, age) |>
+        left_join(cif_at(args$cif_pop), by = join_by(stratum, age)) |>
+        rename(k_pop = cif) |>
+        left_join(cif_at(args$cif_fh), by = join_by(stratum, age)) |>
+        rename(k_fh = cif) |>
+        mutate(
+          pop = private$cache_key("cif", args$cif_pop),
+          fh  = private$cache_key("cif", args$cif_fh)
+        )
 
       if (anyNA(units$k_pop) || anyNA(units$k_fh)) {
         stop("Sandwich SE: no CIF row for an h2 value's stratum and age; the CIF and h2 tables disagree")
       }
 
-      units[, `:=`(pop = private$cache_key("cif", args$cif_pop), fh = private$cache_key("cif", args$cif_fh))]
+      units
     },
-    # Influence terms of the h2 values behind `at` (`stratum`, `age`): each stratum's own h2 at that age,
-    # or with `meta_analyze` the pooled h2 at that age. Returns the output per row of `at` and the terms.
-    h2_inputs = function(args, at, prefix) {
+    # Influence terms of the h2 values read at `points` (`stratum`, `age`): each stratum's own h2
+    # at that age, or with `meta_analyze` the pooled h2 at that age. Returns the output behind
+    # each row of `points` and the term table.
+    h2_terms_at = function(args, points, prefix) {
       if (!("meta_analyze" %in% names(args))) {
-        output <- paste0(prefix, "|", at$stratum, "|", at$age)
-        units  <- private$h2_units(args, data.table(output = output, stratum = at$stratum, age = at$age))
+        points <- points |>
+          transmute(output = private$output_key(prefix, stratum, age), stratum, age)
+        units  <- private$h2_units(args, points)
 
-        return(list(output = output, terms = private$sandwich$h2_terms(units, args$relatedness)))
+        return(list(output = points$output, terms = private$sandwich$h2_terms(units, args$relatedness)))
       }
 
-      sub_args              <- copy(args)
+      sub_args              <- args
       sub_args$meta_analyze <- NULL
 
-      local <- copy(as.data.table(do.call(self$run_h2, sub_args)$results))
-      local[, `:=`(
-        sandwich_stratum = private$stratum_key(local, sub_args$cif_pop$stratify_columns),
-        sandwich_share   = private$sandwich$calculate_meta_shares(h2, se, age, args$meta_analyze)
-      )]
-      pooled <- local[age %in% at$age & !is.na(sandwich_share)]
-      pooled[, sandwich_output := paste0(prefix, "|", sandwich_stratum, "|", age)]
+      # The strata pooled at each age and their run_meta shares, frozen at the full sample.
+      local  <- do.call(private$native_h2, sub_args)$results
+      pooled <- local |>
+        mutate(
+          stratum = private$stratum_key(local, sub_args$cif_pop$stratify_columns),
+          share   = private$sandwich$calculate_meta_shares(h2, se, age, args$meta_analyze)
+        ) |>
+        filter(age %in% points$age, !is.na(share)) |>
+        transmute(output = private$output_key(prefix, stratum, age), stratum, age, share)
 
-      units <- private$h2_units(sub_args, pooled[, .(output = sandwich_output, stratum = sandwich_stratum, age)])
+      units <- private$h2_units(sub_args, pooled)
       terms <- private$sandwich$compose_terms(
         private$sandwich$h2_terms(units, sub_args$relatedness),
-        pooled[, .(from = sandwich_output, to = paste0(prefix, "|meta|", age), coef = sandwich_share)]
+        pooled |> transmute(from = output, to = private$output_key(prefix, "meta", age), coef = share)
       )
 
-      list(output = paste0(prefix, "|meta|", at$age), terms = terms)
+      list(output = private$output_key(prefix, "meta", points$age), terms = terms)
     },
-    # A sandwich plan names the output behind each results row (NA for none) and holds their term table.
+    # The plan of an h2 results table: each stratum's last age gets an output (with
+    # `meta_analyze`, the meta table's last age); other rows get NA.
     h2_plan = function(args, h2) {
       stratum <- if ("meta_analyze" %in% names(args)) {
         rep(".", nrow(h2))
@@ -168,51 +192,54 @@ Pipeline <- R6::R6Class( #nolint
         private$stratum_key(h2, args$cif_pop$stratify_columns)
       }
       headline <- h2$age == stats::ave(h2$age, stratum, FUN = max)
-      inputs   <- private$h2_inputs(args, data.table(stratum = stratum, age = h2$age)[headline], "h2")
+      points   <- data.table(stratum = stratum, age = h2$age) |> filter(headline)
+      inputs   <- private$h2_terms_at(args, points, "h2")
       output   <- rep(NA_character_, nrow(h2))
 
       output[headline] <- inputs$output
 
-      list(output = output, terms = inputs$terms)
+      list(output = output, terms = inputs$terms, cifs = list(args$cif_pop, args$cif_fh))
     },
-    # The plan of every row of `estimates` (from `rg_estimates`).
-    rg_plan = function(args, estimates) {
-      stratum <- private$stratum_key(estimates, args$cif_cross$stratify_columns)
-      units   <- data.table(
-        output  = paste0("rg|", stratum),
-        stratum = stratum,
-        age     = estimates$age,
-        pop1    = private$cache_key("cif", args$h2_t1$cif_pop),
-        cross   = private$cache_key("cif", args$cif_cross),
-        pop2    = private$cache_key("cif", args$h2_t2$cif_pop),
-        k_pop1  = estimates$t1_pop_cif,
-        k_cross = estimates$cross_cif,
-        k_pop2  = estimates$t2_pop_cif,
-        h2_t1   = estimates$t1_h2,
-        h2_t2   = estimates$t2_h2
-      )
-      t1 <- private$h2_inputs(args$h2_t1, units, "t1")
-      t2 <- private$h2_inputs(args$h2_t2, units, "t2")
-      units[, `:=`(h2_t1_output = t1$output, h2_t2_output = t2$output)]
-
-      list(output = units$output, terms = private$sandwich$rg_terms(units, rbind(t1$terms, t2$terms), args$relatedness))
-    },
-    # The plan of the meta-analyzed rg, pooled with run_meta's shares of the per-stratum rows.
-    meta_rg_plan = function(args) {
-      sub_args              <- copy(args)
+    # The plan of an rg analysis: one output per stratum, pooled into "rg|meta" with run_meta's
+    # shares when `meta_analyze` is set.
+    rg_plan = function(args) {
+      sub_args              <- args
       sub_args$meta_analyze <- NULL
 
       estimates <- private$rg_estimates(sub_args)
-      local     <- private$rg_plan(sub_args, estimates)
-      shares    <- data.table(
-        from = local$output,
-        to   = "rg|meta",
+      strata    <- private$stratum_key(estimates, args$cif_cross$stratify_columns)
+      units     <- estimates |>
+        transmute(
+          output  = private$output_key("rg", strata),
+          stratum = strata,
+          age,
+          pop1    = private$cache_key("cif", args$h2_t1$cif_pop),
+          cross   = private$cache_key("cif", args$cif_cross),
+          pop2    = private$cache_key("cif", args$h2_t2$cif_pop),
+          k_pop1  = t1_pop_cif,
+          k_cross = cross_cif,
+          k_pop2  = t2_pop_cif,
+          h2_t1   = t1_h2,
+          h2_t2   = t2_h2
+        )
+      t1    <- private$h2_terms_at(args$h2_t1, units, "t1")
+      t2    <- private$h2_terms_at(args$h2_t2, units, "t2")
+      units <- units |> mutate(h2_t1_output = t1$output, h2_t2_output = t2$output)
+      terms <- private$sandwich$rg_terms(units, bind_rows(t1$terms, t2$terms), args$relatedness)
+      cifs  <- list(args$h2_t1$cif_pop, args$h2_t1$cif_fh, args$h2_t2$cif_pop, args$h2_t2$cif_fh, args$cif_cross)
+
+      if (!("meta_analyze" %in% names(args))) return(list(output = units$output, terms = terms, cifs = cifs))
+
+      shares <- data.table(
+        from = units$output,
+        to   = private$output_key("rg", "meta"),
         coef = private$sandwich$calculate_meta_shares(
           estimates$rg, estimates$rg_se, rep(1, nrow(estimates)), args$meta_analyze
         )
-      )
+      ) |>
+        filter(!is.na(coef))
 
-      list(output = "rg|meta", terms = private$sandwich$compose_terms(local$terms, shares[!is.na(coef)]))
+      list(output = shares$to[1], terms = private$sandwich$compose_terms(terms, shares), cifs = cifs)
     },
     native_h2 = function(...) {
 
@@ -365,24 +392,18 @@ Pipeline <- R6::R6Class( #nolint
 
       list(metadata = metadata, results = rg)
     },
-    # Adds the sandwich columns to the results a public run_h2 or run_rg call returns, cached or not. The
-    # native_* methods never come through here, so the calls nested inside an analysis skip the sandwich.
+    # Adds the sandwich columns to the results a public run_h2 or run_rg call returns, cached or
+    # not. The native_* methods never come through here, so the calls nested inside an analysis
+    # skip the sandwich.
     with_sandwich_columns = function(type, out) {
       args <- out$metadata$analysis_arguments
       key  <- private$cache_key(type, args)
 
       if (!("sandwich_se" %in% names(out$results))) {
-        plan <- if (type == "h2") {
-          private$h2_plan(args, out$results)
-        } else if ("meta_analyze" %in% names(args)) {
-          private$meta_rg_plan(args)
-        } else {
-          private$rg_plan(args, private$rg_estimates(args))
-        }
-        cifs <- if (type == "h2") list(args$cif_pop, args$cif_fh) else private$rg_cifs(args)
-        fit  <- private$sandwich_fit(plan$terms, cifs)
+        plan <- if (type == "h2") private$h2_plan(args, out$results) else private$rg_plan(args)
+        fit  <- private$sandwich$run(plan$terms, private$sandwich_cohorts(plan$cifs, plan$terms))
 
-        out$results <- private$with_sandwich(out$results, plan$output, fit, type)
+        out$results <- private$add_sandwich_columns(out$results, plan$output, fit$variance, type)
         private$sandwich_runs[[type]][[key]] <- fit[c("batch_size", "passes")]
         self$add_results(type, out$results, args)
       }
@@ -391,10 +412,8 @@ Pipeline <- R6::R6Class( #nolint
 
       out
     },
-    rg_cifs = function(args) {
-      list(args$h2_t1$cif_pop, args$h2_t1$cif_fh, args$h2_t2$cif_pop, args$h2_t2$cif_fh, args$cif_cross)
-    },
-    sandwich_fit = function(terms, cif_args) {
+    # The TTE rows of every cohort the term table reads, keyed like its `cohort` column.
+    sandwich_cohorts = function(cif_args, terms) {
       cohorts <- list()
 
       for (one in cif_args) {
@@ -407,26 +426,29 @@ Pipeline <- R6::R6Class( #nolint
         cohorts[[key]] <- tte
       }
 
-      private$sandwich$run(terms, cohorts)
+      cohorts
     },
-    # Adds the sandwich columns to `results`, whose rows carry the outputs `output` (NA for none).
-    with_sandwich = function(results, output, fit, estimate) {
-      variance <- fit$variance$variance[match(output, fit$variance$output)]
+    # Adds `sandwich_se`, `sandwich_l95` and `sandwich_u95` to `results`, whose rows carry the
+    # outputs `output` (NA for none); `variance` has one row per output.
+    add_sandwich_columns = function(results, output, variance, estimate) {
+      variance <- variance$variance[match(output, variance$output)]
       negative <- !is.na(variance) & variance < 0
 
       if (any(negative)) {
         warning(sum(negative), " sandwich variance(s) came out negative and are reported as NA")
       }
 
-      se      <- sqrt(ifelse(negative, NA_real_, variance))
-      point   <- results[[estimate]]
-      results <- as.data.table(results)
+      # Locals named so that no results column shadows them inside mutate (`se` would).
+      row_variance <- ifelse(negative, NA_real_, variance)
+      point        <- results[[estimate]]
 
-      set(results, j = "sandwich_se", value = se)
-      set(results, j = "sandwich_l95", value = point - 1.96 * se)
-      set(results, j = "sandwich_u95", value = point + 1.96 * se)
-
-      results
+      results |>
+        mutate(
+          sandwich_se  = sqrt(row_variance),
+          sandwich_l95 = point - 1.96 * sandwich_se,
+          sandwich_u95 = point + 1.96 * sandwich_se
+        ) |>
+        as.data.table()
     }
   ),
   public = list(
