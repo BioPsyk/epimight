@@ -1,3 +1,13 @@
+# epimight 2.1.4
+
+## Added
+
+- R package `pedigreegraph` for future integration
+
+## Changed
+
+- CIF cases are now scaled by `sum(tte$weight) / sum(tte$weight ^ 2)`
+
 # epimight 2.1.3
 
 ## Changed

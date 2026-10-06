@@ -55,12 +55,17 @@
         rPackage
       ];
     };
+
+    pedigree_graph = pkgs.callPackage ./pedigree-graph.nix {
+      inherit (pkgs);
+    };
   in
   {
     devShell = import ./shell.nix {
       inherit pkgs;
       inherit wrappedEmacs;
       inherit wrappedTexlive;
+      inherit pedigree_graph;
 
       wrappedR = devWrappedR;
     };

@@ -67,17 +67,22 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
       rlang::call2("mutate", as.symbol("group_results"), !!!results)
     },
     run_weighted_single = function(tte) {
-      trait_age_max <- max(tte$trait_age)
-
-      tte[
+      age_summarised <- tte[
         ,
         .(
+          trait_max_age  = max(trait_age),
           weight_all     = sum(weight),
+          weight_sq_all  = sum(weight ^ 2),
           weight_event_1 = sum(ifelse(trait_status == 1, weight, 0.0)),
           weight_event_n = sum(ifelse(trait_status != 0, weight, 0.0))
         ),
         by = trait_age
-      ] |>
+      ]
+
+      trait_age_max <- max(age_summarised$trait_max_age)
+      cases_scale   <- sum(age_summarised$weight_all) / sum(age_summarised$weight_sq_all)
+
+      age_summarised |>
         # Make sure we have a row for `trait_age` from 0 up to `trait_age_max`
         right_join(
           data.table(
@@ -125,7 +130,7 @@ CumulativeIncidenceAnalysis <- R6::R6Class( #nolint
         ) |>
         mutate(
           cif   = ifelse(trait_age == 0, 0, lag(cif_acc)),
-          cases = cumsum(weight_event_1),
+          cases = cumsum(weight_event_1) * cases_scale,
           var   = ifelse(trait_age == 0, 0, lag(var))
         ) |>
         rename(age = trait_age) |>
