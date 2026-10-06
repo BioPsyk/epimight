@@ -22,7 +22,7 @@ args     <- commandArgs(trailingOnly = TRUE)
 probands <- as.integer(args[1])
 strata   <- as.integer(args[2])
 meta     <- args[3]
-mode     <- args[4]
+bench_mode     <- args[4]
 output   <- args[5]
 
 generate <- function(probands, strata, seed = 1) {
@@ -79,25 +79,25 @@ if (!file.exists(cache)) {
 }
 data <- readRDS(cache)
 
-namespace <- asNamespace("epimight")
-moments   <- get("pair_variances", namespace)
-pairlist  <- function(graph, psi, max_degree, categories = NULL) {
+# The override is installed on the class, so its body resolves names through the package
+# namespace; the script-level names below are chosen not to collide with base or dplyr.
+moments   <- SandwichAnalysis$public_methods$calculate_pair_variances
+pairlist_variances <- function(graph, psi, max_degree, categories = NULL) {
   pairs <- pedigreegraph::relationship_pairs(graph, max_degree = max_degree, ids = FALSE, progress = FALSE)
   cross <- colSums(psi[pairs$first, , drop = FALSE] * psi[pairs$second, , drop = FALSE])
   unname(colSums(psi ^ 2) + 2 * cross)
 }
-tally   <- new.env()
+counter   <- new.env()
 counted <- function(graph, psi, ...) {
-  tally$passes  <- tally$passes + 1L
-  tally$columns <- tally$columns + ncol(psi)
-  (if (mode == "pairlist") pairlist else moments)(graph, psi, ...)
+  counter$passes  <- counter$passes + 1L
+  counter$columns <- counter$columns + ncol(psi)
+  (if (bench_mode == "pairlist") pairlist_variances else moments)(graph, psi, ...)
 }
-tally$passes  <- 0L
-tally$columns <- 0L
-unlockBinding("pair_variances", namespace)
-assign("pair_variances", counted, envir = namespace)
+counter$passes  <- 0L
+counter$columns <- 0L
+SandwichAnalysis$set("public", "calculate_pair_variances", counted, overwrite = TRUE)
 
-pipeline <- if (mode == "native") {
+pipeline <- if (bench_mode == "native") {
   Pipeline$new(pool = data$pool)
 } else {
   Pipeline$new(pool = data$pool, pedigree = data$pedigree)
@@ -117,11 +117,11 @@ row <- data.table(
   probands      = probands,
   strata        = strata,
   meta          = meta,
-  mode          = mode,
+  mode          = bench_mode,
   threads       = pedigreegraph::thread_budget(),
   wall_s        = round(wall, 3),
-  passes        = tally$passes,
-  columns       = tally$columns,
+  passes        = counter$passes,
+  columns       = counter$columns,
   batch_size    = if (is.null(rg$metadata$sandwich)) NA else rg$metadata$sandwich$batch_size,
   pedigree_rows = nrow(data$pedigree)
 )

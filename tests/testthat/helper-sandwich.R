@@ -34,7 +34,7 @@ sandwich_cohorts <- function(persons, multiplier = rep(1, nrow(persons))) {
   )
 }
 
-# The cohorts in the layout `assemble_influence` takes, with person i on pedigree row i.
+# The cohorts in the layout `SandwichAnalysis$assemble_influence` takes, with person i on pedigree row i.
 sandwich_assembly_cohorts <- function(cohorts) {
   lapply(cohorts, function(cohort) {
     split(cohort[, .(row = person, stratum, trait_age, trait_status, weight)], by = "stratum", keep.by = FALSE)
@@ -204,5 +204,5 @@ plan_influence <- function(pipeline, args, plan, ids) {
     rows <- chmatch(tte$person_id, ids)
     split(tte[, .(row = rows, stratum, trait_age, trait_status, weight)], by = "stratum", keep.by = FALSE)
   })
-  assemble_influence(plan$terms, by_stratum, length(ids))
+  SandwichAnalysis$new()$assemble_influence(plan$terms, by_stratum, length(ids))
 }

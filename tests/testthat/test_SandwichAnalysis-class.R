@@ -9,9 +9,11 @@ skip_if_not_installed("pedigreegraph")
 
 options(pedigreegraph.progress = FALSE)
 
+sandwich <- SandwichAnalysis$new()
+private  <- sandwich$.__enclos_env__$private
 pedigree <- toy_pedigree()
 probands <- pedigree[!grepl("^[fm][0-9]", person_id), person_id]
-built    <- sandwich_graph(pedigree, probands, 3L, trim = FALSE)
+built    <- private$build_graph(pedigree, probands, 3L, trim = FALSE)
 
 # Influence columns over the graph rows: random on probands, zero elsewhere, with one
 # column whose pair terms nearly cancel its diagonal.
@@ -32,11 +34,11 @@ expect_close <- function(actual, expected, rtol, atol) {
 # Tests
 #=================================================================================
 
-describe("pair_variances", {
+describe("calculate_pair_variances", {
   psi <- influence_columns(built$person_id, 5)
 
   it("equals the dense brute-force sandwich over the engine's pairs", {
-    expect_close(pair_variances(built$graph, psi, 3L), brute_pair_variances(built$graph, psi, 3L),
+    expect_close(sandwich$calculate_pair_variances(built$graph, psi, 3L), brute_pair_variances(built$graph, psi, 3L),
                  rtol = 1e-10, atol = 1e-12)
   })
 
@@ -47,31 +49,31 @@ describe("pair_variances", {
     )]
     cluster <- colSums(rowsum(psi, sibship) ^ 2)
 
-    expect_close(pair_variances(built$graph, psi, NULL, categories = c("MZ", "FS")), cluster,
+    expect_close(sandwich$calculate_pair_variances(built$graph, psi, NULL, categories = c("MZ", "FS")), cluster,
                  rtol = 1e-10, atol = 1e-12)
   })
 
   it("keeps a negative or nearly cancelled variance as computed", {
-    trio  <- sandwich_graph(data.table(person_id = c("mum", "dad", "kid"), mother_id = c(NA, NA, "mum"),
+    trio  <- private$build_graph(data.table(person_id = c("mum", "dad", "kid"), mother_id = c(NA, NA, "mum"),
                                        father_id = c(NA, NA, "dad")), c("mum", "dad", "kid"), 1L)
     # Kid 1 and parents -a: V = 1 + 2 a^2 - 4 a, negative at a = 0.5 and near 0 at a = 1 - 1 / sqrt(2).
     a     <- c(0.5, 1 - 1 / sqrt(2) + 1e-9)
     psi   <- vapply(a, function(x) ifelse(trio$person_id == "kid", 1, -x), numeric(3))
     exact <- 1 + 2 * a ^ 2 - 4 * a
 
-    expect_close(pair_variances(trio$graph, psi, 1L), exact, rtol = 1e-10, atol = 1e-12)
+    expect_close(sandwich$calculate_pair_variances(trio$graph, psi, 1L), exact, rtol = 1e-10, atol = 1e-12)
     expect_close(brute_pair_variances(trio$graph, psi, 1L), exact, rtol = 1e-10, atol = 1e-12)
-    expect_lt(pair_variances(trio$graph, psi, 1L)[1], 0)
+    expect_lt(sandwich$calculate_pair_variances(trio$graph, psi, 1L)[1], 0)
   })
 
   it("gives each column the same variance whatever its batch mates", {
     wide  <- influence_columns(built$person_id, 32, seed = 7)
-    whole <- pair_variances(built$graph, wide, 3L)
+    whole <- sandwich$calculate_pair_variances(built$graph, wide, 3L)
 
     for (size in c(1, 7)) {
       batches <- split(seq_len(32), ceiling(seq_len(32) / size))
       batched <- unlist(
-        lapply(batches, function(cols) pair_variances(built$graph, wide[, cols, drop = FALSE], 3L)),
+        lapply(batches, function(cols) sandwich$calculate_pair_variances(built$graph, wide[, cols, drop = FALSE], 3L)),
         use.names = FALSE
       )
       expect_identical(batched, whole)
@@ -94,10 +96,11 @@ describe("pair_variances", {
         paste(
           "suppressMessages(%s)",
           "x <- readRDS('%s')",
-          "built <- epimight:::sandwich_graph(x$pedigree, x$probands, 3L, trim = FALSE)",
+          "sandwich <- epimight:::SandwichAnalysis$new()",
+          "built <- sandwich$.__enclos_env__$private$build_graph(x$pedigree, x$probands, 3L, trim = FALSE)",
           "set.seed(8)",
           "psi <- matrix(rnorm(built$graph$n * 6), ncol = 6)",
-          "v <- epimight:::pair_variances(built$graph, psi, 3L)",
+          "v <- sandwich$calculate_pair_variances(built$graph, psi, 3L)",
           "saveRDS(list(variance = v, threads = pedigreegraph::thread_budget()), '%s')",
           sep = "; "
         ),
@@ -117,7 +120,7 @@ describe("pair_variances", {
   })
 })
 
-describe("sandwich_graph", {
+describe("build_graph", {
   it("keeps every proband pair when trimmed to max_degree - 1 ancestor generations", {
     set.seed(9)
     youngest <- pedigree[startsWith(person_id, "g3_"), person_id]
@@ -126,15 +129,15 @@ describe("sandwich_graph", {
 
     for (case in list(list(probands = youngest, degree = 3L), list(probands = spread, degree = 3L),
                       list(probands = spread, degree = 2L))) {
-      trimmed <- sandwich_graph(pedigree, case$probands, case$degree)
-      full    <- sandwich_graph(pedigree, case$probands, case$degree, trim = FALSE)
+      trimmed <- private$build_graph(pedigree, case$probands, case$degree)
+      full    <- private$build_graph(pedigree, case$probands, case$degree, trim = FALSE)
       values  <- setNames(rnorm(length(case$probands)), case$probands)
       on_rows <- function(person_id) matrix(ifelse(person_id %chin% case$probands, values[person_id], 0))
 
       expect_lt(trimmed$graph$n, full$graph$n)
       expect_equal(
-        pair_variances(trimmed$graph, on_rows(trimmed$person_id), case$degree),
-        pair_variances(full$graph, on_rows(full$person_id), case$degree),
+        sandwich$calculate_pair_variances(trimmed$graph, on_rows(trimmed$person_id), case$degree),
+        sandwich$calculate_pair_variances(full$graph, on_rows(full$person_id), case$degree),
         tolerance = 1e-12
       )
     }
@@ -158,11 +161,11 @@ describe("sandwich_graph", {
   })
 })
 
-describe("sandwich_batch_size", {
+describe("batch_size", {
   it("fits 16 bytes per row and output into the budget, between 1 and 32", {
-    expect_equal(sandwich_batch_size(1e7, 2^31), 13)
-    expect_equal(sandwich_batch_size(100, 2^31), 32)
-    expect_equal(sandwich_batch_size(1e9, 2^31), 1)
+    expect_equal(private$batch_size(1e7, 2^31), 13)
+    expect_equal(private$batch_size(100, 2^31), 32)
+    expect_equal(private$batch_size(1e9, 2^31), 1)
   })
 })
 

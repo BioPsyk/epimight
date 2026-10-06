@@ -118,7 +118,7 @@ Pipeline <- R6::R6Class( #nolint
 
       data.table(stratum = private$stratum_key(cif, cif_args$stratify_columns), age = cif$age, cif = cif$cif)
     },
-    # One h2 unit (see `h2_terms`) per row of `at`: `output`, `stratum`, `age`.
+    # One h2 unit (see `SandwichAnalysis$h2_terms`) per row of `at`: `output`, `stratum`, `age`.
     h2_units = function(args, at) {
       units <- copy(at)
 
@@ -138,7 +138,7 @@ Pipeline <- R6::R6Class( #nolint
         output <- paste0(prefix, "|", at$stratum, "|", at$age)
         units  <- private$h2_units(args, data.table(output = output, stratum = at$stratum, age = at$age))
 
-        return(list(output = output, terms = h2_terms(units, args$relatedness)))
+        return(list(output = output, terms = private$sandwich$h2_terms(units, args$relatedness)))
       }
 
       sub_args              <- copy(args)
@@ -147,14 +147,14 @@ Pipeline <- R6::R6Class( #nolint
       local <- copy(as.data.table(do.call(self$run_h2, sub_args)$results))
       local[, `:=`(
         sandwich_stratum = private$stratum_key(local, sub_args$cif_pop$stratify_columns),
-        sandwich_share   = meta_shares(h2, se, age, args$meta_analyze)
+        sandwich_share   = private$sandwich$calculate_meta_shares(h2, se, age, args$meta_analyze)
       )]
       pooled <- local[age %in% at$age & !is.na(sandwich_share)]
       pooled[, sandwich_output := paste0(prefix, "|", sandwich_stratum, "|", age)]
 
       units <- private$h2_units(sub_args, pooled[, .(output = sandwich_output, stratum = sandwich_stratum, age)])
-      terms <- compose_terms(
-        h2_terms(units, sub_args$relatedness),
+      terms <- private$sandwich$compose_terms(
+        private$sandwich$h2_terms(units, sub_args$relatedness),
         pooled[, .(from = sandwich_output, to = paste0(prefix, "|meta|", age), coef = sandwich_share)]
       )
 
@@ -195,7 +195,7 @@ Pipeline <- R6::R6Class( #nolint
       t2 <- private$h2_inputs(args$h2_t2, units, "t2")
       units[, `:=`(h2_t1_output = t1$output, h2_t2_output = t2$output)]
 
-      list(output = units$output, terms = rg_terms(units, rbind(t1$terms, t2$terms), args$relatedness))
+      list(output = units$output, terms = private$sandwich$rg_terms(units, rbind(t1$terms, t2$terms), args$relatedness))
     },
     # The plan of the meta-analyzed rg, pooled with run_meta's shares of the per-stratum rows.
     meta_rg_plan = function(args) {
@@ -207,10 +207,12 @@ Pipeline <- R6::R6Class( #nolint
       shares    <- data.table(
         from = local$output,
         to   = "rg|meta",
-        coef = meta_shares(estimates$rg, estimates$rg_se, rep(1, nrow(estimates)), args$meta_analyze)
+        coef = private$sandwich$calculate_meta_shares(
+          estimates$rg, estimates$rg_se, rep(1, nrow(estimates)), args$meta_analyze
+        )
       )
 
-      list(output = "rg|meta", terms = compose_terms(local$terms, shares[!is.na(coef)]))
+      list(output = "rg|meta", terms = private$sandwich$compose_terms(local$terms, shares[!is.na(coef)]))
     },
     native_h2 = function(...) {
 

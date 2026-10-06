@@ -50,7 +50,8 @@ h2_at <- function(tables, k, s, a) {
 local_h2 <- lapply(c("trait1", "trait2"), function(trait) {
   local <- copy(as.data.table(do.call(pipeline$run_h2, sandwich_h2_args(trait))$results))
   local[, stratum := as.character(born_at_year)]
-  local[, `:=`(fixed = meta_shares(h2, se, age, "fixed"), random = meta_shares(h2, se, age, "random"))]
+  shares <- SandwichAnalysis$new()$calculate_meta_shares
+  local[, `:=`(fixed = shares(h2, se, age, "fixed"), random = shares(h2, se, age, "random"))]
 })
 
 pooled_at <- function(tables, k, method, a) {
@@ -72,7 +73,9 @@ rg_frozen <- lapply(rg_variants, function(args) {
   sub$meta_analyze <- NULL
   estimates        <- as.data.table(private$rg_estimates(sub))
   estimates[, stratum := as.character(born_at_year)]
-  if (!is.null(args$meta_analyze)) estimates[, share := meta_shares(rg, rg_se, 1, args$meta_analyze)]
+  if (!is.null(args$meta_analyze)) {
+    estimates[, share := SandwichAnalysis$new()$calculate_meta_shares(rg, rg_se, 1, args$meta_analyze)]
+  }
   estimates
 })
 
@@ -196,7 +199,7 @@ describe("sandwich variances of many outputs", {
       comp <- components[j]
       tte  <- cohorts[[comp$cohort]][stratum == comp$stratum]
       phi[chmatch(tte$person_id, graph$person_id), j] <-
-        aj_influence(tte$trait_age, tte$trait_status, tte$weight, comp$age)$phi
+        SandwichAnalysis$new()$calculate_cif_influence(tte$trait_age, tte$trait_status, tte$weight, comp$age)$phi
     }
     coef <- matrix(0, nrow(components), length(outputs))
     hit  <- terms[components[, j := .I], on = .(cohort, stratum, age)]

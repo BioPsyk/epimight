@@ -20,8 +20,7 @@ Suggests:
     pkgdown,
     testthat (>= 3.0.0),
     waldo,
-    microbenchmark,
-    pedigreegraph
+    microbenchmark
 Imports:
     R6,
     cmprsk,
@@ -45,7 +44,6 @@ Collate:
     'CumulativeIncidenceAnalysis-class.R'
     'GeneticCorrelationAnalysis-class.R'
     'HeritabilityAnalysis-class.R'
-    'influence.R'
     'SandwichAnalysis-class.R'
     'Pipeline-class.R'
     'TTERetriever-class.R'

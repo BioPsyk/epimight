@@ -16,6 +16,7 @@ private_ci <- CumulativeIncidenceAnalysis$new()$.__enclos_env__$private
 h2_calc    <- HeritabilityAnalysis$new()
 rg_calc    <- GeneticCorrelationAnalysis$new()
 rc         <- 0.5
+sandwich   <- SandwichAnalysis$new()
 
 # Rows of every status, both sides of the evaluation age, in one stratum.
 probe_rows <- function(cohort, age) {
@@ -46,13 +47,13 @@ chain_points <- function(cohorts, ages) {
 # Tests
 #=================================================================================
 
-describe("aj_influence", {
+describe("calculate_cif_influence", {
   fh  <- cohorts$fh1[stratum == "a"]
   pop <- cohorts$pop1[stratum == "a"]
 
   it("reports the weighted path's CIF at every age it reports one", {
     shipped <- private_ci$run_weighted_single(fh[, .(trait_age, trait_status, weight)])
-    ours    <- aj_influence(fh$trait_age, fh$trait_status, fh$weight, shipped$age)$cif
+    ours    <- sandwich$calculate_cif_influence(fh$trait_age, fh$trait_status, fh$weight, shipped$age)$cif
 
     # The weighted path's lag() leaves its first age NA when that age is above 0.
     expect_equal(which(is.na(shipped$cif)), 1L)
@@ -62,7 +63,7 @@ describe("aj_influence", {
   it("reports cmprsk's CIF at every reported age", {
     tte     <- pop[, .(person_id = as.character(person), trait_status, trait_age)]
     shipped <- CumulativeIncidenceAnalysis$new()$run(tte = tte)
-    ours    <- aj_influence(pop$trait_age, pop$trait_status, rep(1, nrow(pop)), shipped$age)$cif
+    ours    <- sandwich$calculate_cif_influence(pop$trait_age, pop$trait_status, rep(1, nrow(pop)), shipped$age)$cif
 
     expect_lt(max(abs(ours - shipped$cif)), 1e-12)
   })
@@ -71,7 +72,7 @@ describe("aj_influence", {
     for (cohort in list(fh, pop)) {
       ages <- private_ci$run_weighted_single(cohort[, .(trait_age, trait_status, weight)])$age
       ages <- ages[c(2, length(ages) %/% 2, length(ages))]
-      phi  <- aj_influence(cohort$trait_age, cohort$trait_status, cohort$weight, ages)$phi
+      phi  <- sandwich$calculate_cif_influence(cohort$trait_age, cohort$trait_status, cohort$weight, ages)$phi
 
       for (j in seq_along(ages)) {
         point <- function(m) shipped_weighted_cif(copy(cohort)[, weight := weight * m], "a", ages[j])
@@ -84,13 +85,13 @@ describe("aj_influence", {
   })
 
   it("sums to zero over the rows", {
-    phi <- aj_influence(fh$trait_age, fh$trait_status, fh$weight, c(3, 8, 15))$phi
+    phi <- sandwich$calculate_cif_influence(fh$trait_age, fh$trait_status, fh$weight, c(3, 8, 15))$phi
 
     expect_lt(max(abs(colSums(phi))), 1e-15)
   })
 
   it("is zero at age 0", {
-    infl <- aj_influence(fh$trait_age, fh$trait_status, fh$weight, 0)
+    infl <- sandwich$calculate_cif_influence(fh$trait_age, fh$trait_status, fh$weight, 0)
 
     expect_equal(infl$cif, 0)
     expect_true(all(infl$phi == 0))
@@ -111,19 +112,19 @@ describe("per-stratum h2 and rg influence", {
   )]
 
   h2 <- rbind(
-    h2_terms(units[, .(output = paste0("h2_1@", stratum), stratum, age, pop = "pop1", fh = "fh1",
+    sandwich$h2_terms(units[, .(output = paste0("h2_1@", stratum), stratum, age, pop = "pop1", fh = "fh1",
                        k_pop = k_pop1, k_fh = k_fh1)], rc),
-    h2_terms(units[, .(output = paste0("h2_2@", stratum), stratum, age, pop = "pop2", fh = "fh2",
+    sandwich$h2_terms(units[, .(output = paste0("h2_2@", stratum), stratum, age, pop = "pop2", fh = "fh2",
                        k_pop = k_pop2, k_fh = k_fh2)], rc)
   )
-  rg <- rg_terms(
+  rg <- sandwich$rg_terms(
     units[, .(output = paste0("rg@", stratum), stratum, age, pop1 = "pop1", cross = "cross", pop2 = "pop2",
               k_pop1, k_cross, k_pop2, h2_t1, h2_t2,
               h2_t1_output = paste0("h2_1@", stratum), h2_t2_output = paste0("h2_2@", stratum))],
     h2, rc
   )
   n_rows <- nrow(persons) + 5
-  psi    <- assemble_influence(rbind(h2, rg), sandwich_assembly_cohorts(cohorts), n_rows)
+  psi    <- sandwich$assemble_influence(rbind(h2, rg), sandwich_assembly_cohorts(cohorts), n_rows)
 
   it("matches the Gateaux derivative of every output in every person's weight", {
     set.seed(3)
@@ -144,11 +145,11 @@ describe("per-stratum h2 and rg influence", {
   it("refuses a CIF that disagrees with the plug-in", {
     bad <- copy(h2)[1, k := k + 1e-6]
 
-    expect_error(assemble_influence(bad, sandwich_assembly_cohorts(cohorts), n_rows), "disagrees")
+    expect_error(sandwich$assemble_influence(bad, sandwich_assembly_cohorts(cohorts), n_rows), "disagrees")
   })
 })
 
-describe("meta_shares", {
+describe("calculate_meta_shares", {
   set.seed(4)
   estimates <- data.table(
     index_trait = "t",
@@ -162,7 +163,7 @@ describe("meta_shares", {
 
   for (method in c("fixed", "random")) {
     it(sprintf("pools to run_meta's %s point", method), {
-      shared <- copy(estimates)[, share := meta_shares(h2, se, age, method)]
+      shared <- copy(estimates)[, share := sandwich$calculate_meta_shares(h2, se, age, method)]
       pooled <- shared[!is.na(share), .(pooled = sum(share * h2)), by = age]
 
       expect_equal(pooled$pooled, meta[[paste0(method, "_meta")]], tolerance = 1e-14)
@@ -171,20 +172,22 @@ describe("meta_shares", {
   }
 
   it("does not change when a group's raw weights share a common factor", {
-    share  <- meta_shares(estimates$h2, estimates$se, estimates$age, "fixed")
-    scaled <- meta_shares(estimates$h2, estimates$se * rep(c(1, 3, 1), each = 4), estimates$age, "fixed")
+    share  <- sandwich$calculate_meta_shares(estimates$h2, estimates$se, estimates$age, "fixed")
+    scaled <- sandwich$calculate_meta_shares(
+      estimates$h2, estimates$se * rep(c(1, 3, 1), each = 4), estimates$age, "fixed"
+    )
 
     expect_equal(scaled, share, tolerance = 1e-14)
   })
 
   it("leaves a random pool undefined when one row has no variance", {
-    expect_true(is.na(meta_shares(0.3, 0.05, 1, "random")))
+    expect_true(is.na(sandwich$calculate_meta_shares(0.3, 0.05, 1, "random")))
   })
 })
 
-describe("chain_jacobian", {
+describe("calculate_jacobian", {
   it("returns an empty rows-by-inputs matrix for zero rows", {
-    grad <- h2_gradient(numeric(0), numeric(0), 0.5)
+    grad <- sandwich$calculate_h2_gradient(numeric(0), numeric(0), 0.5)
 
     expect_equal(dim(grad), c(0L, 2L))
     expect_equal(colnames(grad), c("pop", "fh"))
@@ -192,7 +195,7 @@ describe("chain_jacobian", {
 
   it("stays finite and accurate for an h2 below the step", {
     h1   <- c(5e-7, 0.3)
-    grad <- rg_gradient(c(0.1, 0.1), c(0.15, 0.15), c(0.12, 0.12), h1, c(0.4, 0.4), 0.5)
+    grad <- sandwich$calculate_rg_gradient(c(0.1, 0.1), c(0.15, 0.15), c(0.12, 0.12), h1, c(0.4, 0.4), 0.5)
     rg   <- rg_calc$calculate_rg(1, 0.1, 0.15, 0.12, 1, 1, 1, h1, 0.4, 0.5)$rg
 
     # rg = rhh / sqrt(h2_t1 * h2_t2), so d rg / d h2_t1 = -rg / (2 * h2_t1).
