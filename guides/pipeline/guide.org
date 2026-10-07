@@ -589,3 +589,92 @@ with the following members:
 |--------------+----------------------------------------------------|
 | results      | Analysis results as a single ~data.table~          |
 | args         | Arguments supplied to the interface                |
+
+* Sandwich standard errors
+
+The ~se~, ~l95~ and ~u95~ columns of h2 and rg treat every proband as independent of every
+other. Probands are often relatives of each other, and one person can enter the population,
+family-history and cross-trait cohorts at once, so those SEs can be too small or too large.
+Given a pedigree, the pipeline also reports a pedigree-pair sandwich SE that accounts for both.
+
+** The pedigreegraph package
+
+The pair sum runs in the ~pedigreegraph~ package, an import of epimight since 2.1.4 that the
+nix build provides. Outside nix, each GitHub release carries a source tarball that builds
+offline with a Rust toolchain (~rustc >= 1.85~):
+
+#+BEGIN_SRC R :exports code :results output :tangle no
+install.packages(
+  "https://github.com/rwaples/pedigree-graph/releases/download/v0.12.2/pedigreegraph_0.12.2.tar.gz",
+  repos = NULL, type = "source"
+)
+#+END_SRC
+
+** The pedigree argument
+
+Pass the pedigree to ~Pipeline$new~ next to the pool:
+
+#+BEGIN_SRC R :exports code :results output :tangle no
+pipeline <- Pipeline$new(pool = tte, pedigree = pedigree)
+#+END_SRC
+
+The pedigree is a ~data.table~ with one row per person:
+
+| Column      | Type   | Description                                              |
+|-------------+--------+----------------------------------------------------------|
+| ~person_id~ | string | Same ids as the pool's ~person_id~                       |
+| ~mother_id~ | string | The mother's id, ~NA~ when unknown                       |
+| ~father_id~ | string | The father's id, ~NA~ when unknown                       |
+| ~twin~      | string | Optional: the co-twin's id for monozygotic twins, else ~NA~ |
+
+Every ~person_id~ of the pool needs a row; ~Pipeline$new~ stops and reports how many are
+missing. A parent does not need a row of their own: children who share a parent id are
+still siblings. These are the columns ~TTERetriever~ emits.
+
+~max_degree~ (1 to 5, default 3) sets how distant the related pairs are that the SE accounts for:
+3 covers parents, siblings, half siblings, grandparents, aunts and uncles, great-grandparents,
+half aunts and uncles, great-aunts and great-uncles, and first cousins.
+
+** Output
+
+With a pedigree, every h2 and rg result gains three columns:
+
+| Name           | Description                               |
+|----------------+-------------------------------------------|
+| ~sandwich_se~  | Pedigree-pair sandwich standard error     |
+| ~sandwich_l95~ | ~h2 - 1.96 * sandwich_se~ (or ~rg - ...~) |
+| ~sandwich_u95~ | ~h2 + 1.96 * sandwich_se~ (or ~rg + ...~) |
+
+They are filled at the headline row only and are ~NA~ on the others:
+
+- h2: each stratum's last age; for ~meta_analyze~, the last age of the meta table.
+- rg: every row, since rg already has one age per stratum, and the meta-analyzed rg.
+
+Points and the native ~se~ do not change. ~metadata$sandwich~ reports the ~batch_size~ and
+the number of ~passes~ over the pedigree.
+
+** What the sandwich assumes
+
+- The meta-analysis weights, the ages and the strata are held fixed at their values in the
+  data. Only per-stratum outputs have been checked for coverage in simulation; the
+  meta-analyzed outputs are checked against derivatives, not coverage.
+- The pairs are relatives up to ~max_degree~, all with the same weight. Spouses and shared
+  households are not pairs, so shared environment beyond what the relatives' pairs carry is
+  not accounted for.
+- Relatives missing from the pedigree are treated as unrelated, which makes the SE too small.
+- With so few related pairs that the pair terms can outweigh the diagonal, a variance can come
+  out negative. It is reported as ~NA~ with a warning.
+
+** Performance
+
+The SE needs one pass over the pedigree per batch of up to 32 headline rows of the call you
+make. The h2 and rg calls the pipeline makes internally skip the SE; calling one of them yourself
+later adds it to the cached result. A pass costs about as much whatever its number of rows, so
+most of the added time is one or two traversals of the pedigree. Each pass holds about 16 bytes
+per pedigree row and row of output; ~options(epimight.sandwich_batch_bytes = ...)~
+(default 2 GiB) caps that and sets the batch size. The pedigree is trimmed to the probands and
+their ancestors up to ~max_degree - 1~ generations up before the first pass.
+
+The pass runs on the threads ~pedigreegraph::configure_threads(n)~ allows, set once per
+R session before the first pass. It runs after the per-stratum CIF work, which uses
+~parallel::mclapply~, so the two do not compete for cores.

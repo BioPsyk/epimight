@@ -44,6 +44,7 @@ Collate:
     'CumulativeIncidenceAnalysis-class.R'
     'GeneticCorrelationAnalysis-class.R'
     'HeritabilityAnalysis-class.R'
+    'SandwichAnalysis-class.R'
     'Pipeline-class.R'
     'TTERetriever-class.R'
 Depends:
