@@ -8,11 +8,6 @@ project_dir=$(dirname "$script_dir")
 cd "${project_dir}"
 
 version=$(cat "./VERSION")
-git_branch=$(git rev-parse --abbrev-ref HEAD)
-
-if [ "${git_branch}" != "master" ]; then
-  version="${version}-${git_branch}"
-fi
 
 echo ">> Publishing docker image ${version}"
 
@@ -22,7 +17,16 @@ nix build .#dockerImage
 echo "-- Loading image"
 docker load < ./result
 
+image_id=$(docker images -q "biopsyk/epimight:${version}")
+git_branch=$(git rev-parse --abbrev-ref HEAD)
+
+if [ "${git_branch}" != "master" ]; then
+  version="${version}-${git_branch}"
+fi
+
 echo "-- Pushing ${version}"
+
+docker image tag "${image_id}" "biopsyk/epimight:${version}"
 docker image push "biopsyk/epimight:${version}"
 
 if [ "${git_branch}" == "master" ]; then
