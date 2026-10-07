@@ -1,4 +1,4 @@
-{ rPackages, version, src }:
+{ rPackages, pedigree_graph, version, src }:
 
 with rPackages; buildRPackage rec {
   name = "epimight";
@@ -8,6 +8,6 @@ with rPackages; buildRPackage rec {
 
   propagatedBuildInputs = [
     dplyr dtplyr data_table cmprsk ggplot2 stringr readr tidyr rlang
-    jinjar yaml rjson
+    jinjar yaml rjson pedigree_graph
   ];
 }

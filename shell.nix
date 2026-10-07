@@ -1,4 +1,4 @@
-{ pkgs, wrappedEmacs, wrappedTexlive, wrappedR, pedigree_graph }:
+{ pkgs, wrappedEmacs, wrappedTexlive, wrappedR }:
 
 with pkgs; mkShell {
   buildInputs = [
@@ -13,8 +13,5 @@ with pkgs; mkShell {
     wrappedEmacs
     wrappedTexlive
     wrappedR
-    pedigree_graph
-    rustc
   ];
-  PEDIGREE = pedigree_graph;
 }

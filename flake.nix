@@ -33,6 +33,10 @@
       ess
     ]);
 
+    pedigree_graph = pkgs.callPackage ./pedigree-graph.nix {
+      inherit (pkgs);
+    };
+
     devWrappedR = with pkgs; rWrapper.override {
       packages = with rPackages; [
         # Development
@@ -40,7 +44,7 @@
         waldo
         # Requirements
         dplyr dtplyr data_table cmprsk ggplot2 stringr readr tidyr rlang
-        jinjar yaml rjson
+        jinjar yaml rjson pedigree_graph
       ];
     };
 
@@ -48,6 +52,7 @@
       inherit (pkgs);
       inherit src;
       inherit version;
+      inherit pedigree_graph;
     };
 
     releaseWrappedR = with pkgs; rWrapper.override {
@@ -55,17 +60,12 @@
         rPackage
       ];
     };
-
-    pedigree_graph = pkgs.callPackage ./pedigree-graph.nix {
-      inherit (pkgs);
-    };
   in
   {
     devShell = import ./shell.nix {
       inherit pkgs;
       inherit wrappedEmacs;
       inherit wrappedTexlive;
-      inherit pedigree_graph;
 
       wrappedR = devWrappedR;
     };
