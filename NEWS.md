@@ -1,4 +1,4 @@
-# epimight (development)
+# epimight 2.2.0
 
 ## Added
 
