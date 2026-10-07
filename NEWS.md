@@ -7,7 +7,7 @@
   add `sandwich_se`, `sandwich_l95` and `sandwich_u95` at the headline row: each stratum's last h2 age, the
   meta table's last age, and every rg row. The SE sums each estimate's influence over related pairs up to
   `max_degree` (default 3), so it accounts for related probands and for one person entering several cohorts.
-  Points and native SEs are unchanged. Needs the optional `pedigreegraph` package, which is not on CRAN.
+  Points and native SEs are unchanged.
 
 # epimight 2.1.4
 

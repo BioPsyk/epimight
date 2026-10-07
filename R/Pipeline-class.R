@@ -466,7 +466,7 @@ Pipeline <- R6::R6Class( #nolint
     #' @param pedigree Optional data.table with string columns `person_id`, `mother_id`, `father_id` and an
     #'   optional `twin` (the co-twin's id), with `NA` for an unknown parent. Every `person_id` of the pool needs
     #'   a row. With a pedigree, h2 and rg results gain pedigree-pair sandwich SEs (`sandwich_se`,
-    #'   `sandwich_l95`, `sandwich_u95`) at their headline age; this needs the `pedigreegraph` package.
+    #'   `sandwich_l95`, `sandwich_u95`) at their headline age.
     #' @param max_degree Highest kinship degree of the related pairs the sandwich SEs sum over, 1 to 5 (default 3).
     initialize = function(...) {
       validator <- ArgumentsValidator$new(
@@ -530,10 +530,6 @@ Pipeline <- R6::R6Class( #nolint
       private$pool <- args$pool
 
       if (!is.null(args$pedigree)) {
-        if (!requireNamespace("pedigreegraph", quietly = TRUE)) {
-          stop("Sandwich standard errors need the `pedigreegraph` package; install it or leave out `pedigree`")
-        }
-
         private$sandwich <- SandwichAnalysis$new(
           pedigree   = args$pedigree,
           probands   = unique(private$pool$person_id),

@@ -597,10 +597,11 @@ other. Probands are often relatives of each other, and one person can enter the 
 family-history and cross-trait cohorts at once, so those SEs can be too small or too large.
 Given a pedigree, the pipeline also reports a pedigree-pair sandwich SE that accounts for both.
 
-** Installing pedigreegraph
+** The pedigreegraph package
 
-The sandwich needs the ~pedigreegraph~ package, which is not on CRAN. Each GitHub release
-carries a source tarball that builds offline with a Rust toolchain (~rustc >= 1.85~):
+The pair sum runs in the ~pedigreegraph~ package, an import of epimight since 2.1.4 that the
+nix build provides. Outside nix, each GitHub release carries a source tarball that builds
+offline with a Rust toolchain (~rustc >= 1.85~):
 
 #+BEGIN_SRC R :exports code :results output :tangle no
 install.packages(
@@ -608,8 +609,6 @@ install.packages(
   repos = NULL, type = "source"
 )
 #+END_SRC
-
-Without ~pedigreegraph~, the pipeline works as before; only the ~pedigree~ argument is refused.
 
 ** The pedigree argument
 

@@ -40,7 +40,7 @@ This guide explains how the pipeline works and what each line of code in `run-ep
 
 - [Guide: running the pipeline](./guides/pipeline/guide.org)
 
-Pedigree-pair sandwich standard errors need the optional `pedigreegraph` package, which is not on CRAN.
+Pedigree-pair sandwich standard errors use the `pedigreegraph` package, an import since 2.1.4.
 Install it from its [GitHub release tarball](https://github.com/rwaples/pedigree-graph/releases) with a
 Rust toolchain (`rustc >= 1.85`); see [Sandwich standard errors](./guides/pipeline/guide.org) in the guide.
 
