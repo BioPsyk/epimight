@@ -600,7 +600,7 @@ describe("run_h2_pooled", {
 
   it("refuses arguments it cannot pool", {
     expect_error(do.call(pipeline$run_h2_pooled, pooled_args("CAD", list())), "needs `stratify_columns`")
-    expect_error(do.call(pipeline$run_h2_pooled, c(pooled_args("CAD"), method = "median")))
+    expect_error(do.call(pipeline$run_h2_pooled, c(pooled_args("CAD"), method = "median")), "not one of allowed values")
     expect_error(do.call(pipeline$run_h2_pooled, c(pooled_args("CAD"), meta_analyze = "fixed")), "not `meta_analyze`")
 
     pipeline$clear_results()

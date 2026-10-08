@@ -620,7 +620,8 @@ pooled_h2 <- pipeline$run_h2_pooled(
 #+END_SRC
 
 It takes the arguments of ~run_h2~ without ~meta_analyze~, and needs ~stratify_columns~.
-~method~ is ~"fixed"~ (the default) or ~"random"~, with the same weights as ~meta_analyze~.
+~method~ is ~"fixed"~ (the default) or ~"random"~, weighted as in ~meta_analyze~, except
+that the random-effects variance between strata is taken over the entering rows only.
 Each stratum's row is the one ~run_h2~ returns at that stratum's last age. A stratum enters
 the pool when that row's ~h2~ and ~se~ are finite and its ~se~ is positive. ~"random"~ needs
 at least two strata to enter; with one stratum, ~"fixed"~ returns that stratum's own h2 and
@@ -638,8 +639,9 @@ at least two strata to enter; with one stratum, ~"fixed"~ returns that stratum's
 | u95         | Upper bound of the 95% confidence interval     |
 
 Use ~meta_analyze~ for h2 by age, across the strata that reach each age. Use ~run_h2_pooled~
-for one h2 that every stratum enters at the end of its own table. When all strata share their
-last age, the two agree there.
+for one h2 that every stratum enters at the end of its own table. With ~"fixed"~, when all
+strata share their last age and every last row enters, the two agree there. The random-effects
+pools differ even then: ~meta_analyze~ takes the variance between strata over every age.
 
 * Sandwich standard errors
 

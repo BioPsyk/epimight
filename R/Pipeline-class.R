@@ -192,7 +192,7 @@ Pipeline <- R6::R6Class( #nolint
       } else {
         private$stratum_key(h2, args$cif_pop$stratify_columns)
       }
-      headline <- h2$age == stats::ave(h2$age, stratum, FUN = max)
+      headline <- private$at_last_age(h2$age, stratum)
       points   <- data.table(stratum = stratum, age = h2$age) |> filter(headline)
       inputs   <- private$h2_terms_at(args, points, "h2")
       output   <- rep(NA_character_, nrow(h2))
@@ -246,14 +246,10 @@ Pipeline <- R6::R6Class( #nolint
     # it, kept when h2 and SE are finite and SE is positive (run_meta would take SE 0 as an
     # infinite weight). Adds the `stratum` key.
     last_age_rows = function(args) {
-      stratify_columns <- args$cif_pop$stratify_columns
-
-      if (length(stratify_columns) == 0) stop("Pooling h2 across strata needs `stratify_columns`")
-
       local <- do.call(private$native_h2, args[c("cif_pop", "cif_fh", "relatedness")])$results
       last  <- local |>
-        mutate(stratum = private$stratum_key(local, stratify_columns)) |>
-        filter(age == stats::ave(age, stratum, FUN = max)) |>
+        mutate(stratum = private$stratum_key(local, args$cif_pop$stratify_columns)) |>
+        filter(private$at_last_age(age, stratum)) |>
         filter(is.finite(h2), is.finite(se), se > 0)
 
       if (nrow(last) == 0) stop("No stratum has a finite h2 with a positive SE at its last age")
@@ -263,6 +259,7 @@ Pipeline <- R6::R6Class( #nolint
 
       last
     },
+    at_last_age = function(age, stratum) age == stats::ave(age, stratum, FUN = max),
     # The plan of a last-age pool: each stratum's h2 at its last age, pooled into "h2|pool" with
     # run_meta's shares.
     h2_pooled_plan = function(args) {
@@ -863,8 +860,9 @@ Pipeline <- R6::R6Class( #nolint
     #'   for details.
     #' @param cif_fh Analysis arguments for family history cumulative incidence. See run_cif for details.
     #' @param relatedness Relatedness coefficient to use in h2 calculation.
-    #' @param method `"fixed"` (default) or `"random"` effects pooling, as in `meta_analyze`. Random needs at least
-    #'   two entering strata.
+    #' @param method `"fixed"` (default) or `"random"` effects pooling, weighted as in `meta_analyze` except that the
+    #'   random-effects variance between strata is taken over the entering rows only. Random needs at least two
+    #'   entering strata.
     #' @returns A named list with metadata and results: one row per `index_trait` with `n_strata`, the range of
     #'   the strata's last ages `age_min` and `age_max`, and `h2`, `se`, `l95`, `u95`. With a pedigree, also
     #'   `sandwich_se`, `sandwich_l95` and `sandwich_u95`.
@@ -873,6 +871,7 @@ Pipeline <- R6::R6Class( #nolint
       validator$add_post_validation(function(args, rules) {
         # The validator keeps unknown arguments, and h2_terms_at reads `meta_analyze` as a by-age pool.
         if ("meta_analyze" %in% names(args)) stop("run_h2_pooled takes `method`, not `meta_analyze`")
+        if (length(args$cif_pop$stratify_columns) == 0) stop("Pooling h2 across strata needs `stratify_columns`")
 
         private$check_h2_args(args, rules)
       })
