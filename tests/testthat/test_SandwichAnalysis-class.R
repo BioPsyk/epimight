@@ -30,6 +30,47 @@ expect_close <- function(actual, expected, rtol, atol) {
   expect_true(all(gap <= atol + rtol * abs(expected)), info = sprintf("max gap %.3g", max(gap)))
 }
 
+read_golden <- function(name) {
+  golden <- test_path("..", "data", name)
+  list(
+    pool     = fread(file.path(golden, "pool.csv"), colClasses = list(character = "person_id")),
+    pedigree = fread(file.path(golden, "pedigree.csv"), colClasses = "character", na.strings = ""),
+    python   = fread(file.path(golden, "se.csv"))
+  )
+}
+
+golden_h2_args <- function(trait) {
+  list(
+    cif_pop     = list(index_trait = trait, stratify_columns = list("born_at_year")),
+    cif_fh      = list(index_trait = trait, relatives_trait = trait, relatives_kind = "FS",
+                       stratify_columns = list("born_at_year")),
+    relatedness = 0.5
+  )
+}
+
+# The last-age pools of h2 and the fixed pool of per-stratum rg against the Python pooled rows.
+expect_pooled_golden <- function(pipeline, python) {
+  expect_row <- function(results, name, estimate) {
+    expected <- python[quantity == name]
+    expect_equal(nrow(results), 1)
+    expect_true(is.na(expected$born_at_year))
+    expect_equal(results[[estimate]], expected$point, tolerance = 1e-10)
+    expect_equal(results$sandwich_se, expected$se, tolerance = 1e-8)
+  }
+
+  for (k in 1:2) {
+    pooled <- do.call(pipeline$run_h2_pooled, c(golden_h2_args(paste0("trait", k)), method = "fixed"))$results
+    expect_row(pooled, paste0("h2_", k, "_pool"), "h2")
+  }
+  rg <- pipeline$run_rg(
+    h2_t1 = golden_h2_args("trait1"), h2_t2 = golden_h2_args("trait2"), relatedness = 0.5,
+    cif_cross = list(index_trait = "trait1", relatives_trait = "trait2", relatives_kind = "FS",
+                     stratify_columns = list("born_at_year")),
+    meta_analyze = "fixed"
+  )$results
+  expect_row(rg, "rg_pool", "rg")
+}
+
 #=================================================================================
 # Tests
 #=================================================================================
@@ -170,22 +211,15 @@ describe("batch_size", {
 })
 
 describe("Pipeline with a pedigree", {
-  golden   <- test_path("..", "data", "sandwich-golden")
-  pool     <- fread(file.path(golden, "pool.csv"), colClasses = list(character = "person_id"))
-  pedigree <- fread(file.path(golden, "pedigree.csv"), colClasses = "character", na.strings = "")
-  python   <- fread(file.path(golden, "se.csv"))
+  golden   <- read_golden("sandwich-golden")
+  pool     <- golden$pool
+  pedigree <- golden$pedigree
+  python   <- golden$python
   pipeline <- Pipeline$new(pool = pool, pedigree = pedigree)
-  h2_args  <- function(trait) {
-    list(
-      cif_pop     = list(index_trait = trait, stratify_columns = list("born_at_year")),
-      cif_fh      = list(index_trait = trait, relatives_trait = trait, relatives_kind = "FS",
-                         stratify_columns = list("born_at_year")),
-      relatedness = 0.5
-    )
-  }
+  h2_args  <- golden_h2_args
   headline <- function(results) results[!is.na(sandwich_se)][order(born_at_year)]
   expect_golden <- function(results, name, estimate) {
-    expected <- python[quantity == name][order(born_at_year)]
+    expected <- python[quantity == name & !is.na(born_at_year)][order(born_at_year)]
     expect_equal(results$born_at_year, expected$born_at_year)
     expect_equal(results[[estimate]], expected$point, tolerance = 1e-10)
     expect_equal(results$sandwich_se, expected$se, tolerance = 1e-8)
@@ -214,6 +248,25 @@ describe("Pipeline with a pedigree", {
 
     expect_equal(first$metadata$sandwich, list(batch_size = 32, passes = 1L))
     expect_equal(cached$metadata$sandwich, first$metadata$sandwich)
+  })
+
+  it("adds sandwich columns to the last-age pool, and clear_results drops them and their run", {
+    fresh   <- Pipeline$new(pool = pool, pedigree = pedigree)
+    private <- pipeline_private(fresh)
+    out     <- do.call(fresh$run_h2_pooled, h2_args("trait1"))
+    plain   <- do.call(Pipeline$new(pool = pool)$run_h2_pooled, h2_args("trait1"))
+
+    expect_equal(out$results[, !c("sandwich_se", "sandwich_l95", "sandwich_u95")], plain$results)
+    expect_true(is.finite(out$results$sandwich_se))
+    expect_equal(out$results$sandwich_l95, out$results$h2 - 1.96 * out$results$sandwich_se)
+    expect_equal(out$results$sandwich_u95, out$results$h2 + 1.96 * out$results$sandwich_se)
+    expect_equal(out$metadata$sandwich, list(batch_size = 32, passes = 1L))
+    expect_length(private$results$h2_pooled, 1)
+    expect_length(private$sandwich_runs$h2_pooled, 1)
+
+    fresh$clear_results()
+    expect_length(private$results$h2_pooled, 0)
+    expect_null(private$sandwich_runs$h2_pooled)
   })
 
   it("handles an empty string as a stratum label", {
@@ -302,5 +355,30 @@ describe("Pipeline with a pedigree", {
                        stratify_columns = list("born_at_year"))
     )
     expect_golden(headline(rg$results), "rg", "rg")
+  })
+
+  it("matches the Python sandwich on the last-age pool of h2 and the pooled rg", {
+    expect_pooled_golden(pipeline, python)
+  })
+})
+
+describe("Pipeline with a pedigree and strata that end at different ages", {
+  golden   <- read_golden("sandwich-golden-unequal")
+  pipeline <- Pipeline$new(pool = golden$pool, pedigree = golden$pedigree)
+
+  it("reads each stratum at a different last age, so the last-age pool is not the by-age pool", {
+    for (trait in c("trait1", "trait2")) {
+      local  <- do.call(pipeline$run_h2, golden_h2_args(trait))$results
+      by_age <- do.call(pipeline$run_h2, c(golden_h2_args(trait), meta_analyze = "fixed"))$results
+      pooled <- do.call(pipeline$run_h2_pooled, golden_h2_args(trait))$results
+
+      expect_gt(uniqueN(local[, .(age = max(age)), by = born_at_year]$age), 1)
+      expect_equal(pooled$n_strata, uniqueN(local$born_at_year))
+      expect_gt(abs(pooled$h2 - tail(by_age[order(age)], 1)$h2), 1e-6)
+    }
+  })
+
+  it("matches the Python sandwich on the last-age pool of h2 and the pooled rg", {
+    expect_pooled_golden(pipeline, golden$python)
   })
 })

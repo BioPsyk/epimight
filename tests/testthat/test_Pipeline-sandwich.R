@@ -99,16 +99,28 @@ h2_meta <- lapply(c("fixed", "random"), function(method) {
   list(args = args, results = do.call(pipeline$run_h2, args)$results)
 })
 
+# The last-age pool of trait 1: each stratum's eligible last-age row and its share, frozen.
+h2_pool <- lapply(c(fixed = "fixed", random = "random"), function(method) {
+  args <- c(sandwich_h2_args("trait1"), method = method)
+  last <- local_h2[[1]][, .SD[age == max(age)], by = stratum][is.finite(h2) & is.finite(se) & se > 0]
+  last[, share := SandwichAnalysis$new()$calculate_meta_shares(h2, se, 1, method)]
+  list(args = args, last = last, results = do.call(pipeline$run_h2_pooled, args)$results)
+})
+
 # Every functional's value with person weights scaled by `m`, named "<variant>/<output>".
 oracle_points <- function(m) {
   tables <- oracle_tables(m)
   h2     <- vapply(h2_meta, function(x) pooled_at(tables, 1, x$args$meta_analyze, max(x$results$age)), numeric(1))
+  pool   <- vapply(h2_pool, function(x) {
+    sum(x$last$share * mapply(function(s, a) h2_at(tables, 1, s, a), x$last$stratum, x$last$age))
+  }, numeric(1))
   rg     <- Map(function(args, frozen, name) {
     points <- rg_points(tables, args, frozen)
     setNames(points, paste0(name, "/", names(points)))
   }, rg_variants, rg_frozen, names(rg_variants))
 
-  c(setNames(h2, c("h2_fixed/meta", "h2_random/meta")), unlist(unname(rg)))
+  c(setNames(h2, c("h2_fixed/meta", "h2_random/meta")), setNames(pool, paste0("h2_pool_", names(pool), "/pool")),
+    unlist(unname(rg)))
 }
 
 # The production influence of the same functionals, columns named like oracle_points().
@@ -119,6 +131,11 @@ production_influence <- function() {
     matrix(psi[, plan$output[!is.na(plan$output)]], ncol = 1,
            dimnames = list(NULL, paste0(c("h2_fixed", "h2_random")[j], "/meta")))
   })
+  pool <- lapply(names(h2_pool), function(method) {
+    plan <- private$h2_pooled_plan(h2_pool[[method]]$args)
+    psi  <- plan_influence(pipeline, base, plan, ids)
+    matrix(psi[, plan$output], ncol = 1, dimnames = list(NULL, paste0("h2_pool_", method, "/pool")))
+  })
   rg <- Map(function(args, name) {
     plan <- private$rg_plan(args)
     psi <- plan_influence(pipeline, base, plan, ids)
@@ -126,7 +143,7 @@ production_influence <- function() {
     psi
   }, rg_variants, names(rg_variants))
 
-  do.call(cbind, c(h2, unname(rg)))
+  do.call(cbind, c(h2, pool, unname(rg)))
 }
 
 #=================================================================================
@@ -137,8 +154,9 @@ describe("meta-analyzed sandwich influence", {
   points <- oracle_points(rep(1, length(ids)))
   psi    <- production_influence()
 
-  it("covers strata with different rg ages and pooled h2 with dropped strata", {
+  it("covers strata with different rg ages and last ages, and pooled h2 with dropped strata", {
     expect_gt(uniqueN(rg_frozen$t1_fixed$age), 1)
+    expect_gt(uniqueN(h2_pool$fixed$last$age), 1)
     a_star <- max(h2_meta[[1]]$results$age)
     expect_lt(nrow(local_h2[[1]][age == a_star]), uniqueN(local_h2[[1]]$stratum))
   })
@@ -146,6 +164,8 @@ describe("meta-analyzed sandwich influence", {
   it("reproduces the pipeline's points with the frozen shares and ages", {
     expect_equal(points[["h2_fixed/meta"]], tail(h2_meta[[1]]$results[order(age)], 1)$h2, tolerance = 1e-12)
     expect_equal(points[["h2_random/meta"]], tail(h2_meta[[2]]$results[order(age)], 1)$h2, tolerance = 1e-12)
+    expect_equal(points[["h2_pool_fixed/pool"]], h2_pool$fixed$results$h2, tolerance = 1e-12)
+    expect_equal(points[["h2_pool_random/pool"]], h2_pool$random$results$h2, tolerance = 1e-12)
 
     for (name in c("t1_fixed", "t2_random", "both_random")) {
       expect_equal(unname(points[paste0(name, "/rg|", rg_frozen[[name]]$stratum)]), rg_frozen[[name]]$rg,
@@ -222,6 +242,14 @@ describe("sandwich variances of many outputs", {
     for (run in runs[-1]) expect_identical(run$variance, runs[[1]]$variance)
     expect_equal(vapply(runs, `[[`, numeric(1), "batch_size"), c(1, 7, 32))
     expect_equal(vapply(runs, `[[`, numeric(1), "passes"), ceiling(length(outputs) / c(1, 7, 32)))
+  })
+})
+
+describe("with_sandwich_columns", {
+  it("refuses a results type without a sandwich plan", {
+    out <- list(metadata = list(analysis_arguments = list(index_trait = "trait1")), results = data.table(cif = 0.1))
+
+    expect_error(private$with_sandwich_columns("cif", out), "No sandwich plan for results of type \"cif\"")
   })
 })
 

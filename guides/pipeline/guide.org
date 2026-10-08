@@ -590,6 +590,57 @@ with the following members:
 | results      | Analysis results as a single ~data.table~          |
 | args         | Arguments supplied to the interface                |
 
+* Pooling h² across strata
+
+~run_h2~ gives one h2 per stratum and age, and its ~meta_analyze~ argument pools the strata
+at each age: the row for age 40 pools every stratum's h2 at age 40. A stratum drops out of
+the pool at the ages past the end of its own h2 table. Take half siblings in three birth-year
+strata whose h2 tables end at ages 63, 73 and 73. The pooled table's last row, at age 73,
+pools the two strata that reach 73 only; the third stratum's last h2, at 63, is in no row
+after age 63.
+
+~run_h2_pooled~ instead pools each stratum's h2 at that stratum's own last age, the
+*last-age pool*. In the example it pools the h2 at 63, 73 and 73 into one row:
+
+#+BEGIN_SRC R :exports code :results output :tangle no
+pooled_h2 <- pipeline$run_h2_pooled(
+  cif_pop = list(
+    index_trait      = "SCZ",
+    stratify_columns = list("birth_year")
+  ),
+  cif_fh = list(
+    index_trait      = "SCZ",
+    relatives_trait  = "SCZ",
+    relatives_kind   = "half_siblings",
+    stratify_columns = list("birth_year")
+  ),
+  relatedness = 0.25,
+  method      = "fixed"
+)
+#+END_SRC
+
+It takes the arguments of ~run_h2~ without ~meta_analyze~, and needs ~stratify_columns~.
+~method~ is ~"fixed"~ (the default) or ~"random"~, with the same weights as ~meta_analyze~.
+Each stratum's row is the one ~run_h2~ returns at that stratum's last age. A stratum enters
+the pool when that row's ~h2~ and ~se~ are finite and its ~se~ is positive. ~"random"~ needs
+at least two strata to enter; with one stratum, ~"fixed"~ returns that stratum's own h2 and
+~se~. The result has one row per index trait:
+
+| Name        | Description                                    |
+|-------------+------------------------------------------------|
+| index_trait | The index trait                                |
+| n_strata    | The number of strata pooled                    |
+| age_min     | The youngest of the pooled strata's last ages  |
+| age_max     | The oldest of the pooled strata's last ages    |
+| h2          | Pooled heritability                            |
+| se          | Standard error of the pooled heritability      |
+| l95         | Lower bound of the 95% confidence interval     |
+| u95         | Upper bound of the 95% confidence interval     |
+
+Use ~meta_analyze~ for h2 by age, across the strata that reach each age. Use ~run_h2_pooled~
+for one h2 that every stratum enters at the end of its own table. When all strata share their
+last age, the two agree there.
+
 * Sandwich standard errors
 
 The ~se~, ~l95~ and ~u95~ columns of h2 and rg treat every proband as independent of every
@@ -648,6 +699,7 @@ With a pedigree, every h2 and rg result gains three columns:
 They are filled at the headline row only and are ~NA~ on the others:
 
 - h2: each stratum's last age; for ~meta_analyze~, the last age of the meta table.
+- ~run_h2_pooled~: its pooled row.
 - rg: every row, since rg already has one age per stratum, and the meta-analyzed rg.
 
 Points and the native ~se~ do not change. ~metadata$sandwich~ reports the ~batch_size~ and
@@ -656,8 +708,13 @@ the number of ~passes~ over the pedigree.
 ** What the sandwich assumes
 
 - The meta-analysis weights, the ages and the strata are held fixed at their values in the
-  data. Only per-stratum outputs have been checked for coverage in simulation; the
-  meta-analyzed outputs are checked against derivatives, not coverage.
+  data. The coverage checks in simulation scored two pooled outputs, both pooled across
+  strata with fixed effects: the last-age pool of h2 (~run_h2_pooled~ with
+  ~method = "fixed"~) and rg with each stratum's own h2 (~run_rg(meta_analyze = "fixed")~
+  with no ~meta_analyze~ in ~h2_t1~ or ~h2_t2~). The other pooled outputs are checked against
+  derivatives, not coverage: h2 pooled by age (~run_h2(meta_analyze = ...)~), random-effects
+  pools, and rg with pooled h2 inputs.
+  Per-stratum h2 and rg have been checked for coverage in one simulated scenario only.
 - The pairs are relatives up to ~max_degree~, all with the same weight. Spouses and shared
   households are not pairs, so shared environment beyond what the relatives' pairs carry is
   not accounted for.

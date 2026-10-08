@@ -505,6 +505,132 @@ describe("run_h2", {
   })
 })
 
+describe("run_h2_pooled", {
+  private     <- pipeline_private(pipeline)
+  pooled_args <- function(trait, stratify_columns = list("birth_year")) {
+    list(
+      cif_pop = list(
+        index_trait      = trait,
+        stratify_columns = stratify_columns
+      ),
+      cif_fh = list(
+        index_trait      = trait,
+        relatives_trait  = trait,
+        relatives_kind   = "parents",
+        stratify_columns = stratify_columns
+      ),
+      relatedness = 0.5
+    )
+  }
+  last_rows <- function(local) {
+    as.data.table(local)[, .SD[age == max(age)], by = birth_year]
+  }
+  hand_pool <- function(rows, weight) {
+    h2 <- sum(weight * rows$h2) / sum(weight)
+    se <- sqrt(1 / sum(weight))
+    c(h2 = h2, se = se, l95 = h2 - 1.96 * se, u95 = h2 + 1.96 * se)
+  }
+  # A cached per-stratum h2 table: 1991's last row has SE 0, 1992's a missing h2, 1994's an
+  # infinite SE and 1995's a negative SE, so only 1990 (at age 2) and 1993 (at age 4) enter.
+  cached_local <- data.table(
+    index_trait = "CAD",
+    age         = c(1, 2, 2, 3, 3, 4, 2, 2),
+    birth_year  = c(1990, 1990, 1991, 1991, 1992, 1993, 1994, 1995),
+    h2          = c(0.9, 0.3, 0.2, 0.4, NA, 0.5, 0.2, 0.1),
+    se          = c(0.1, 0.1, 0.1, 0, 0.1, 0.2, Inf, -0.1),
+    l95         = 0,
+    u95         = 1
+  )
+
+  it("pools each stratum's last-age row of run_h2 with fixed and random weights", {
+    args   <- pooled_args("CAD")
+    last   <- last_rows(do.call(pipeline$run_h2, args)$results)
+    fixed  <- do.call(pipeline$run_h2_pooled, args)$results
+    random <- do.call(pipeline$run_h2_pooled, c(args, method = "random"))$results
+
+    expect_gt(uniqueN(last$age), 1)
+    expect_equal(unlist(fixed[, .(h2, se, l95, u95)]), hand_pool(last, 1 / last$se ^ 2))
+    expect_equal(unlist(random[, .(h2, se, l95, u95)]), hand_pool(last, 1 / (last$se ^ 2 + var(last$h2))))
+  })
+
+  it("reports the strata pooled and the range of their last ages, without sandwich columns", {
+    args <- pooled_args("SCZ")
+    last <- last_rows(do.call(pipeline$run_h2, args)$results)
+    out  <- do.call(pipeline$run_h2_pooled, args)
+
+    expect_named(out$results, c("index_trait", "n_strata", "age_min", "age_max", "h2", "se", "l95", "u95"))
+    expect_equal(out$results$index_trait, "SCZ")
+    expect_equal(out$results$n_strata, nrow(last))
+    expect_equal(out$results$age_min, min(last$age))
+    expect_equal(out$results$age_max, max(last$age))
+    expect_null(out$metadata$sandwich)
+  })
+
+  it("leaves out strata whose last-age h2 or SE is not finite or whose SE is not positive", {
+    pipeline$clear_results()
+    args <- pooled_args("CAD")
+    pipeline$add_results("h2", cached_local, args)
+
+    fixed  <- do.call(pipeline$run_h2_pooled, args)$results
+    random <- do.call(pipeline$run_h2_pooled, c(args, method = "random"))$results
+    last   <- cached_local[c(2, 6)]
+
+    expect_equal(fixed$n_strata, 2)
+    expect_equal(c(fixed$age_min, fixed$age_max), c(2, 4))
+    expect_equal(unlist(fixed[, .(h2, se, l95, u95)]), hand_pool(last, 1 / last$se ^ 2))
+    expect_equal(unlist(random[, .(h2, se, l95, u95)]), hand_pool(last, 1 / (last$se ^ 2 + var(last$h2))))
+    pipeline$clear_results()
+  })
+
+  it("pools a single eligible stratum as that stratum's own row", {
+    single <- Pipeline$new(pool = pipeline_tte[birth_year == 2000])
+    args   <- pooled_args("CAD")
+    last   <- last_rows(do.call(single$run_h2, args)$results)
+    pooled <- do.call(single$run_h2_pooled, args)$results
+
+    expect_equal(nrow(last), 1)
+    expect_equal(pooled$n_strata, 1)
+    expect_identical(pooled$h2, last$h2)
+    expect_identical(pooled$se, last$se)
+    expect_error(
+      do.call(single$run_h2_pooled, c(args, method = "random")),
+      "at least 2 eligible strata, found 1"
+    )
+  })
+
+  it("refuses arguments it cannot pool", {
+    expect_error(do.call(pipeline$run_h2_pooled, pooled_args("CAD", list())), "needs `stratify_columns`")
+    expect_error(do.call(pipeline$run_h2_pooled, c(pooled_args("CAD"), method = "median")))
+    expect_error(do.call(pipeline$run_h2_pooled, c(pooled_args("CAD"), meta_analyze = "fixed")), "not `meta_analyze`")
+
+    pipeline$clear_results()
+    args <- pooled_args("CAD")
+    pipeline$add_results("h2", cached_local[-c(1, 2, 6)], args)
+    expect_error(do.call(pipeline$run_h2_pooled, args), "No stratum has a finite h2")
+    pipeline$add_results("h2", cached_local[-(1:2)], args)
+    expect_error(do.call(pipeline$run_h2_pooled, c(args, method = "random")), "found 1")
+    pipeline$clear_results()
+  })
+
+  it("caches an omitted method as fixed and random separately, until clear_results", {
+    pipeline$clear_results()
+    args    <- pooled_args("CAD")
+    omitted <- do.call(pipeline$run_h2_pooled, args)
+    expect_length(private$results$h2_pooled, 1)
+
+    fixed <- do.call(pipeline$run_h2_pooled, c(args, method = "fixed"))
+    expect_length(private$results$h2_pooled, 1)
+    expect_identical(fixed$results, omitted$results)
+
+    random <- do.call(pipeline$run_h2_pooled, c(args, method = "random"))
+    expect_length(private$results$h2_pooled, 2)
+    expect_false(isTRUE(all.equal(random$results$h2, fixed$results$h2)))
+
+    pipeline$clear_results()
+    expect_length(private$results$h2_pooled, 0)
+  })
+})
+
 describe("run_rg", {
   rg_args <- list(
     h2_t1 = list(

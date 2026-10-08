@@ -1,3 +1,19 @@
+# epimight (development)
+
+## Added
+
+- `Pipeline$run_h2_pooled()`, the last-age pool of h2: each stratum's h2 at its own last age (the row `run_h2`
+  returns there), pooled across strata with `method = "fixed"` (default) or `"random"` weights. Strata enter when
+  that row's h2 and SE are finite and the SE is positive. One row per `index_trait` with `n_strata`, `age_min`,
+  `age_max`, `h2`, `se`, `l95` and `u95`, plus `sandwich_se`, `sandwich_l95` and `sandwich_u95` with a pedigree.
+  `run_h2(meta_analyze=)` pools by age instead, so its last row leaves out every stratum whose table ends earlier.
+
+## Changed
+
+- The pipeline guide's sandwich section said only per-stratum outputs had been checked for coverage. The
+  coverage checks scored the fixed-effect last-age pool of h2 and the fixed-effect pool of per-stratum rg; the
+  guide now says so, and adds a section on pooling h2 across strata.
+
 # epimight 2.2.0
 
 ## Added

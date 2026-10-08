@@ -17,9 +17,10 @@ Pipeline <- R6::R6Class( #nolint
     sandwich      = NULL,
     sandwich_runs = list(),
     results       = list(
-      cif = list(),
-      h2  = list(),
-      rg  = list()
+      cif       = list(),
+      h2        = list(),
+      h2_pooled = list(),
+      rg        = list()
     ),
     cache_key = function(type, args) {
       rules     <- self$validation_rules[[type]]
@@ -241,28 +242,64 @@ Pipeline <- R6::R6Class( #nolint
 
       list(output = shares$to[1], terms = private$sandwich$compose_terms(terms, shares), cifs = cifs)
     },
+    # The rows a last-age pool reads: each stratum's h2 row at its own last age, as h2_plan picks
+    # it, kept when h2 and SE are finite and SE is positive (run_meta would take SE 0 as an
+    # infinite weight). Adds the `stratum` key.
+    last_age_rows = function(args) {
+      stratify_columns <- args$cif_pop$stratify_columns
+
+      if (length(stratify_columns) == 0) stop("Pooling h2 across strata needs `stratify_columns`")
+
+      local <- do.call(private$native_h2, args[c("cif_pop", "cif_fh", "relatedness")])$results
+      last  <- local |>
+        mutate(stratum = private$stratum_key(local, stratify_columns)) |>
+        filter(age == stats::ave(age, stratum, FUN = max)) |>
+        filter(is.finite(h2), is.finite(se), se > 0)
+
+      if (nrow(last) == 0) stop("No stratum has a finite h2 with a positive SE at its last age")
+      if (args$method == "random" && nrow(last) < 2) {
+        stop("A random-effects pool needs at least 2 eligible strata, found ", nrow(last))
+      }
+
+      last
+    },
+    # The plan of a last-age pool: each stratum's h2 at its last age, pooled into "h2|pool" with
+    # run_meta's shares.
+    h2_pooled_plan = function(args) {
+      last   <- private$last_age_rows(args)
+      local  <- private$h2_terms_at(args, last, "h2")
+      shares <- data.table(
+        from = local$output,
+        to   = private$output_key("h2", "pool"),
+        coef = private$sandwich$calculate_meta_shares(last$h2, last$se, rep(1, nrow(last)), args$method)
+      )
+
+      list(output = shares$to[1], terms = private$sandwich$compose_terms(local$terms, shares),
+           cifs = list(args$cif_pop, args$cif_fh))
+    },
+    check_h2_args = function(args, rules) {
+      if ("relatives_trait" %in% names(args$cif_pop)) {
+        stop("Using `relatives_trait` in `cif_pop` is not allowed")
+      } else if ("relatives_kind" %in% names(args$cif_pop)) {
+        stop("Using `relatives_kind` in `cif_pop` is not allowed")
+      } else if (args$cif_pop$index_trait != args$cif_fh$index_trait) {
+        stop("Using different `index_trait` in `cif_pop` and `cif_fh` is not allowed")
+      } else if (args$cif_fh$index_trait != args$cif_fh$relatives_trait) {
+        stop("Using different `index_trait` and `relatives_trait` in `cif_fh` is not allowed")
+      } else if (!identical(args$cif_pop$stratify_columns, args$cif_fh$stratify_columns)) {
+        stop("Using different `stratify_columns` in `cif_pop` and `cif_fh` is not allowed")
+      } else if ("meta_analyze" %in% names(args$cif_pop)) {
+        stop("Using meta-analyzed `cif_pop` as input to h2 is not allowed")
+      } else if ("meta_analyze" %in% names(args$cif_fh)) {
+        stop("Using meta-analyzed `cif_fh` as input to h2 is not allowed")
+      }
+
+      args
+    },
     native_h2 = function(...) {
 
       validator <- do.call(ArgumentsValidator$new, self$validation_rules$h2$properties)
-      validator$add_post_validation(function(args, rules) {
-        if ("relatives_trait" %in% names(args$cif_pop)) {
-          stop("Using `relatives_trait` in `cif_pop` is not allowed")
-        } else if ("relatives_kind" %in% names(args$cif_pop)) {
-          stop("Using `relatives_kind` in `cif_pop` is not allowed")
-        } else if (args$cif_pop$index_trait != args$cif_fh$index_trait) {
-          stop("Using different `index_trait` in `cif_pop` and `cif_fh` is not allowed")
-        } else if (args$cif_fh$index_trait != args$cif_fh$relatives_trait) {
-          stop("Using different `index_trait` and `relatives_trait` in `cif_fh` is not allowed")
-        } else if (!identical(args$cif_pop$stratify_columns, args$cif_fh$stratify_columns)) {
-          stop("Using different `stratify_columns` in `cif_pop` and `cif_fh` is not allowed")
-        } else if ("meta_analyze" %in% names(args$cif_pop)) {
-          stop("Using meta-analyzed `cif_pop` as input to h2 is not allowed")
-        } else if ("meta_analyze" %in% names(args$cif_fh)) {
-          stop("Using meta-analyzed `cif_fh` as input to h2 is not allowed")
-        }
-
-        args
-      })
+      validator$add_post_validation(private$check_h2_args)
 
       args      <- validator$run(...)
       metadata  <- list(
@@ -392,18 +429,25 @@ Pipeline <- R6::R6Class( #nolint
 
       list(metadata = metadata, results = rg)
     },
-    # Adds the sandwich columns to the results a public run_h2 or run_rg call returns, cached or
-    # not. The native_* methods never come through here, so the calls nested inside an analysis
-    # skip the sandwich.
+    # Adds the sandwich columns to the results a public run_h2, run_h2_pooled or run_rg call
+    # returns, cached or not. The native_* methods never come through here, so the calls nested
+    # inside an analysis skip the sandwich.
     with_sandwich_columns = function(type, out) {
       args <- out$metadata$analysis_arguments
       key  <- private$cache_key(type, args)
 
       if (!("sandwich_se" %in% names(out$results))) {
-        plan <- if (type == "h2") private$h2_plan(args, out$results) else private$rg_plan(args)
+        kind <- switch(
+          type,
+          h2        = list(plan = private$h2_plan(args, out$results), estimate = "h2"),
+          h2_pooled = list(plan = private$h2_pooled_plan(args), estimate = "h2"),
+          rg        = list(plan = private$rg_plan(args), estimate = "rg"),
+          stop("No sandwich plan for results of type \"", type, "\"")
+        )
+        plan <- kind$plan
         fit  <- private$sandwich$run(plan$terms, private$sandwich_cohorts(plan$cifs, plan$terms))
 
-        out$results <- private$add_sandwich_columns(out$results, plan$output, fit$variance, type)
+        out$results <- private$add_sandwich_columns(out$results, plan$output, fit$variance, kind$estimate)
         private$sandwich_runs[[type]][[key]] <- fit[c("batch_size", "passes")]
         self$add_results(type, out$results, args)
       }
@@ -581,6 +625,14 @@ Pipeline <- R6::R6Class( #nolint
         )
       )
 
+      self$validation_rules$h2_pooled <- self$validation_rules$h2
+      self$validation_rules$h2_pooled$properties$meta_analyze <- NULL
+      self$validation_rules$h2_pooled$properties$method       <- list(
+        type    = "string",
+        enum    = list("fixed", "random"),
+        default = "fixed"
+      )
+
       self$validation_rules$rg <- list(
         required   = TRUE,
         type       = "named_list",
@@ -615,12 +667,12 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' Removes all results from the cache.
     clear_results = function() {
-      private$results       <- list(cif = list(), h2 = list(), rg = list())
+      private$results       <- list(cif = list(), h2 = list(), h2_pooled = list(), rg = list())
       private$sandwich_runs <- list()
     },
     #' Adds the given analysis results to the cache.
     #'
-    #' @param type A label that identifies what analysis produced the results: "cif", "h2" or "rg".
+    #' @param type A label that identifies what analysis produced the results: "cif", "h2", "h2_pooled" or "rg".
     #' @param results A data.table with the results to cache.
     #' @param args The arguments that was provided to the analysis function that produced the results.
     add_results = function(type, results, args) {
@@ -633,7 +685,7 @@ Pipeline <- R6::R6Class( #nolint
     },
     #' Gets the analysis results produced by the given analysis arguments from the cache.
     #'
-    #' @param type A label that identifies what analysis produced the results: "cif", "h2" or "rg".
+    #' @param type A label that identifies what analysis produced the results: "cif", "h2", "h2_pooled" or "rg".
     #' @param args The arguments that was provided to the analysis function that produced the results.
     #' @returns A data.table with the cache analysis results.
     get_results = function(type, args) {
@@ -799,6 +851,61 @@ Pipeline <- R6::R6Class( #nolint
       if (is.null(private$sandwich)) return(out)
 
       private$with_sandwich_columns("h2", out)
+    },
+    #' Produces heritability pooled across strata, each stratum read at its own last age.
+    #'
+    #' Each stratum's h2 at the last age of its h2 table (the row [run_h2()] gives it) enters
+    #' when its h2 and SE are finite and its SE is positive; the entering rows are pooled by
+    #' inverse-variance weights. `run_h2(meta_analyze=)` instead pools by age, so at its last
+    #' age only the strata whose table reaches that age contribute.
+    #'
+    #' @param cif_pop Analysis arguments for population cumulative incidence, with `stratify_columns`. See run_cif
+    #'   for details.
+    #' @param cif_fh Analysis arguments for family history cumulative incidence. See run_cif for details.
+    #' @param relatedness Relatedness coefficient to use in h2 calculation.
+    #' @param method `"fixed"` (default) or `"random"` effects pooling, as in `meta_analyze`. Random needs at least
+    #'   two entering strata.
+    #' @returns A named list with metadata and results: one row per `index_trait` with `n_strata`, the range of
+    #'   the strata's last ages `age_min` and `age_max`, and `h2`, `se`, `l95`, `u95`. With a pedigree, also
+    #'   `sandwich_se`, `sandwich_l95` and `sandwich_u95`.
+    run_h2_pooled = function(...) {
+      validator <- do.call(ArgumentsValidator$new, self$validation_rules$h2_pooled$properties)
+      validator$add_post_validation(function(args, rules) {
+        # The validator keeps unknown arguments, and h2_terms_at reads `meta_analyze` as a by-age pool.
+        if ("meta_analyze" %in% names(args)) stop("run_h2_pooled takes `method`, not `meta_analyze`")
+
+        private$check_h2_args(args, rules)
+      })
+
+      args     <- validator$run(...)
+      metadata <- list(
+        epimight_version   = as.character(packageVersion(methods::getPackageName())),
+        analysis_name      = "h2_pooled",
+        analysis_arguments = args,
+        analysis_time      = format(Sys.time(), "%Y-%m-%dT%H:%M")
+      )
+      results  <- self$get_results("h2_pooled", args)
+
+      if (is.null(results)) {
+        last    <- private$last_age_rows(args)
+        results <- private$analyses$core$run_meta(
+          estimates       = last,
+          estimate_column = "h2",
+          se_column       = "se",
+          group_columns   = list("index_trait")
+        ) |>
+          rename_with(~ str_remove(., sprintf("^%s_", args$method))) |>
+          mutate(n_strata = nrow(last), age_min = min(last$age), age_max = max(last$age)) |>
+          select(index_trait, n_strata, age_min, age_max, h2 = meta, se, l95, u95)
+
+        self$add_results("h2_pooled", results, args)
+      }
+
+      out <- list(metadata = metadata, results = results)
+
+      if (is.null(private$sandwich)) return(out)
+
+      private$with_sandwich_columns("h2_pooled", out)
     },
     #' Produces genetic correlations for the two given traits.
     #'
